@@ -1,0 +1,24 @@
+#!/usr/bin/php
+<?php declare(strict_types=1);
+
+use ApiClients\Tools\OpenApiClientGenerator\Generator;
+use Symfony\Component\Yaml\Yaml;
+
+(function(): void {
+    /**
+     * Require Composer's autoloader
+     */
+    require_once '%s';
+})();
+
+(function(string $configuration): void {
+    /**
+     * Create and boot up the application
+     */
+    exit((function (string $configuration): int {
+        $yaml = Yaml::parseFile($configuration);
+        (new Generator($yaml['spec']))->generate($yaml['namespace'] . '\\', $yaml['destination']);
+
+        return 0;
+    })($configuration));
+})($argv[1]);

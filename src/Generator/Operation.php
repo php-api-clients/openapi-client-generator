@@ -45,30 +45,32 @@ final class Operation
         $requestReplaces = [];
         $query = [];
         foreach ($operation->parameters as $parameter) {
-            $class->addStmt(
-                $factory->
-                property($parameter->name)->
-                setDocComment('/**' . (string)$parameter->description . '**/')->
-                setType(str_replace([
+            $paramterStmt = $factory->
+            property($parameter->name)->
+            setDocComment('/**' . (string)$parameter->description . '**/');
+            if ($parameter->schema->type !== null) {
+                $paramterStmt->setType(str_replace([
                     'integer',
                     'any',
                 ], [
                     'int',
                     '',
-                ], $parameter->schema->type))
-            );
+                ], $parameter->schema->type));
+            }
+            $class->addStmt($paramterStmt);
 
-            $param = (new Param(
-                $parameter->name
-            ))->setType(
-                str_replace([
-                    'integer',
-                    'any',
-                ], [
-                    'int',
-                    '',
-                ], $parameter->schema->type)
-            );
+            $param = new Param($parameter->name);
+            if ($parameter->schema->default !== null) {
+                $param->setType(
+                    str_replace([
+                        'integer',
+                        'any',
+                    ], [
+                        'int',
+                        '',
+                    ], $parameter->schema->type)
+                );
+            }
             if ($parameter->schema->default !== null) {
                 $param->setDefault($parameter->schema->default);
             }

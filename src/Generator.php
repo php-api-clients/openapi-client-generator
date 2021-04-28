@@ -4,6 +4,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use Jawira\CaseConverter\Convert;
@@ -22,9 +23,23 @@ final class Generator
     public function generate(string $namespace, string $destinationPath)
     {
         $codePrinter = new Standard();
+        foreach ($this->spec->components->schemas as $name => $schema) {
+            $schemaClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal());
+            @mkdir(dirname($destinationPath . '/Schema/' . $schemaClassName), 0777, true);
+            file_put_contents($destinationPath . '/Schema/' . $schemaClassName . '.php', $codePrinter->prettyPrintFile([
+                    Schema::generate(
+                        $name,
+                        $namespace . str_replace('/', '\\', dirname('Schema/' . $schemaClassName)),
+                        strrev(explode('/', strrev($schemaClassName))[0]),
+                        $schema
+                    ),
+                ]) . PHP_EOL);
+        }
+
         foreach ($this->spec->paths as $path => $pathItem) {
-            $pathClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($path))->toPascal()) . 'Path';
-            @mkdir(dirname($destinationPath . '/Path' . $pathClassName), 0777, true);
+            $pathClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($path))->toPascal());
+            echo $pathClassName, PHP_EOL;
+            @mkdir(dirname($destinationPath . '/Path/' . $pathClassName), 0777, true);
             file_put_contents($destinationPath . '/Path/' . $pathClassName . '.php', $codePrinter->prettyPrintFile([
                 Path::generate(
                     $path,
@@ -35,7 +50,7 @@ final class Generator
                 ),
             ]) . PHP_EOL);
             foreach ($pathItem->getOperations() as $method => $operation) {
-                $operationClassName = (new Convert($operation->operationId))->fromTrain()->toPascal() . 'Operation';
+                $operationClassName = (new Convert($operation->operationId))->fromTrain()->toPascal();
                 $operations[$method] = $operationClassName;
 
                 @mkdir(dirname($destinationPath . '/Operation/' . $operationClassName), 0777, true);

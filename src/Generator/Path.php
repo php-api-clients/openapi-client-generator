@@ -30,17 +30,18 @@ final class Path
             ;
             $operationConstructorArguments = [];
             foreach ($operation->parameters as $parameter) {
-                $param = (new Param(
-                    $parameter->name
-                ))->setType(
-                    str_replace([
-                        'integer',
-                        'any',
-                    ], [
-                        'int',
-                        '',
-                    ], $parameter->schema->type)
-                );
+                $param = new Param($parameter->name);
+                if ($parameter->schema->default !== null) {
+                    $param->setType(
+                        str_replace([
+                            'integer',
+                            'any',
+                        ], [
+                            'int',
+                            '',
+                        ], $parameter->schema->type)
+                    );
+                }
                 if ($parameter->schema->default !== null) {
                     $param->setDefault($parameter->schema->default);
                 }

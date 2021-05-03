@@ -23,6 +23,10 @@ final class Generator
     public function generate(string $namespace, string $destinationPath)
     {
         $codePrinter = new Standard();
+        $schemaClassNameMap = [];
+        foreach ($this->spec->components->schemas as $name => $schema) {
+            $schemaClassNameMap[spl_object_hash($schema)] = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal());
+        }
         foreach ($this->spec->components->schemas as $name => $schema) {
             $schemaClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal());
             @mkdir(dirname($destinationPath . '/Schema/' . $schemaClassName), 0777, true);
@@ -31,14 +35,14 @@ final class Generator
                         $name,
                         $namespace . str_replace('/', '\\', dirname('Schema/' . $schemaClassName)),
                         strrev(explode('/', strrev($schemaClassName))[0]),
-                        $schema
+                        $schema,
+                        $schemaClassNameMap
                     ),
                 ]) . PHP_EOL);
         }
 
         foreach ($this->spec->paths as $path => $pathItem) {
             $pathClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($path))->toPascal());
-            echo $pathClassName, PHP_EOL;
             @mkdir(dirname($destinationPath . '/Path/' . $pathClassName), 0777, true);
             file_put_contents($destinationPath . '/Path/' . $pathClassName . '.php', $codePrinter->prettyPrintFile([
                 Path::generate(

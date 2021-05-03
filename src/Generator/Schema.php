@@ -16,10 +16,10 @@ final class Schema
      * @param string $name
      * @param string $namespace
      * @param string $className
-     * @param OpenAPiSchema $operation
+     * @param OpenAPiSchema $schema
      * @return iterable<Node>
      */
-    public static function generate(string $name, string $namespace, string $className, OpenAPiSchema $operation): Node
+    public static function generate(string $name, string $namespace, string $className, OpenAPiSchema $schema, array $schemaClassNameMap): Node
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -30,7 +30,7 @@ final class Schema
                     new Node\Const_(
                         'SCHEMA_TITLE',
                         new Node\Scalar\String_(
-                            $operation->title ?? $name
+                            $schema->title ?? $name
                         )
                     ),
                 ],
@@ -40,9 +40,20 @@ final class Schema
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
+                        'SPL_HASH',
+                        new Node\Scalar\String_(
+                            spl_object_hash($schema)
+                        )
+                    ),
+                ],
+                Class_::MODIFIER_PUBLIC
+        ))->addStmt(
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
                         'SCHEMA_DESCRIPTION',
                         new Node\Scalar\String_(
-                            $operation->description ?? ''
+                            $schema->description ?? ''
                         )
                     ),
                 ],
@@ -50,10 +61,11 @@ final class Schema
             )
         );
 
-        foreach ($operation->properties as $propertyName => $property) {
+        foreach ($schema->properties as $propertyName => $property) {
             $propertyStmt = $factory->property($propertyName)->makePrivate();
+            $docBlock = [];
             if (strlen($property->description) > 0) {
-                $propertyStmt->setDocComment('/**' . $property->description . '**/');
+                $docBlock[] = $property->description;
             }
             $method = $factory->method($propertyName)->makePublic()/*->setReturnType('string')*/->addStmt(
                 new Node\Stmt\Return_(
@@ -64,6 +76,9 @@ final class Schema
                 )
             );
             if (is_string($property->type)) {
+                if ($property->type === 'array' && array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
+                    $docBlock[] = '@var array<' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
+                }
                 $propertyStmt->setType(str_replace([
                     'integer',
                     'any',
@@ -79,22 +94,12 @@ final class Schema
                     '',
                 ], $property->type));
             }
-            $class->addStmt($propertyStmt)->addStmt($method);
 
-            $param = (new Param(
-                $propertyName
-            ))/*->setType(
-                str_replace([
-                    'integer',
-                    'any',
-                ], [
-                    'int',
-                    '',
-                ], $property->type)
-            )*/;
-            if ($property->default !== null) {
-                $param->setDefault($property->default);
+            if (count($docBlock) > 0) {
+                $propertyStmt->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', $docBlock) . PHP_EOL .' */');
             }
+
+            $class->addStmt($propertyStmt)->addStmt($method);
         }
 
         return $stmt->addStmt($class)->getNode();

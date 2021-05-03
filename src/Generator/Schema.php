@@ -97,6 +97,8 @@ final class Schema
                     '',
                     'bool',
                 ], $property->type));
+            } else if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
+                $propertyStmt->setType('\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])]);
             }
 
             if (count($docBlock) > 0) {

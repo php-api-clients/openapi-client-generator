@@ -36,9 +36,11 @@ final class Path
                         str_replace([
                             'integer',
                             'any',
+                            'boolean',
                         ], [
                             'int',
                             '',
+                            'bool',
                         ], $parameter->schema->type)
                     );
                 }

@@ -25,7 +25,7 @@ final class Generator
         $codePrinter = new Standard();
         $schemaClassNameMap = [];
         foreach ($this->spec->components->schemas as $name => $schema) {
-            $schemaClassName = trim(str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal()));
+            $schemaClassName = $this->className($name);
             if (strlen($schemaClassName) === 0) {
                 continue;
             }
@@ -46,7 +46,7 @@ final class Generator
         }
 
         foreach ($this->spec->paths as $path => $pathItem) {
-            $pathClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($path))->toPascal());
+            $pathClassName = $this->className($path);
             @mkdir(dirname($destinationPath . '/Path/' . $pathClassName), 0777, true);
             file_put_contents($destinationPath . '/Path/' . $pathClassName . '.php', $codePrinter->prettyPrintFile([
                 Path::generate(
@@ -58,7 +58,7 @@ final class Generator
                 ),
             ]) . PHP_EOL);
             foreach ($pathItem->getOperations() as $method => $operation) {
-                $operationClassName = (new Convert($operation->operationId))->fromTrain()->toPascal();
+                $operationClassName = $this->className((new Convert($operation->operationId))->fromTrain()->toPascal());
                 $operations[$method] = $operationClassName;
 
                 @mkdir(dirname($destinationPath . '/Operation/' . $operationClassName), 0777, true);
@@ -74,5 +74,10 @@ final class Generator
             }
         }
 
+    }
+
+    private function className(string $className): string
+    {
+        return str_replace(['{', '}', '-'], ['Cb', 'Rcb', 'Dash'], (new Convert($className))->toPascal());
     }
 }

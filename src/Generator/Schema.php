@@ -82,16 +82,20 @@ final class Schema
                 $propertyStmt->setType(str_replace([
                     'integer',
                     'any',
+                    'boolean',
                 ], [
                     'int',
                     '',
+                    'bool',
                 ], $property->type));
                 $method->setReturnType(str_replace([
                     'integer',
                     'any',
+                    'boolean',
                 ], [
                     'int',
                     '',
+                    'bool',
                 ], $property->type));
             }
 

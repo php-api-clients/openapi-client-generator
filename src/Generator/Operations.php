@@ -52,9 +52,11 @@ final class Operation
                 setType(str_replace([
                     'integer',
                     'any',
+                    'boolean',
                 ], [
                     'int',
                     '',
+                    'bool',
                 ], $parameter->schema->type))
             );
 
@@ -64,9 +66,11 @@ final class Operation
                 str_replace([
                     'integer',
                     'any',
+                    'boolean',
                 ], [
                     'int',
                     '',
+                    'bool',
                 ], $parameter->schema->type)
             );
             if ($parameter->schema->default !== null) {

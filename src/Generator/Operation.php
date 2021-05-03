@@ -52,9 +52,11 @@ final class Operation
                 $paramterStmt->setType(str_replace([
                     'integer',
                     'any',
+                    'boolean',
                 ], [
                     'int',
                     '',
+                    'bool',
                 ], $parameter->schema->type));
             }
             $class->addStmt($paramterStmt);
@@ -65,9 +67,11 @@ final class Operation
                     str_replace([
                         'integer',
                         'any',
+                        'boolean',
                     ], [
                         'int',
                         '',
+                        'bool',
                     ], $parameter->schema->type)
                 );
             }

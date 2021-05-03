@@ -51,7 +51,15 @@ final class Schema
         );
 
         foreach ($schema->properties as $propertyName => $property) {
-            $propertyName = trim($propertyName, '@');
+            $propertyName = str_replace([
+                '@',
+                '+',
+                '-',
+            ], [
+                '_AT_',
+                '_PLUSES_',
+                '_MINUS_',
+            ], $propertyName);
             $propertyStmt = $factory->property($propertyName)->makePrivate();
             $docBlock = [];
             if (strlen($property->description) > 0) {

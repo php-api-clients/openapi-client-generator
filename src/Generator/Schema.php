@@ -79,7 +79,7 @@ final class Schema
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                     $docBlock[] = '@var array<\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
                 }
-                $propertyStmt->setType(str_replace([
+                $t = str_replace([
                     'integer',
                     'any',
                     'boolean',
@@ -87,18 +87,20 @@ final class Schema
                     'int',
                     '',
                     'bool',
-                ], $property->type));
-                $method->setReturnType(str_replace([
-                    'integer',
-                    'any',
-                    'boolean',
-                ], [
-                    'int',
-                    '',
-                    'bool',
-                ], $property->type));
+                ], $property->type);
+                if ($t !== '') {
+                    $dft = [];
+                    if ($t !== 'array') {
+                        $t = '?' . $t;
+                        $dft = null;
+                    }
+                    $propertyStmt->setType($t)->setDefault($dft);
+                    $method->setReturnType($t);
+                }
             } else if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
-                $propertyStmt->setType('\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])]);
+                $fqcnn = '?\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
+                $propertyStmt->setType($fqcnn)->setDefault(null);
+                $method->setReturnType($fqcnn);
             }
 
             if (count($docBlock) > 0) {

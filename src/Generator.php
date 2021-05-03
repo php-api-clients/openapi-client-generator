@@ -25,10 +25,14 @@ final class Generator
         $codePrinter = new Standard();
         $schemaClassNameMap = [];
         foreach ($this->spec->components->schemas as $name => $schema) {
-            $schemaClassNameMap[spl_object_hash($schema)] = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal());
+            $schemaClassName = trim(str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal()));
+            if (strlen($schemaClassName) === 0) {
+                continue;
+            }
+            $schemaClassNameMap[spl_object_hash($schema)] = $schemaClassName;
         }
         foreach ($this->spec->components->schemas as $name => $schema) {
-            $schemaClassName = str_replace(['{', '}'], ['Cb', 'Rcb'], (new Convert($name))->toPascal());
+            $schemaClassName = $schemaClassNameMap[spl_object_hash($schema)];
             @mkdir(dirname($destinationPath . '/Schema/' . $schemaClassName), 0777, true);
             file_put_contents($destinationPath . '/Schema/' . $schemaClassName . '.php', $codePrinter->prettyPrintFile([
                     Schema::generate(

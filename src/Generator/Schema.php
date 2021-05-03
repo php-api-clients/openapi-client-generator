@@ -40,17 +40,6 @@ final class Schema
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
-                        'SPL_HASH',
-                        new Node\Scalar\String_(
-                            spl_object_hash($schema)
-                        )
-                    ),
-                ],
-                Class_::MODIFIER_PUBLIC
-        ))->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
                         'SCHEMA_DESCRIPTION',
                         new Node\Scalar\String_(
                             $schema->description ?? ''
@@ -62,6 +51,7 @@ final class Schema
         );
 
         foreach ($schema->properties as $propertyName => $property) {
+            $propertyName = trim($propertyName, '@');
             $propertyStmt = $factory->property($propertyName)->makePrivate();
             $docBlock = [];
             if (strlen($property->description) > 0) {

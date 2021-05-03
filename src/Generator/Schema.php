@@ -76,7 +76,7 @@ final class Schema
                 )
             );
             if (is_string($property->type)) {
-                if ($property->type === 'array' && array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
+                if ($property->type === 'array' && $property->items instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                     $docBlock[] = '@var array<' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
                 }
                 $propertyStmt->setType(str_replace([

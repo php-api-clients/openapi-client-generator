@@ -76,6 +76,7 @@ final class Schema
             if (is_string($property->type)) {
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                     $docBlock[] = '@var array<\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
+                    $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '::class)';
                 }
                 $t = str_replace([
                     'integer',
@@ -96,9 +97,10 @@ final class Schema
                     $method->setReturnType($t);
                 }
             } else if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
-                $fqcnn = '?\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
-                $propertyStmt->setType($fqcnn)->setDefault(null);
-                $method->setReturnType($fqcnn);
+                $fqcnn = '\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
+                $propertyStmt->setType('?' . $fqcnn)->setDefault(null);
+                $method->setReturnType('?' . $fqcnn);
+                $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
             }
 
             if (count($docBlock) > 0) {

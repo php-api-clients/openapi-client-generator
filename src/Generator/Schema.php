@@ -79,10 +79,12 @@ final class Schema
                     $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '::class)';
                 }
                 $t = str_replace([
+                    'object',
                     'integer',
                     'any',
                     'boolean',
                 ], [
+                    'array',
                     'int',
                     '',
                     'bool',

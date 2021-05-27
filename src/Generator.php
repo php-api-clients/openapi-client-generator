@@ -22,6 +22,7 @@ final class Generator
 
     public function generate(string $namespace, string $destinationPath)
     {
+        $namespace = $this->cleanUpNamespace($namespace);
         $codePrinter = new Standard();
         $schemaClassNameMap = [];
         foreach ($this->spec->components->schemas as $name => $schema) {
@@ -37,7 +38,7 @@ final class Generator
             file_put_contents($destinationPath . '/Schema/' . $schemaClassName . '.php', $codePrinter->prettyPrintFile([
                     Schema::generate(
                         $name,
-                        $namespace . str_replace('/', '\\', dirname('Schema/' . $schemaClassName)),
+                        $this->cleanUpNamespace($namespace . dirname('Schema/' . $schemaClassName)),
                         strrev(explode('/', strrev($schemaClassName))[0]),
                         $schema,
                         $schemaClassNameMap
@@ -51,7 +52,7 @@ final class Generator
             file_put_contents($destinationPath . '/Path/' . $pathClassName . '.php', $codePrinter->prettyPrintFile([
                 Path::generate(
                     $path,
-                    $namespace . str_replace('/', '\\', dirname('Path/' . $pathClassName)),
+                    $this->cleanUpNamespace($namespace . dirname('Path/' . $pathClassName)),
                     $namespace,
                     strrev(explode('/', strrev($pathClassName))[0]),
                     $pathItem
@@ -66,7 +67,7 @@ final class Generator
                     Operation::generate(
                         $path,
                         $method,
-                        $namespace . str_replace('/', '\\', dirname('Operation/' . $operationClassName)),
+                        $this->cleanUpNamespace($namespace . dirname('Operation/' . $operationClassName)),
                         strrev(explode('/', strrev($operationClassName))[0]),
                         $operation
                     ),
@@ -79,5 +80,13 @@ final class Generator
     private function className(string $className): string
     {
         return str_replace(['{', '}', '-'], ['Cb', 'Rcb', 'Dash'], (new Convert($className))->toPascal());
+    }
+
+    private function cleanUpNamespace(string $namespace): string
+    {
+        $namespace = str_replace('/', '\\', $namespace);
+        $namespace = str_replace('\\\\', '\\', $namespace);
+
+        return $namespace;
     }
 }

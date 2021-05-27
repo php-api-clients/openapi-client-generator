@@ -34,6 +34,9 @@ final class Generator
         }
         foreach ($this->spec->components->schemas as $name => $schema) {
             $schemaClassName = $schemaClassNameMap[spl_object_hash($schema)];
+            if (strlen($schemaClassName) === 0) {
+                continue;
+            }
             @mkdir(dirname($destinationPath . '/Schema/' . $schemaClassName), 0777, true);
             file_put_contents($destinationPath . '/Schema/' . $schemaClassName . '.php', $codePrinter->prettyPrintFile([
                     Schema::generate(
@@ -48,6 +51,9 @@ final class Generator
 
         foreach ($this->spec->paths as $path => $pathItem) {
             $pathClassName = $this->className($path);
+            if (strlen($pathClassName) === 0) {
+                continue;
+            }
             @mkdir(dirname($destinationPath . '/Path/' . $pathClassName), 0777, true);
             file_put_contents($destinationPath . '/Path/' . $pathClassName . '.php', $codePrinter->prettyPrintFile([
                 Path::generate(
@@ -61,7 +67,9 @@ final class Generator
             foreach ($pathItem->getOperations() as $method => $operation) {
                 $operationClassName = $this->className((new Convert($operation->operationId))->fromTrain()->toPascal());
                 $operations[$method] = $operationClassName;
-
+                if (strlen($operationClassName) === 0) {
+                    continue;
+                }
                 @mkdir(dirname($destinationPath . '/Operation/' . $operationClassName), 0777, true);
                 file_put_contents($destinationPath . '/Operation/' . $operationClassName . '.php', $codePrinter->prettyPrintFile([
                     Operation::generate(

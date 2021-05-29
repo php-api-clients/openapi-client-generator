@@ -5,6 +5,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Webhook;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use Jawira\CaseConverter\Convert;
@@ -25,14 +26,14 @@ final class Generator
         $namespace = $this->cleanUpNamespace($namespace);
         $codePrinter = new Standard();
         $schemaClassNameMap = [];
-        foreach ($this->spec->components->schemas as $name => $schema) {
+        foreach (($this->spec->components->schemas ? []) as $name => $schema) {
             $schemaClassName = $this->className($name);
             if (strlen($schemaClassName) === 0) {
                 continue;
             }
             $schemaClassNameMap[spl_object_hash($schema)] = $schemaClassName;
         }
-        foreach ($this->spec->components->schemas as $name => $schema) {
+        foreach (($this->spec->components->schemas ? []) as $name => $schema) {
             $schemaClassName = $schemaClassNameMap[spl_object_hash($schema)];
             if (strlen($schemaClassName) === 0) {
                 continue;
@@ -49,7 +50,7 @@ final class Generator
                 ]) . PHP_EOL);
         }
 
-        foreach ($this->spec->paths as $path => $pathItem) {
+        foreach (($this->spec->paths ? []) as $path => $pathItem) {
             $pathClassName = $this->className($path);
             if (strlen($pathClassName) === 0) {
                 continue;
@@ -81,6 +82,20 @@ final class Generator
                     ),
                 ]) . PHP_EOL);
             }
+        }
+
+        foreach (($this->spec->webhooks ?? []) as $name => $webhook) {
+            $webhookClassName = $this->className($webhook);
+            @mkdir(dirname($destinationPath . '/WebHook/' . $webhookClassName), 0777, true);
+            file_put_contents($destinationPath . '/WebHook/' . $webhookClassName . '.php', $codePrinter->prettyPrintFile([
+                    Webhook::generate(
+                        $name,
+                        $this->cleanUpNamespace($namespace . dirname('WebHook/' . $webhookClassName)),
+                        strrev(explode('/', strrev($webhookClassName))[0]),
+                        $webhook,
+                        $webhookClassName
+                    ),
+                ]) . PHP_EOL);
         }
 
     }

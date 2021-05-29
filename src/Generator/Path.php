@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Tools\OpenApiClientGenerator\File;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
 use cebe\openapi\spec\PathItem;
 use Jawira\CaseConverter\Convert;
@@ -14,7 +15,16 @@ use RingCentral\Psr7\Request;
 
 final class Path
 {
-    public static function generate(string $path, string $namespace, string $baseNamespace, string $className, PathItem $pathItem): Node
+    /**
+     * @param string $path
+     * @param string $namespace
+     * @param string $baseNamespace
+     * @param string $className
+     * @param PathItem $pathItem
+     * @return iterable<Node>
+     * @throws \Jawira\CaseConverter\CaseConverterException
+     */
+    public static function generate(string $path, string $namespace, string $baseNamespace, string $className, PathItem $pathItem): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -57,6 +67,6 @@ final class Path
             $class->addStmt($method);
         }
 
-        return $stmt->addStmt($class)->getNode();
+        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
     }
 }

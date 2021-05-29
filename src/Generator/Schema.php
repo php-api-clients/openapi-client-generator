@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Tools\OpenApiClientGenerator\File;
 use cebe\openapi\spec\Schema as OpenAPiSchema;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -19,7 +20,7 @@ final class Schema
      * @param OpenAPiSchema $schema
      * @return iterable<Node>
      */
-    public static function generate(string $name, string $namespace, string $className, OpenAPiSchema $schema, array $schemaClassNameMap): Node
+    public static function generate(string $name, string $namespace, string $className, OpenAPiSchema $schema, array $schemaClassNameMap): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -121,6 +122,6 @@ final class Schema
             $class->addStmt($propertyStmt)->addStmt($method);
         }
 
-        return $stmt->addStmt($class)->getNode();
+        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
     }
 }

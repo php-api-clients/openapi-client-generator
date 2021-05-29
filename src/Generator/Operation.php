@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Tools\OpenApiClientGenerator\File;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -12,7 +13,15 @@ use RingCentral\Psr7\Request;
 
 final class Operation
 {
-    public static function generate(string $path, string $method, string $namespace, string $className, OpenAPiOperation $operation): Node
+    /**
+     * @param string $path
+     * @param string $method
+     * @param string $namespace
+     * @param string $className
+     * @param OpenAPiOperation $operation
+     * @return iterable<Node>
+     */
+    public static function generate(string $path, string $method, string $namespace, string $className, OpenAPiOperation $operation): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -126,6 +135,6 @@ final class Operation
             $factory->method('validateResponse')
         );
 
-        return $stmt->addStmt($class)->getNode();
+        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
     }
 }

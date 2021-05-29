@@ -102,11 +102,11 @@ final class Schema
                     'bool',
                 ], $property->type);
                 if ($t !== '') {
-                    $dft = [];
-                    if ($t !== 'array') {
-                        $dft = null;
+                    if ($t === 'array') {
+                        $propertyStmt->setType($t)->setDefault([]);
+                    } else {
+                        $propertyStmt->setType($t);
                     }
-                    $propertyStmt->setType($t)->setDefault($dft);
                     $method->setReturnType($t);
                 }
             }

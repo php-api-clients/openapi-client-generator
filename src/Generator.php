@@ -24,7 +24,7 @@ final class Generator
     {
         $namespace = $this->cleanUpNamespace($namespace);
         $codePrinter = new Standard();
-        if (count($this->spec->components->schemas) > 0) {
+        if (count($this->spec->components->schemas ?? []) > 0) {
             $schemaClassNameMap = [];
             foreach ($this->spec->components->schemas as $name => $schema) {
                 $schemaClassName = $this->className($name);
@@ -51,7 +51,7 @@ final class Generator
             }
         }
 
-        if (count($this->spec->paths) > 0) {
+        if (count($this->spec->paths ?? []) > 0) {
             foreach ($this->spec->paths as $path => $pathItem) {
                 $pathClassName = $this->className($path);
                 if (strlen($pathClassName) === 0) {

@@ -32,7 +32,7 @@ final class Path
         $class = $factory->class($className)->makeFinal();
 
         foreach ($pathItem->getOperations() as $method => $operation) {
-            $operationClassName = str_replace('/', '\\', '\\' . $baseNamespace . 'Operation/' . (new Convert($operation->operationId))->fromTrain()->toPascal()) . 'Operation';
+            $operationClassName = str_replace('/', '\\', '\\' . $baseNamespace . 'Operation/' . (new Convert($operation->operationId))->fromTrain()->toPascal());
             $method =
                 $factory->
                 method($method)->

@@ -34,7 +34,7 @@ final class Generator
 
     private function className(string $className): string
     {
-        return str_replace(['{', '}', '-', '$'], ['Cb', 'Rcb', 'Dash', '_'], (new Convert($className))->toPascal());
+        return str_replace(['{', '}', '-', '$', '_'], ['Cb', 'Rcb', 'Dash', '_', '\\'], (new Convert($className))->toPascal());
     }
 
     private function cleanUpNamespace(string $namespace): string
@@ -69,10 +69,11 @@ final class Generator
 
                 yield from Schema::generate(
                     $name,
-                    $this->cleanUpNamespace($namespace . dirname('Schema/' . $schemaClassName)),
-                    strrev(explode('/', strrev($schemaClassName))[0]),
+                    $this->dirname($namespace . 'Schema/' . $schemaClassName),
+                    $this->basename($namespace . 'Schema/' . $schemaClassName),
                     $schema,
-                    $schemaClassNameMap
+                    $schemaClassNameMap,
+                    $namespace . 'Schema'
                 );
             }
         }
@@ -86,9 +87,9 @@ final class Generator
 
                 yield from Path::generate(
                     $path,
-                    $this->cleanUpNamespace($namespace . dirname('Path/' . $pathClassName)),
+                    $this->dirname($namespace . 'Path/' . $pathClassName),
                     $namespace,
-                    strrev(explode('/', strrev($pathClassName))[0]),
+                    $this->basename($namespace . 'Path/' . $pathClassName),
                     $pathItem
                 );
 
@@ -102,12 +103,26 @@ final class Generator
                     yield from Operation::generate(
                         $path,
                         $method,
-                        $this->cleanUpNamespace($namespace . dirname('Operation/' . $operationClassName)),
-                        strrev(explode('/', strrev($operationClassName))[0]),
+                        $this->dirname($namespace . 'Operation/' . $operationClassName),
+                        $this->basename($namespace . 'Operation/' . $operationClassName),
                         $operation
                     );
                 }
             }
         }
+    }
+
+    private function dirname(string $fqcn): string
+    {
+        $fqcn = str_replace('\\', '/', $fqcn);
+
+        return $this->cleanUpNamespace(dirname($fqcn));
+    }
+
+    private function basename(string $fqcn): string
+    {
+        $fqcn = str_replace('\\', '/', $fqcn);
+
+        return $this->cleanUpNamespace(basename($fqcn));
     }
 }

@@ -87,7 +87,7 @@ final class Generator
 
     private function className(string $className): string
     {
-        return str_replace(['{', '}', '-'], ['Cb', 'Rcb', 'Dash'], (new Convert($className))->toPascal());
+        return str_replace(['{', '}', '-', '$'], ['Cb', 'Rcb', 'Dash', '_'], (new Convert($className))->toPascal());
     }
 
     private function cleanUpNamespace(string $namespace): string

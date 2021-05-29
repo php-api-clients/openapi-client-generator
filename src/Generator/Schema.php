@@ -91,6 +91,26 @@ final class Schema
                         $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '::class)';
                     }
                 }
+
+
+                if (is_string($property->type)) {
+                    $t = str_replace([
+                        'object',
+                        'integer',
+                        'any',
+                        'boolean',
+                    ], [
+                        'array',
+                        'int',
+                        '',
+                        'bool',
+                    ], $property->type);
+                    if ($t !== '') {
+                        $propertyStmt->setType($t);
+                        $method->setReturnType($t);
+                    }
+                }
+
             }
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
@@ -123,11 +143,8 @@ final class Schema
                 ], $property->type);
                 if ($t !== '') {
                     if ($t === 'array' && $setDefaylt === true) {
-                        $propertyStmt->setType($t)->setDefault([]);
-                    } else {
-                        $propertyStmt->setType($t);
+                        $propertyStmt->setDefault([]);
                     }
-                    $method->setReturnType($t);
                 }
             }
 

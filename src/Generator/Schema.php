@@ -113,14 +113,14 @@ final class Schema
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
-                $propertyStmt->setType( $fqcnn)->setDefault(null);
+                $propertyStmt->setType( $fqcnn);
                 $method->setReturnType( $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
-                $propertyStmt->setType( $fqcnn)->setDefault(null);
+                $propertyStmt->setType( $fqcnn);
                 $method->setReturnType( $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
             }

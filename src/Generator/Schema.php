@@ -98,8 +98,17 @@ final class Schema
                     $propertyStmt->setType($t)->setDefault($dft);
                     $method->setReturnType($t);
                 }
-            } else if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
+            }
+
+            if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
                 $fqcnn = '\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
+                $propertyStmt->setType('?' . $fqcnn)->setDefault(null);
+                $method->setReturnType('?' . $fqcnn);
+                $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
+            }
+
+            if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {
+                $fqcnn = '\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
                 $propertyStmt->setType('?' . $fqcnn)->setDefault(null);
                 $method->setReturnType('?' . $fqcnn);
                 $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';

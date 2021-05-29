@@ -63,9 +63,11 @@ final class Schema
                 '_MINUS_',
             ], $propertyName);
             $propertyStmt = $factory->property($propertyName)->makePrivate();
-            $docBlock = [];
+            $propertyDocBlock = [];
+            $methodDocBlock = [];
             if (strlen($property->description) > 0) {
-                $docBlock[] = $property->description;
+                $propertyDocBlock[] = $property->description;
+                $methodDocBlock[] = $property->description;
             }
             $method = $factory->method($propertyName)->makePublic()/*->setReturnType('string')*/->addStmt(
                 new Node\Stmt\Return_(
@@ -78,10 +80,12 @@ final class Schema
             if (is_string($property->type)) {
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema) {
                     if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
+                        $methodDocBlock[] = '@return array<\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
                         $docBlock[] = '@var array<\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
                         $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '::class)';
                     } elseif ($property->items->type === 'object') {
                         yield from self::generate($name . '::' . $propertyName, $namespace . '\\' . $className, (new Convert($propertyName))->toPascal(), $property->items, $schemaClassNameMap);
+                        $methodDocBlock[] = '@return array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
                         $docBlock[] = '@var array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
                         $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '::class)';
                     }
@@ -112,18 +116,22 @@ final class Schema
                 $fqcnn = '\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
                 $propertyStmt->setType('?' . $fqcnn)->setDefault(null);
                 $method->setReturnType('?' . $fqcnn);
-                $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
+                $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {
                 $fqcnn = '\\' . $namespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
                 $propertyStmt->setType('?' . $fqcnn)->setDefault(null);
                 $method->setReturnType('?' . $fqcnn);
-                $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
+                $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
             }
 
-            if (count($docBlock) > 0) {
-                $propertyStmt->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', $docBlock) . PHP_EOL .' */');
+            if (count($propertyDocBlock) > 0) {
+                $propertyStmt->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', $propertyDocBlock) . PHP_EOL .' */');
+            }
+
+            if (count($methodDocBlock) > 0) {
+                $method->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', $methodDocBlock) . PHP_EOL .' */');
             }
 
             $class->addStmt($propertyStmt)->addStmt($method);

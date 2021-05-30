@@ -82,13 +82,13 @@ final class Schema
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema) {
                     if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                         $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
-                        $docBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
-                        $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '::class)';
+                        $propertyDocBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
+                        $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '::class)';
                     } elseif ($property->items->type === 'object') {
                         yield from self::generate($name . '::' . $propertyName, $namespace . '\\' . $className, (new Convert($propertyName))->toPascal(), $property->items, $schemaClassNameMap, $rootNamespace);
                         $methodDocBlock[] = '@return array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
-                        $docBlock[] = '@var array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
-                        $docBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '::class)';
+                        $propertyDocBlock[] = '@var array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
+                        $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '::class)';
                     }
                 }
 

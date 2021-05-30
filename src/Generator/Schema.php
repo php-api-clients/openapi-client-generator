@@ -57,10 +57,12 @@ final class Schema
                 '@',
                 '+',
                 '-',
+                '$',
             ], [
                 '_AT_',
                 '_PLUSES_',
                 '_MINUS_',
+                '',
             ], $propertyName);
             $propertyStmt = $factory->property($propertyName)->makePrivate();
             $propertyDocBlock = [];

@@ -100,10 +100,12 @@ final class Schema
                         'object',
                         'integer',
                         'any',
+                        'null',
                         'boolean',
                     ], [
                         'array',
                         'int',
+                        '',
                         '',
                         'bool',
                     ], $property->type);

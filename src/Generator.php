@@ -5,6 +5,8 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use Jawira\CaseConverter\Convert;
@@ -110,6 +112,37 @@ final class Generator
                 }
             }
         }
+
+        if (count($this->spec->webhooks ?? []) > 0) {
+            $pathClassNameMapping = [];
+            foreach ($this->spec->webhooks as $path => $pathItem) {
+                $webHookClassName = $this->className($path);
+                $pathClassNameMapping[$path] = $this->fqcn($namespace . 'WebHook/' . $webHookClassName);
+                if (strlen($webHookClassName) === 0) {
+                    continue;
+                }
+
+                yield from WebHook::generate(
+                    $path,
+                    $this->dirname($namespace . 'WebHook/' . $webHookClassName),
+                    $namespace,
+                    $this->basename($namespace . 'WebHook/' . $webHookClassName),
+                    $pathItem,
+                    $schemaClassNameMap,
+                    $namespace . 'WebHook'
+                );
+            }
+
+            yield from WebHooks::generate(
+                $this->dirname($namespace . 'WebHooks'),
+                $pathClassNameMapping,
+            );
+        }
+    }
+
+    private function fqcn(string $fqcn): string
+    {
+        return str_replace('/', '\\', $fqcn);
     }
 
     private function dirname(string $fqcn): string

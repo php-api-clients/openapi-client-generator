@@ -6,6 +6,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
@@ -133,6 +134,10 @@ final class Generator
                 );
             }
 
+            yield from WebHookInterface::generate(
+                $this->dirname($namespace . 'WebHookInterface'),
+                'WebHookInterface',
+            );
             yield from WebHooks::generate(
                 $this->dirname($namespace . 'WebHooks'),
                 $pathClassNameMapping,

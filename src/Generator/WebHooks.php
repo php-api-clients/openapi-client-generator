@@ -26,7 +26,7 @@ final class WebHooks
      * @return iterable<Node>
      * @throws \Jawira\CaseConverter\CaseConverterException
      */
-    public static function generate(string $namespace, array $eventClassNameMapping): iterable
+    public static function generate(string $namespace, string $baseNamespace, array $eventClassNameMapping): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -50,7 +50,7 @@ final class WebHooks
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('object')->addParam(
+            $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('\\' . $baseNamespace . 'WebHookInterface')->addParam(
                 (new Param('event'))->setType('string')
             )->addStmt(
                 new Node\Stmt\If_(

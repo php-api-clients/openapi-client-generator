@@ -31,7 +31,7 @@ final class WebHook
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
 
-        $class = $factory->class($className)->makeFinal()->implement($baseNamespace . 'WebHookInterface');
+        $class = $factory->class($className)->makeFinal()->implement('\\' . $baseNamespace . 'WebHookInterface');
 
         $method = $factory->method('resolve')->makePublic()->setReturnType('string')->addParam(
             (new Param('data'))->setType('array')

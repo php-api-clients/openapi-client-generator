@@ -140,6 +140,7 @@ final class Generator
             );
             yield from WebHooks::generate(
                 $this->dirname($namespace . 'WebHooks'),
+                $namespace,
                 $pathClassNameMapping,
             );
         }

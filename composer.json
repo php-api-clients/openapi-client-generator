@@ -20,7 +20,7 @@
     },
     "require": {
         "php": "^7.4",
-        "cebe/php-openapi": "dev-webhooks as 1.6.0",
+        "cebe/php-openapi": "^1.5",
         "jawira/case-converter": "^3.4",
         "twig/twig": "^3.0",
         "nikic/php-parser": "^4.8",
@@ -29,23 +29,22 @@
         "symfony/yaml": "^5.2",
         "wyrihaximus/composer-update-bin-autoload-path": "^1 || ^1.0.1",
         "wyrihaximus/hydrator": "dev-master",
-        "league/openapi-psr7-validator": "dev-webhooks as 0.16.99"
+        "league/openapi-psr7-validator": "^0.16"
     },
     "autoload": {
         "psr-4": {
             "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/"
-        }
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@github.com:WyriHaximus-labs/php-openapi.git"
         },
-        {
-            "type": "vcs",
-            "url": "git@github.com:WyriHaximus-labs/openapi-psr7-validator.git"
-        }
-    ],
+        "files": [
+            "external_files/cebe/SpecBaseObject.php",
+            "external_files/cebe/OpenApi.php",
+            "external_files/cebe/Schema.php",
+            "external_files/cebe/Type.php",
+            "external_files/cebe/WebHooks.php",
+            "external_files/thephpleague/SchemaValidator.php",
+            "external_files/thephpleague/Type.php"
+        ]
+    },
     "config": {
         "platform": {
             "php": "7.4.7"

@@ -130,7 +130,7 @@ final class Generator
                     $this->basename($namespace . 'WebHook/' . $webHookClassName),
                     $pathItem,
                     $schemaClassNameMap,
-                    $namespace . 'WebHook'
+                    $namespace
                 );
             }
 

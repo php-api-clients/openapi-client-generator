@@ -123,6 +123,12 @@ final class Schema
                 $method->setReturnType( $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
+            } else if (is_array($property->allOf) && $property->allOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->allOf[0]), $schemaClassNameMap)) {
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->allOf[0])];
+                $propertyStmt->setType( $fqcnn);
+                $method->setReturnType( $fqcnn);
+                $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
+                $setDefaylt = false;
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {

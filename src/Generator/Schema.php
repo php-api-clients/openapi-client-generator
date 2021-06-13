@@ -109,12 +109,17 @@ final class Schema
                         '',
                         'bool',
                     ], $property->type);
+
+                    if ($t !== '' && is_array($schema->required) && !in_array($propertyName, $schema->required, false)) {
+                        $t = '?' . $t;
+                        $propertyStmt->setDefault(null);
+                    }
+
                     if ($t !== '') {
                         $propertyStmt->setType($t);
                         $method->setReturnType($t);
                     }
                 }
-
             }
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {

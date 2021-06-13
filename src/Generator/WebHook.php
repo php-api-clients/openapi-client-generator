@@ -62,7 +62,7 @@ final class WebHook
                                 new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [new Node\Scalar\String_(json_encode($oneOfSchema->getSerializableData())), new Node\Scalar\String_('\cebe\openapi\spec\Schema')])),
                             ]
                         )),
-                        new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($oneOfSchema)])),
+                        new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaClassNameMap[spl_object_hash($oneOfSchema)])),
                     ], [
                         new Node\Stmt\Catch_(
                             [new Node\Name('\\' . \Throwable::class)],

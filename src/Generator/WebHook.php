@@ -38,8 +38,9 @@ final class WebHook
         );
         if ($pathItem->post->requestBody->content !== null) {
             $content = current($pathItem->post->requestBody->content);
+            $tmts = [];
             if ($content->schema->oneOf !== null && count($content->schema->oneOf) > 0) {
-                $method->addStmt(new Node\Expr\Assign(new Node\Expr\Variable('schemaValidator'), new Node\Expr\New_(
+                $tmts[] = new Node\Expr\Assign(new Node\Expr\Variable('schemaValidator'), new Node\Expr\New_(
                     new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
                     [
                         new Node\Arg(new Node\Expr\ClassConstFetch(
@@ -47,12 +48,12 @@ final class WebHook
                             new Node\Name('VALIDATE_AS_REQUEST'),
                         ))
                     ]
-                )));
+                ));
                 $gotoLabels = 'a';
                 foreach ($content->schema->oneOf as $oneOfSchema) {
-                    $method->addStmt(new Node\Stmt\Label($gotoLabels));
+                    $tmts[] = new Node\Stmt\Label($gotoLabels);
                     $gotoLabels++;
-                    $method->addStmt(new Node\Stmt\TryCatch([
+                    $tmts[] = new Node\Stmt\TryCatch([
                         new Node\Stmt\Expression(new Node\Expr\MethodCall(
                             new Node\Expr\Variable('schemaValidator'),
                             new Node\Name('validate'),
@@ -70,11 +71,17 @@ final class WebHook
                                 new Node\Stmt\Goto_($gotoLabels),
                             ]
                         ),
-                    ]));
+                    ]);
                 }
-                $method->addStmt(new Node\Stmt\Label($gotoLabels));
-                $method->addStmt(new Node\Stmt\Throw_(new Node\Expr\Variable($gotoLabels)));
+                $tmts[] = new Node\Stmt\Label($gotoLabels);
+                $tmts[] = new Node\Stmt\Throw_(new Node\Expr\Variable($gotoLabels));
             }
+
+            if (count($tmts) === 0) {
+                $tmts[] = new Node\Stmt\Return_(new Node\Scalar\String_('TODO: Implement this'));
+            }
+
+            $method->addStmts($tmts);
         }
         $class->addStmt($method);
 

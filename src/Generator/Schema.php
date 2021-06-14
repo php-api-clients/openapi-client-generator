@@ -117,30 +117,30 @@ final class Schema
                     ], $property->type);
 
                     if ($t !== '') {
-                        $propertyStmt->setType($nullable . $t);
-                        $method->setReturnType($nullable . $t);
+                        $propertyStmt->setType(($t === 'array' ? '' : $nullable) . $t);
+                        $method->setReturnType(($t === 'array' ? '' : $nullable) . $t);
                     }
                 }
             }
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
-                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
-                $propertyStmt->setType($fqcnn);
-                $method->setReturnType($fqcnn);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
+                $propertyStmt->setType($nullable . $fqcnn);
+                $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             } else if (is_array($property->allOf) && $property->allOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->allOf[0]), $schemaClassNameMap)) {
-                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->allOf[0])];
-                $propertyStmt->setType($fqcnn);
-                $method->setReturnType($fqcnn);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->allOf[0])];
+                $propertyStmt->setType($nullable . $fqcnn);
+                $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {
-                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
-                $propertyStmt->setType($fqcnn);
-                $method->setReturnType($fqcnn);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
+                $propertyStmt->setType($nullable . $fqcnn);
+                $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             }

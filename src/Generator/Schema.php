@@ -81,6 +81,10 @@ final class Schema
             );
             $setDefaylt = true;
             $nullable = '';
+            if ($property->nullable) {
+                $nullable = '?';
+                $propertyStmt->setDefault(null);
+            }
             if (is_string($property->type)) {
                 if (is_array($schema->required) && !in_array($propertyName, $schema->required, false)) {
                     $nullable = '?';

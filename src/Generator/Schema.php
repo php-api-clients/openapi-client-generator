@@ -80,7 +80,13 @@ final class Schema
                 )
             );
             $setDefaylt = true;
+            $nullable = '';
             if (is_string($property->type)) {
+                if (is_array($schema->required) && !in_array($propertyName, $schema->required, false)) {
+                    $nullable = '?';
+                    $propertyStmt->setDefault(null);
+                }
+
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema) {
                     if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                         $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->items)] . '>';
@@ -110,36 +116,31 @@ final class Schema
                         'bool',
                     ], $property->type);
 
-                    if ($t !== '' && is_array($schema->required) && !in_array($propertyName, $schema->required, false)) {
-                        $t = '?' . $t;
-                        $propertyStmt->setDefault(null);
-                    }
-
                     if ($t !== '') {
-                        $propertyStmt->setType($t);
-                        $method->setReturnType($t);
+                        $propertyStmt->setType($nullable . $t);
+                        $method->setReturnType($nullable . $t);
                     }
                 }
             }
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
-                $propertyStmt->setType( $fqcnn);
-                $method->setReturnType( $fqcnn);
+                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->anyOf[0])];
+                $propertyStmt->setType($fqcnn);
+                $method->setReturnType($fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             } else if (is_array($property->allOf) && $property->allOf[0] instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property->allOf[0]), $schemaClassNameMap)) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->allOf[0])];
-                $propertyStmt->setType( $fqcnn);
-                $method->setReturnType( $fqcnn);
+                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property->allOf[0])];
+                $propertyStmt->setType($fqcnn);
+                $method->setReturnType($fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema && array_key_exists(spl_object_hash($property), $schemaClassNameMap)) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
-                $propertyStmt->setType( $fqcnn);
-                $method->setReturnType( $fqcnn);
+                $fqcnn = $nullable . '\\' . $rootNamespace . '\\' . $schemaClassNameMap[spl_object_hash($property)];
+                $propertyStmt->setType($fqcnn);
+                $method->setReturnType($fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             }

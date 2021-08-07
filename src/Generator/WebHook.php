@@ -78,7 +78,7 @@ final class WebHook
             }
 
             if (count($tmts) === 0) {
-                $tmts[] = new Node\Stmt\Return_(new Node\Scalar\String_('TODO: Implement this'));
+                return;
             }
 
             $method->addStmts($tmts);

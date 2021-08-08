@@ -121,7 +121,7 @@ final class WebHook
             }
 
             if (count($tmts) === 0) {
-                return;
+                $tmts[] = new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaClassNameMap[spl_object_hash($content->schema)]));
             }
 
             $method->addStmts($tmts);

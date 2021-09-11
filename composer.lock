@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1efcea84e72f9ae2be20504a7da849f6",
+    "content-hash": "2eb1f6d9705d4c9ede4aff85b191e95d",
     "packages": [
         {
             "name": "cebe/php-openapi",
@@ -1932,7 +1932,7 @@
             "require": {
                 "doctrine/annotations": "^1.12",
                 "ocramius/generated-hydrator": "^4.0",
-                "php": "^7.4"
+                "php": "^8 || ^7.4"
             },
             "require-dev": {
                 "wyrihaximus/test-utilities": "^3.7"
@@ -1978,7 +1978,7 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^7.4"
+        "php": "^8 || ^7.4"
     },
     "platform-dev": [],
     "platform-overrides": {

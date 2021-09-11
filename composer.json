@@ -19,7 +19,7 @@
         }
     },
     "require": {
-        "php": "^7.4",
+        "php": "^8 || ^7.4",
         "cebe/php-openapi": "^1.5",
         "jawira/case-converter": "^3.4",
         "twig/twig": "^3.0",

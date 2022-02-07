@@ -20,7 +20,7 @@
     },
     "require": {
         "php": "^8 || ^7.4",
-        "cebe/php-openapi": "^1.5",
+        "cebe/php-openapi": "dev-openapi-31 as 1.6.0",
         "jawira/case-converter": "^3.4",
         "twig/twig": "^3.0",
         "nikic/php-parser": "^4.8",
@@ -37,10 +37,7 @@
         },
         "files": [
             "external_files/cebe/SpecBaseObject.php",
-            "external_files/cebe/OpenApi.php",
             "external_files/cebe/Schema.php",
-            "external_files/cebe/Type.php",
-            "external_files/cebe/WebHooks.php",
             "external_files/thephpleague/SchemaValidator.php",
             "external_files/thephpleague/Type.php"
         ]
@@ -48,6 +45,9 @@
     "config": {
         "platform": {
             "php": "7.4.7"
+        },
+        "allow-plugins": {
+            "wyrihaximus/composer-update-bin-autoload-path": true
         }
     },
     "autoload-dev": {

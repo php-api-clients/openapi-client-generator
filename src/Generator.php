@@ -117,7 +117,7 @@ final class Generator
         if (count($this->spec->webhooks ?? []) > 0) {
             $pathClassNameMapping = [];
             foreach ($this->spec->webhooks as $path => $pathItem) {
-                $webHookClassName = $this->className($path);
+                $webHookClassName = 'WebHook_' . $this->className($path);
                 $pathClassNameMapping[$path] = $this->fqcn($namespace . 'WebHook/' . $webHookClassName);
                 if (strlen($webHookClassName) === 0) {
                     continue;

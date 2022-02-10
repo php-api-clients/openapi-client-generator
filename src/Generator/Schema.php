@@ -120,11 +120,13 @@ final class Schema
                     $t = str_replace([
                         'object',
                         'integer',
+                        'number',
                         'any',
                         'null',
                         'boolean',
                     ], [
                         'array',
+                        'int',
                         'int',
                         '',
                         '',

@@ -52,6 +52,17 @@ final class Schema
             )
         );
 
+        if ($schema->oneOf !== null && count($schema->oneOf) > 0 && $schema->oneOf[0] instanceof OpenAPiSchema) {
+            yield from self::fillUpSchema($name, $namespace, $className, $class, $schema->oneOf[0], $factory, $schemaClassNameMap, $rootNamespace);
+        } else {
+            yield from self::fillUpSchema($name, $namespace, $className, $class, $schema, $factory, $schemaClassNameMap, $rootNamespace);
+        }
+
+        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
+    }
+
+    private static function fillUpSchema(string $name, string $namespace, string $className, \PhpParser\Builder\Class_ $class, OpenAPiSchema $schema, $factory, array $schemaClassNameMap, string $rootNamespace): iterable
+    {
         foreach ($schema->properties as $propertyName => $property) {
             $propertyName = str_replace([
                 '@',
@@ -178,7 +189,5 @@ final class Schema
 
             $class->addStmt($propertyStmt)->addStmt($method);
         }
-
-        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
     }
 }

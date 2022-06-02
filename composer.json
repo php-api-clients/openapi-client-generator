@@ -19,7 +19,7 @@
         }
     },
     "require": {
-        "php": "^8 || ^7.4",
+        "php": "^8.1",
         "cebe/php-openapi": "dev-openapi-31 as 1.6.0",
         "jawira/case-converter": "^3.4",
         "twig/twig": "^3.0",
@@ -44,7 +44,7 @@
     },
     "config": {
         "platform": {
-            "php": "7.4.7"
+            "php": "8.1.99"
         },
         "allow-plugins": {
             "wyrihaximus/composer-update-bin-autoload-path": true

@@ -2,6 +2,8 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Clients;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
@@ -81,6 +83,7 @@ final class Generator
             }
         }
 
+        $clients = [];
         if (count($this->spec->paths ?? []) > 0) {
             foreach ($this->spec->paths as $path => $pathItem) {
                 $pathClassName = $this->className($path);
@@ -97,7 +100,7 @@ final class Generator
                 );
 
                 foreach ($pathItem->getOperations() as $method => $operation) {
-                    $operationClassName = $this->className((new Convert($operation->operationId))->fromTrain()->toPascal());
+                    $operationClassName = $this->className((new Convert($operation->operationId))->fromTrain()->toPascal()) . '_';
                     $operations[$method] = $operationClassName;
                     if (strlen($operationClassName) === 0) {
                         continue;
@@ -110,9 +113,34 @@ final class Generator
                         $this->basename($namespace . 'Operation/' . $operationClassName),
                         $operation
                     );
+
+                    [$operationGroup, $operationOperation] = explode('/', $operationClassName);
+                    if (!array_key_exists($operationGroup, $clients)) {
+                        $clients[$operationGroup] = [];
+                    }
+                    $clients[$operationGroup][$operationOperation] = [
+                        'class' => $operationClassName,
+                        'operation' => $operation,
+                    ];
                 }
             }
         }
+
+        yield from (function (array $clients, string $namespace): \Generator {
+            foreach ($clients as $operationGroup => $operations) {
+                yield from Client::generate(
+                    $operationGroup,
+                    $this->dirname($namespace . 'Operation/' . $operationGroup),
+                    $this->basename($namespace . 'Operation/' . $operationGroup),
+                    $operations,
+                );
+
+            }
+            yield from Clients::generate(
+                $namespace,
+                $clients,
+            );
+        })($clients, $namespace);
 
         if (count($this->spec->webhooks ?? []) > 0) {
             $pathClassNameMapping = [];

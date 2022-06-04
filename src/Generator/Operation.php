@@ -123,7 +123,7 @@ final class Operation
                                 [
                                     new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces))),
                                     new Node\Expr\Array_(array_values($requestReplaces)),
-                                    new Node\Scalar\String_($path . '?' . implode('&', $query)),
+                                    new Node\Scalar\String_(rtrim($path . '?' . implode('&', $query), '?')),
                                 ]
                             )),
                         ]

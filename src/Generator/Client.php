@@ -31,7 +31,7 @@ final class Client
             foreach ($operationDetails['operation']->parameters as $parameter) {
                 $params[] = new Node\Arg(new Node\Expr\Variable($parameter->name));
                 $param = new Param($parameter->name);
-                if ($parameter->schema->default !== null) {
+                if ($parameter->schema->type !== null) {
                     $param->setType(
                         str_replace([
                             'integer',

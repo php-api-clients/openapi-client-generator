@@ -54,9 +54,10 @@ final class Operation
         $requestReplaces = [];
         $query = [];
         foreach ($operation->parameters as $parameter) {
-            $paramterStmt = $factory->
-            property($parameter->name)->
-            setDocComment('/**' . (string)$parameter->description . '**/');
+            $paramterStmt = $factory->property($parameter->name);
+            if (strlen((string)$parameter->description) > 0) {
+                $paramterStmt->setDocComment('/**' . (string)$parameter->description . '**/');
+            }
             if ($parameter->schema->type !== null) {
                 $paramterStmt->setType(str_replace([
                     'integer',
@@ -68,10 +69,10 @@ final class Operation
                     'bool',
                 ], $parameter->schema->type));
             }
-            $class->addStmt($paramterStmt);
+            $class->addStmt($paramterStmt->makeReadonly()->makePrivate());
 
             $param = new Param($parameter->name);
-            if ($parameter->schema->default !== null) {
+            if ($parameter->schema->type !== null) {
                 $param->setType(
                     str_replace([
                         'integer',

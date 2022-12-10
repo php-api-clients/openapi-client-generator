@@ -93,6 +93,9 @@ final class WebHook
                     $tmts[] = new Node\Stmt\Throw_(new Node\Expr\Variable($gotoLabels));
                 } else {
                     foreach ($content->schema->oneOf as $oneOfSchema) {
+                        if (!array_key_exists(spl_object_hash($oneOfSchema), $schemaClassNameMap)) {
+                            continue; // TODO: Remove to make sure we have all schemas mapped
+                        }
                         $tmts[] = new Node\Stmt\Label($gotoLabels);
                         $gotoLabels++;
                         $tmts[] = new Node\Stmt\TryCatch([

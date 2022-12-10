@@ -67,7 +67,7 @@ final class Operation
                     'int',
                     '',
                     'bool',
-                ], $parameter->schema->type));
+                ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type])));
             }
             $class->addStmt($paramterStmt->makeReadonly()->makePrivate());
 
@@ -82,7 +82,7 @@ final class Operation
                         'int',
                         '',
                         'bool',
-                    ], $parameter->schema->type)
+                    ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]))
                 );
             }
             if ($parameter->schema->default !== null) {

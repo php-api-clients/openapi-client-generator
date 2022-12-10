@@ -41,7 +41,7 @@ final class Client
                             'int',
                             '',
                             'bool',
-                        ], $parameter->schema->type)
+                        ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]))
                     );
                 }
                 if ($parameter->schema->default !== null) {

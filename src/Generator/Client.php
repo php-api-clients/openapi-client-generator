@@ -22,10 +22,44 @@ final class Client
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
 
-        $class = $factory->class($className)->makeFinal();
+        $class = $factory->class($className)->makeFinal()->addStmt(
+            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->method('__construct')->makePublic()->addParam(
+                (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'requestSchemaValidator'
+                    ),
+                    new Node\Expr\Variable('requestSchemaValidator'),
+                )
+            )->addParam(
+                (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'responseSchemaValidator'
+                    ),
+                    new Node\Expr\Variable('responseSchemaValidator'),
+                )
+            )
+        );
 
         foreach ($operations as $operationOperation => $operationDetails) {
             $params = [];
+            $params[] = new Node\Expr\PropertyFetch(
+                new Node\Expr\Variable('this'),
+                'requestSchemaValidator'
+            );
+            $params[] = new Node\Expr\PropertyFetch(
+                new Node\Expr\Variable('this'),
+                'responseSchemaValidator'
+            );
             $cn = str_replace('/', '\\', '\\' . $namespace . '\\' . $operationDetails['class']);
             $method = $factory->method(lcfirst($operationOperation))->setReturnType($cn)->makePublic();
             foreach ($operationDetails['operation']->parameters as $parameter) {

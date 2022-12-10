@@ -26,7 +26,45 @@ final class Clients
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
-        $class = $factory->class('Client')->makeFinal();
+        $class = $factory->class('Client')->makeFinal()->addStmt(
+            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->method('__construct')->makePublic()->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'requestSchemaValidator'
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                        [
+                            new Node\Arg(new Node\Expr\ClassConstFetch(
+                                new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                                new Node\Name('VALIDATE_AS_REQUEST'),
+                            ))
+                        ]
+                    ),
+                )
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'responseSchemaValidator'
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                        [
+                            new Node\Arg(new Node\Expr\ClassConstFetch(
+                                new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                                new Node\Name('VALIDATE_AS_RESPONSE'),
+                            ))
+                        ]
+                    ),
+                )
+            )
+        );
 
 
         foreach ($clients as $operationGroup => $operations) {
@@ -38,6 +76,16 @@ final class Clients
                             new Node\Name(
                                 $cn
                             ),
+                            [
+                                new Node\Arg(new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'requestSchemaValidator'
+                                )),
+                                new Node\Arg(new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'responseSchemaValidator'
+                                )),
+                            ]
                         )
                     )
                 )->makePublic()

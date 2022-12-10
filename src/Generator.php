@@ -110,8 +110,10 @@ final class Generator
                         $path,
                         $method,
                         $this->dirname($namespace . 'Operation/' . $operationClassName),
+                        $namespace,
                         $this->basename($namespace . 'Operation/' . $operationClassName),
-                        $operation
+                        $operation,
+                        $schemaClassNameMap
                     );
 
                     [$operationGroup, $operationOperation] = explode('/', $operationClassName);

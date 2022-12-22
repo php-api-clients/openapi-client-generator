@@ -441,6 +441,7 @@
         },
         {
             "name": "laminas/laminas-stdlib",
+<<<<<<< HEAD
             "version": "3.16.1",
             "source": {
                 "type": "git",
@@ -451,6 +452,18 @@
                 "type": "zip",
                 "url": "https://api.github.com/repos/laminas/laminas-stdlib/zipball/f4f773641807c7ccee59b758bfe4ac4ba33ecb17",
                 "reference": "f4f773641807c7ccee59b758bfe4ac4ba33ecb17",
+=======
+            "version": "3.9.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/laminas/laminas-stdlib.git",
+                "reference": "1df1cc0b9c2b8c7d1e322da1669a576386b5da46"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/laminas/laminas-stdlib/zipball/1df1cc0b9c2b8c7d1e322da1669a576386b5da46",
+                "reference": "1df1cc0b9c2b8c7d1e322da1669a576386b5da46",
+>>>>>>> b9f023e... Responses
                 "shasum": ""
             },
             "require": {
@@ -496,7 +509,11 @@
                     "type": "community_bridge"
                 }
             ],
+<<<<<<< HEAD
             "time": "2022-12-03T18:48:01+00:00"
+=======
+            "time": "2022-06-08T11:33:13+00:00"
+>>>>>>> b9f023e... Responses
         },
         {
             "name": "league/openapi-psr7-validator",

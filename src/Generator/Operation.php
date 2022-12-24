@@ -43,6 +43,18 @@ final class Operation
                 Class_::MODIFIER_PRIVATE
             )
         )->addStmt(
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
+                        'OPERATION_MATCH',
+                        new Node\Scalar\String_(
+                            strtoupper($method) . ' ' . $path, // Deal with the query
+                        )
+                    ),
+                ],
+                Class_::MODIFIER_PUBLIC
+            )
+        )->addStmt(
             $factory->method('operationId')->makePublic()->setReturnType('string')->addStmt(
                 new Node\Stmt\Return_(
                     new Node\Expr\ClassConstFetch(
@@ -218,11 +230,9 @@ final class Operation
                                 new Node\Arg(new Node\Expr\Variable('body')),
                             ]
                         )),
-//                        new Node\Stmt\Break_()
                     ]
                 );
                 $contentTypeCases[] = $ctc;
-//                $ctc->setDocComment(new Doc('/**' . @var_export($contentTypeSchema->getSerializableData(), true) . '**/'));
             }
             $case = new Node\Stmt\Case_(
                 new Node\Scalar\LNumber($code),
@@ -236,7 +246,6 @@ final class Operation
             );
             $cases[] = $case;
             $case->setDocComment(new Doc('/**' . $spec->description . '**/'));
-//            $case->setDocComment(new Doc('/**' . @var_export($spec->getSerializableData(), true) . '**/'));
         }
         $class->addStmt(
             $factory->method('createResponse')->addParam(

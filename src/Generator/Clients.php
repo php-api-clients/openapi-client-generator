@@ -3,6 +3,7 @@
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
 use cebe\openapi\spec\PathItem;
 use Jawira\CaseConverter\Convert;
@@ -26,7 +27,7 @@ final class Clients
      * @return iterable<Node>
      * @throws \Jawira\CaseConverter\CaseConverterException
      */
-    public static function generate(string $namespace, array $clients, array $schemaClassNameMap): iterable
+    public static function generate(string $namespace, array $clients, SchemaRegistry $schemaRegistry): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
@@ -94,7 +95,7 @@ final class Clients
                 $returnType = [];
                 foreach ($operationDetails['operation']->responses as $spec) {
                     foreach ($spec->content as $contentTypeSchema) {
-                        $callReturnTypes[] = $returnType[] = '\\' . $namespace . 'Schema\\' . $schemaClassNameMap[spl_object_hash($contentTypeSchema->schema)];
+                        $callReturnTypes[] = $returnType[] = '\\' . $namespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema);
                     }
                 }
                 $operationCalls[] = [

@@ -3,6 +3,7 @@
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -25,7 +26,7 @@ final class Operation
      * @param OpenAPiOperation $operation
      * @return iterable<Node>
      */
-    public static function generate(string $path, string $method, string $namespace, string $rootNamespace, string $className, OpenAPiOperation $operation, array $schemaClassNameMap): iterable
+    public static function generate(string $path, string $method, string $namespace, string $rootNamespace, string $className, OpenAPiOperation $operation, SchemaRegistry $schemaRegistry): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -180,7 +181,13 @@ final class Operation
                         new Node\Name('validate'),
                         [
                             new Node\Arg(new Node\Expr\Variable('data')),
-                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [new Node\Scalar\String_(json_encode($requestBodyContent->schema->getSerializableData())), new Node\Scalar\String_('\cebe\openapi\spec\Schema')])),
+                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema)),
+                                    new Node\Name('SCHEMA_JSON'),
+                                ),
+                                new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                            ])),
                         ]
                     ))
                 );
@@ -207,7 +214,7 @@ final class Operation
         foreach ($operation->responses as $code => $spec) {
             $contentTypeCases = [];
             foreach ($spec->content as $contentType => $contentTypeSchema) {
-                $returnType[] = $object = '\\' . $rootNamespace . 'Schema\\' . $schemaClassNameMap[spl_object_hash($contentTypeSchema->schema)];
+                $returnType[] = $object = '\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema);
                 $ctc = new Node\Stmt\Case_(
                     new Node\Scalar\String_($contentType),
                     [
@@ -219,7 +226,13 @@ final class Operation
                             new Node\Name('validate'),
                             [
                                 new Node\Arg(new Node\Expr\Variable('body')),
-                                new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [new Node\Scalar\String_(json_encode($contentTypeSchema->schema->getSerializableData())), new Node\Scalar\String_('\cebe\openapi\spec\Schema')])),
+                                new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema)),
+                                        new Node\Name('SCHEMA_JSON'),
+                                    ),
+                                    new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                                ])),
                             ]
                         )),
                         new Node\Stmt\Return_(new Node\Expr\MethodCall(

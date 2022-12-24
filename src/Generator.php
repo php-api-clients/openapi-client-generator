@@ -128,7 +128,7 @@ final class Generator
             }
         }
 
-        yield from (function (array $clients, string $namespace): \Generator {
+        yield from (function (array $clients, string $namespace, array $schemaClassNameMap): \Generator {
             foreach ($clients as $operationGroup => $operations) {
                 yield from Client::generate(
                     $operationGroup,
@@ -141,8 +141,9 @@ final class Generator
             yield from Clients::generate(
                 $namespace,
                 $clients,
+                $schemaClassNameMap,
             );
-        })($clients, $namespace);
+        })($clients, $namespace, $schemaClassNameMap);
 
         if (count($this->spec->webhooks ?? []) > 0) {
             $pathClassNameMapping = [];

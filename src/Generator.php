@@ -37,9 +37,9 @@ final class Generator
         }
     }
 
-    private function className(string $className): string
+    public static function className(string $className): string
     {
-        return str_replace(['{', '}', '-', '$', '_'], ['Cb', 'Rcb', 'Dash', '_', '\\'], (new Convert($className))->toPascal()) . ($this->isKeyword($className) ? '_' : '');
+        return str_replace(['{', '}', '-', '$', '_'], ['Cb', 'Rcb', 'Dash', '_', '\\'], (new Convert($className))->toPascal()) . (self::isKeyword($className) ? '_' : '');
     }
 
     private function cleanUpNamespace(string $namespace): string
@@ -57,17 +57,17 @@ final class Generator
      */
     private function all(string $namespace): iterable
     {
+        $schemaRegistry = new SchemaRegistry();
         if (count($this->spec->components->schemas ?? []) > 0) {
-            $schemaClassNameMap = [];
             foreach ($this->spec->components->schemas as $name => $schema) {
-                $schemaClassName = $this->className($name);
+                $schemaClassName = self::className($name);
                 if (strlen($schemaClassName) === 0) {
                     continue;
                 }
-                $schemaClassNameMap[spl_object_hash($schema)] = $schemaClassName;
+                $schemaRegistry->addClassName($schemaClassName, $schema);
             }
             foreach ($this->spec->components->schemas as $name => $schema) {
-                $schemaClassName = $schemaClassNameMap[spl_object_hash($schema)];
+                $schemaClassName = $schemaRegistry->get($schema);
                 if (strlen($schemaClassName) === 0) {
                     continue;
                 }
@@ -77,7 +77,7 @@ final class Generator
                     $this->dirname($namespace . 'Schema/' . $schemaClassName),
                     $this->basename($namespace . 'Schema/' . $schemaClassName),
                     $schema,
-                    $schemaClassNameMap,
+                    $schemaRegistry,
                     $namespace . 'Schema'
                 );
             }
@@ -86,7 +86,7 @@ final class Generator
         $clients = [];
         if (count($this->spec->paths ?? []) > 0) {
             foreach ($this->spec->paths as $path => $pathItem) {
-                $pathClassName = $this->className($path);
+                $pathClassName = self::className($path);
                 if (strlen($pathClassName) === 0) {
                     continue;
                 }
@@ -100,7 +100,7 @@ final class Generator
                 );
 
                 foreach ($pathItem->getOperations() as $method => $operation) {
-                    $operationClassName = $this->className((new Convert($operation->operationId))->fromTrain()->toPascal()) . '_';
+                    $operationClassName = self::className((new Convert($operation->operationId))->fromTrain()->toPascal()) . '_';
                     $operations[$method] = $operationClassName;
                     if (strlen($operationClassName) === 0) {
                         continue;
@@ -113,7 +113,7 @@ final class Generator
                         $namespace,
                         $this->basename($namespace . 'Operation/' . $operationClassName),
                         $operation,
-                        $schemaClassNameMap
+                        $schemaRegistry
                     );
 
                     [$operationGroup, $operationOperation] = explode('/', $operationClassName);
@@ -128,7 +128,7 @@ final class Generator
             }
         }
 
-        yield from (function (array $clients, string $namespace, array $schemaClassNameMap): \Generator {
+        yield from (function (array $clients, string $namespace, SchemaRegistry $schemaRegistry): \Generator {
             foreach ($clients as $operationGroup => $operations) {
                 yield from Client::generate(
                     $operationGroup,
@@ -141,14 +141,14 @@ final class Generator
             yield from Clients::generate(
                 $namespace,
                 $clients,
-                $schemaClassNameMap,
+                $schemaRegistry,
             );
-        })($clients, $namespace, $schemaClassNameMap);
+        })($clients, $namespace, $schemaRegistry);
 
         if (count($this->spec->webhooks ?? []) > 0) {
             $pathClassNameMapping = [];
             foreach ($this->spec->webhooks as $path => $pathItem) {
-                $webHookClassName = $this->className($path);
+                $webHookClassName = self::className($path);
                 $pathClassNameMapping[$path] = $this->fqcn($namespace . 'WebHook/' . $webHookClassName);
                 if (strlen($webHookClassName) === 0) {
                     continue;
@@ -160,7 +160,7 @@ final class Generator
                     $namespace,
                     $this->basename($namespace . 'WebHook/' . $webHookClassName),
                     $pathItem,
-                    $schemaClassNameMap,
+                    $schemaRegistry,
                     $namespace
                 );
             }
@@ -173,6 +173,17 @@ final class Generator
                 $this->dirname($namespace . 'WebHooks'),
                 $namespace,
                 $pathClassNameMapping,
+            );
+        }
+
+        foreach ($schemaRegistry->unknownSchemas() as $schema) {
+            yield from Schema::generate(
+                $schema['name'],
+                $this->dirname($namespace . 'Schema/' . $schema['className']),
+                $this->basename($namespace . 'Schema/' . $schema['className']),
+                $schema['schema'],
+                $schemaRegistry,
+                $namespace . 'Schema'
             );
         }
     }
@@ -196,7 +207,7 @@ final class Generator
         return $this->cleanUpNamespace(basename($fqcn));
     }
 
-    private function isKeyword(string $name): bool
+    private static function isKeyword(string $name): bool
     {
         return in_array($name, array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'), false);
     }

@@ -104,19 +104,39 @@ final class Schema
                     )
                 )
             );
+            $propertyType = $property->type;
             $setDefaylt = true;
             $nullable = '';
             if ($property->nullable) {
                 $nullable = '?';
                 $propertyStmt->setDefault(null);
             }
-            if (is_string($property->type)) {
+
+            if (
+                is_array($propertyType) &&
+                count($propertyType) === 2 &&
+                (
+                    in_array(null, $propertyType) ||
+                    in_array("null", $propertyType)
+                )
+            ) {
+                foreach ($propertyType as $pt) {
+                    if ($pt !== null && $pt !== "null") {
+                        $propertyType = $pt;
+                        break;
+                    }
+                }
+
+                $nullable = '?';
+            }
+
+            if (is_string($propertyType)) {
                 if (is_array($schema->required) && !in_array($propertyName, $schema->required, false)) {
                     $nullable = '?';
                     $propertyStmt->setDefault(null);
                 }
 
-                if ($property->type === 'array' && $property->items instanceof OpenAPiSchema) {
+                if ($propertyType === 'array' && $property->items instanceof OpenAPiSchema) {
 //                    if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                         $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
                         $propertyDocBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
@@ -130,7 +150,7 @@ final class Schema
                 }
 
 
-                if (is_string($property->type)) {
+                if (is_string($propertyType)) {
                     $t = str_replace([
                         'object',
                         'integer',
@@ -145,7 +165,7 @@ final class Schema
                         '',
                         '',
                         'bool',
-                    ], $property->type);
+                    ], $propertyType);
 
                     if ($t !== '') {
                         $propertyStmt->setType(($t === 'array' ? '' : $nullable) . $t);
@@ -153,6 +173,8 @@ final class Schema
                     }
                 }
             }
+
+            // 74908
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)*/) {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->anyOf[0], $className . '\\' . (new Convert($propertyName))->toPascal());
@@ -168,7 +190,8 @@ final class Schema
                 $setDefaylt = false;
             }
 
-            if ($property->type  === 'object' && $property instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property), $schemaClassNameMap)*/) {
+//            if (($property->type  === 'object' || (is_array($property->type) && count($property->type) === 2)) && $property instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property), $schemaClassNameMap)*/) {
+            if ($propertyType  === 'object') {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property, $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
                 $method->setReturnType($nullable . $fqcnn);
@@ -176,7 +199,7 @@ final class Schema
                 $setDefaylt = false;
             }
 
-            if (is_string($property->type)) {
+            if (is_string($propertyType)) {
                 $t = str_replace([
                     'object',
                     'integer',
@@ -187,7 +210,7 @@ final class Schema
                     'int',
                     '',
                     'bool',
-                ], $property->type);
+                ], $propertyType);
                 if ($t !== '') {
                     if ($t === 'array' && $setDefaylt === true) {
                         $propertyStmt->setDefault([]);

@@ -118,9 +118,9 @@ final class Schema
 
                 if ($property->type === 'array' && $property->items instanceof OpenAPiSchema) {
 //                    if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
-                        $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items) . '>';
-                        $propertyDocBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items) . '>';
-                        $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items) . '::class)';
+                        $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
+                        $propertyDocBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
+                        $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\HydrateArray(\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '::class)';
 //                    } elseif ($property->items->type === 'object') {
 //                        yield from self::generate($name . '::' . $propertyName, $namespace . '\\' . $className, (new Convert($propertyName))->toPascal(), $property->items, $schemaClassNameMap, $rootNamespace);
 //                        $methodDocBlock[] = '@return array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
@@ -155,13 +155,13 @@ final class Schema
             }
 
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)*/) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->anyOf[0]);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->anyOf[0], $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
                 $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
                 $setDefaylt = false;
             } else if (is_array($property->allOf) && $property->allOf[0] instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property->allOf[0]), $schemaClassNameMap)*/) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->allOf[0]);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->allOf[0], $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
                 $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';
@@ -169,7 +169,7 @@ final class Schema
             }
 
             if ($property->type  === 'object' && $property instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property), $schemaClassNameMap)*/) {
-                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property);
+                $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property, $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
                 $method->setReturnType($nullable . $fqcnn);
                 $propertyDocBlock[] = '@\WyriHaximus\Hydrator\Attribute\Hydrate(' . $fqcnn . '::class)';

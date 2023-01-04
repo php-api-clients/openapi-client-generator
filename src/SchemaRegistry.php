@@ -39,7 +39,8 @@ final class SchemaRegistry
         }
 
         $name = $fallbackName === '' ? 'c_' . md5($json) : $fallbackName;
-        $className = $fallbackName === '' ? Generator::className('Unknown\C_' . md5($json)) : $fallbackName;
+        $className = $fallbackName === '' ? 'Unknown\C_' . md5($json) : $fallbackName;
+        $className = Generator::dirname($className) . '\\' . Generator::className(Generator::basename($className));
         $this->unknownSchemas[$hash] = [
             'name' => $name,
             'className' => $className,

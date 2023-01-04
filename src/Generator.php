@@ -176,15 +176,17 @@ final class Generator
             );
         }
 
-        foreach ($schemaRegistry->unknownSchemas() as $schema) {
-            yield from Schema::generate(
-                $schema['name'],
-                $this->dirname($namespace . 'Schema/' . $schema['className']),
-                $this->basename($namespace . 'Schema/' . $schema['className']),
-                $schema['schema'],
-                $schemaRegistry,
-                $namespace . 'Schema'
-            );
+        while ($schemaRegistry->hasUnknownSchemas()) {
+            foreach ($schemaRegistry->unknownSchemas() as $schema) {
+                yield from Schema::generate(
+                    $schema['name'],
+                    $this->dirname($namespace . 'Schema/' . $schema['className']),
+                    $this->basename($namespace . 'Schema/' . $schema['className']),
+                    $schema['schema'],
+                    $schemaRegistry,
+                    $namespace . 'Schema'
+                );
+            }
         }
     }
 

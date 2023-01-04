@@ -49,8 +49,15 @@ final class SchemaRegistry
         return $className;
     }
 
+    public function hasUnknownSchemas(): bool
+    {
+        return count($this->unknownSchemas) > 0;
+    }
+
     public function unknownSchemas(): iterable
     {
-        yield from $this->unknownSchemas;
+        $unknownSchemas = $this->unknownSchemas;
+        $this->unknownSchemas = [];
+        yield from $unknownSchemas;
     }
 }

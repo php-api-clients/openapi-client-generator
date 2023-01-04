@@ -27,7 +27,7 @@ final class Generator
 
     public function generate(string $namespace, string $destinationPath)
     {
-        $namespace = $this->cleanUpNamespace($namespace);
+        $namespace = self::cleanUpNamespace($namespace);
         $codePrinter = new Standard();
 
         foreach ($this->all($namespace) as $file) {
@@ -42,7 +42,7 @@ final class Generator
         return str_replace(['{', '}', '-', '$', '_'], ['Cb', 'Rcb', 'Dash', '_', '\\'], (new Convert($className))->toPascal()) . (self::isKeyword($className) ? '_' : '');
     }
 
-    private function cleanUpNamespace(string $namespace): string
+    private static function cleanUpNamespace(string $namespace): string
     {
         $namespace = str_replace('/', '\\', $namespace);
         $namespace = str_replace('\\\\', '\\', $namespace);
@@ -74,8 +74,8 @@ final class Generator
 
                 yield from Schema::generate(
                     $name,
-                    $this->dirname($namespace . 'Schema/' . $schemaClassName),
-                    $this->basename($namespace . 'Schema/' . $schemaClassName),
+                    self::dirname($namespace . 'Schema/' . $schemaClassName),
+                    self::basename($namespace . 'Schema/' . $schemaClassName),
                     $schema,
                     $schemaRegistry,
                     $namespace . 'Schema'
@@ -93,14 +93,14 @@ final class Generator
 
                 yield from Path::generate(
                     $path,
-                    $this->dirname($namespace . 'Path/' . $pathClassName),
+                    self::dirname($namespace . 'Path/' . $pathClassName),
                     $namespace,
-                    $this->basename($namespace . 'Path/' . $pathClassName),
+                    self::basename($namespace . 'Path/' . $pathClassName),
                     $pathItem
                 );
 
                 foreach ($pathItem->getOperations() as $method => $operation) {
-                    $operationClassName = self::className((new Convert($operation->operationId))->fromTrain()->toPascal()) . '_';
+                    $operationClassName = self::className((new Convert($operation->operationId))->fromTrain()->toPascal());
                     $operations[$method] = $operationClassName;
                     if (strlen($operationClassName) === 0) {
                         continue;
@@ -109,9 +109,9 @@ final class Generator
                     yield from Operation::generate(
                         $path,
                         $method,
-                        $this->dirname($namespace . 'Operation/' . $operationClassName),
+                        self::dirname($namespace . 'Operation/' . $operationClassName),
                         $namespace,
-                        $this->basename($namespace . 'Operation/' . $operationClassName),
+                        self::basename($namespace . 'Operation/' . $operationClassName),
                         $operation,
                         $schemaRegistry
                     );
@@ -132,8 +132,8 @@ final class Generator
             foreach ($clients as $operationGroup => $operations) {
                 yield from Client::generate(
                     $operationGroup,
-                    $this->dirname($namespace . 'Operation/' . $operationGroup),
-                    $this->basename($namespace . 'Operation/' . $operationGroup),
+                    self::dirname($namespace . 'Operation/' . $operationGroup),
+                    self::basename($namespace . 'Operation/' . $operationGroup),
                     $operations,
                 );
 
@@ -156,9 +156,9 @@ final class Generator
 
                 yield from WebHook::generate(
                     $path,
-                    $this->dirname($namespace . 'WebHook/' . $webHookClassName),
+                    self::dirname($namespace . 'WebHook/' . $webHookClassName),
                     $namespace,
-                    $this->basename($namespace . 'WebHook/' . $webHookClassName),
+                    self::basename($namespace . 'WebHook/' . $webHookClassName),
                     $pathItem,
                     $schemaRegistry,
                     $namespace
@@ -166,11 +166,11 @@ final class Generator
             }
 
             yield from WebHookInterface::generate(
-                $this->dirname($namespace . 'WebHookInterface'),
+                self::dirname($namespace . 'WebHookInterface'),
                 'WebHookInterface',
             );
             yield from WebHooks::generate(
-                $this->dirname($namespace . 'WebHooks'),
+                self::dirname($namespace . 'WebHooks'),
                 $namespace,
                 $pathClassNameMapping,
             );
@@ -180,8 +180,8 @@ final class Generator
             foreach ($schemaRegistry->unknownSchemas() as $schema) {
                 yield from Schema::generate(
                     $schema['name'],
-                    $this->dirname($namespace . 'Schema/' . $schema['className']),
-                    $this->basename($namespace . 'Schema/' . $schema['className']),
+                    self::dirname($namespace . 'Schema/' . $schema['className']),
+                    self::basename($namespace . 'Schema/' . $schema['className']),
                     $schema['schema'],
                     $schemaRegistry,
                     $namespace . 'Schema'
@@ -190,27 +190,27 @@ final class Generator
         }
     }
 
-    private function fqcn(string $fqcn): string
+    private static function fqcn(string $fqcn): string
     {
         return str_replace('/', '\\', $fqcn);
     }
 
-    private function dirname(string $fqcn): string
+    public static function dirname(string $fqcn): string
     {
         $fqcn = str_replace('\\', '/', $fqcn);
 
-        return $this->cleanUpNamespace(dirname($fqcn));
+        return self::cleanUpNamespace(dirname($fqcn));
     }
 
-    private function basename(string $fqcn): string
+    public static function basename(string $fqcn): string
     {
         $fqcn = str_replace('\\', '/', $fqcn);
 
-        return $this->cleanUpNamespace(basename($fqcn));
+        return self::cleanUpNamespace(basename($fqcn));
     }
 
     private static function isKeyword(string $name): bool
     {
-        return in_array($name, array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self'), false);
+        return in_array(strtolower($name), array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self'), false);
     }
 }

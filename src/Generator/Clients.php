@@ -33,6 +33,8 @@ final class Clients
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
         $class = $factory->class('Client')->makeFinal()->addStmt(
+            $factory->property('authentication')->setType('\\' . $namespace . Authentication::INTERFACE_NAME)->makeReadonly()->makePrivate()
+        )->addStmt(
             $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
@@ -40,6 +42,16 @@ final class Clients
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
+                (new Param('authentication'))->setType('\\' . $namespace . Authentication::INTERFACE_NAME)
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'authentication'
+                    ),
+                    new Node\Expr\Variable('authentication'),
+                )
+            )->addParam(
                 (new Param('browser'))->setType('\\' . Browser::class)
             )->addStmt(
                 new Node\Expr\Assign(
@@ -173,7 +185,27 @@ final class Clients
                                         [
                                             new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getMethod'),),
                                             new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getUri'),),
-                                            new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getHeaders'),),
+                                            new Node\Arg(
+                                                new Node\Expr\MethodCall(
+                                                    new Node\Expr\MethodCall(
+                                                        new Node\Expr\Variable('request'),
+                                                        'withHeader',
+                                                        [
+                                                            new Node\Arg(new Node\Scalar\String_('Authorization')),
+                                                            new Node\Arg(
+                                                                new Node\Expr\MethodCall(
+                                                                    new Node\Expr\PropertyFetch(
+                                                                        new Node\Expr\Variable('this'),
+                                                                        'authentication'
+                                                                    ),
+                                                                    'authHeader',
+                                                                ),
+                                                            ),
+                                                        ]
+                                                    ),
+                                                    'getHeaders'
+                                                ),
+                                            ),
                                             new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getBody'),),
                                         ]
                                     ),

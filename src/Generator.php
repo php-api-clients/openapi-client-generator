@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Authentication;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Clients;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
@@ -175,6 +176,10 @@ final class Generator
                 $pathClassNameMapping,
             );
         }
+
+        yield from Authentication::generate(
+            $namespace,
+        );
 
         while ($schemaRegistry->hasUnknownSchemas()) {
             foreach ($schemaRegistry->unknownSchemas() as $schema) {

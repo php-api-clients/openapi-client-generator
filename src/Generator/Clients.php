@@ -39,16 +39,15 @@ final class Clients
         )->addStmt(
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
-            $factory->method('__construct')->makePublic()->addStmt(
+            $factory->method('__construct')->makePublic()->addParam(
+                (new Param('browser'))->setType('\\' . Browser::class)
+            )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
                         'browser'
                     ),
-                    new Node\Expr\New_(
-                        new Node\Name('\\' . Browser::class),
-                        []
-                    ),
+                    new Node\Expr\Variable('browser'),
                 )
             )->addStmt(
                 new Node\Expr\Assign(

@@ -75,14 +75,14 @@ final class WebHook
                                             new Node\Arg(new Node\Expr\Variable('data')),
                                             new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                                 new Node\Expr\ClassConstFetch(
-                                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($fabicatedSchema)),
+                                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($fabicatedSchema, $className . '\\' . $gotoLabels)),
                                                     new Node\Name('SCHEMA_JSON'),
                                                 ),
                                                 new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
                                             ])),
                                         ]
                                     )),
-                                    new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema))),
+                                    new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema, $className . '\\' . $gotoLabels))),
                                 ], [
                                     new Node\Stmt\Catch_(
                                         [new Node\Name('\\' . \Throwable::class)],
@@ -113,14 +113,14 @@ final class WebHook
                                     new Node\Arg(new Node\Expr\Variable('data')),
                                     new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                         new Node\Expr\ClassConstFetch(
-                                            new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema)),
+                                            new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema, $className . '\\' . $gotoLabels)),
                                             new Node\Name('SCHEMA_JSON'),
                                         ),
                                         new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
                                     ])),
                                 ]
                             )),
-                            new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema))),
+                            new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($oneOfSchema, $className . '\\' . $gotoLabels))),
                         ], [
                             new Node\Stmt\Catch_(
                                 [new Node\Name('\\' . \Throwable::class)],
@@ -137,7 +137,7 @@ final class WebHook
             }
 
             if (count($tmts) === 0) {
-                $tmts[] = new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($content->schema)));
+                $tmts[] = new Node\Stmt\Return_(new Node\Scalar\String_($rootNamespace . 'Schema\\' . $schemaRegistry->get($content->schema, $className . '\\Default')));
             }
 
             $method->addStmts($tmts);

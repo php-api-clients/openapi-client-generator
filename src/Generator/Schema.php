@@ -136,7 +136,7 @@ final class Schema
                     $propertyStmt->setDefault(null);
                 }
 
-                if ($propertyType === 'array' && $property->items instanceof OpenAPiSchema) {
+                if ($propertyType === 'array'/* && $property->items instanceof OpenAPiSchema*/) {
 //                    if (array_key_exists(spl_object_hash($property->items), $schemaClassNameMap)) {
                         $methodDocBlock[] = '@return array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
                         $propertyDocBlock[] = '@var array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';

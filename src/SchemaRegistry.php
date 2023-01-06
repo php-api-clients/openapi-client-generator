@@ -26,7 +26,7 @@ final class SchemaRegistry
         $this->json[json_encode($schema->getSerializableData())] = $className;
     }
 
-    public function get(\cebe\openapi\spec\Schema $schema, string $fallbackName = ''): string
+    public function get(\cebe\openapi\spec\Schema $schema, string $fallbackName): string
     {
         $hash = spl_object_hash($schema);
         if (array_key_exists($hash, $this->splHash)) {
@@ -38,11 +38,9 @@ final class SchemaRegistry
             return $this->json[$json];
         }
 
-        $name = $fallbackName === '' ? 'c_' . md5($json) : $fallbackName;
-        $className = $fallbackName === '' ? 'Unknown\C_' . md5($json) : $fallbackName;
-        $className = Generator::dirname($className) . '\\' . Generator::className(Generator::basename($className));
-        $this->unknownSchemas[$hash] = [
-            'name' => $name,
+        $className = Generator::className($fallbackName);
+        $this->unknownSchemas[$className] = [
+            'name' => $fallbackName,
             'className' => $className,
             'schema' => $schema,
         ];

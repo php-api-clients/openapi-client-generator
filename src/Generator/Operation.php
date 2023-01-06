@@ -5,6 +5,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
+use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -183,7 +184,7 @@ final class Operation
                             new Node\Arg(new Node\Expr\Variable('data')),
                             new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                 new Node\Expr\ClassConstFetch(
-                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema)),
+                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema, $className . '\\Request')),
                                     new Node\Name('SCHEMA_JSON'),
                                 ),
                                 new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
@@ -214,7 +215,9 @@ final class Operation
         foreach ($operation->responses as $code => $spec) {
             $contentTypeCases = [];
             foreach ($spec->content as $contentType => $contentTypeSchema) {
-                $returnType[] = $object = '\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema);
+                $fallbackName = $className . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code))->toPascal();
+                $srs = $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
+                $returnType[] = $object = '\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
                 $ctc = new Node\Stmt\Case_(
                     new Node\Scalar\String_($contentType),
                     [
@@ -228,7 +231,7 @@ final class Operation
                                 new Node\Arg(new Node\Expr\Variable('body')),
                                 new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                     new Node\Expr\ClassConstFetch(
-                                        new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema)),
+                                        new Node\Name('\\' . $rootNamespace . 'Schema\\' . $srs),
                                         new Node\Name('SCHEMA_JSON'),
                                     ),
                                     new Node\Scalar\String_('\cebe\openapi\spec\Schema'),

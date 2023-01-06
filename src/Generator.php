@@ -40,7 +40,7 @@ final class Generator
 
     public static function className(string $className): string
     {
-        return str_replace(['{', '}', '-', '$', '_'], ['Cb', 'Rcb', 'Dash', '_', '\\'], (new Convert($className))->toPascal()) . (self::isKeyword($className) ? '_' : '');
+        return str_replace(['{', '}', '-', '$', '_', '+'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus'], (new Convert($className))->toPascal()) . (self::isKeyword($className) ? '_' : '');
     }
 
     private static function cleanUpNamespace(string $namespace): string
@@ -68,7 +68,7 @@ final class Generator
                 $schemaRegistry->addClassName($schemaClassName, $schema);
             }
             foreach ($this->spec->components->schemas as $name => $schema) {
-                $schemaClassName = $schemaRegistry->get($schema);
+                $schemaClassName = $schemaRegistry->get($schema, $schemaClassName);
                 if (strlen($schemaClassName) === 0) {
                     continue;
                 }
@@ -131,7 +131,7 @@ final class Generator
 
         yield from (function (array $clients, string $namespace, SchemaRegistry $schemaRegistry): \Generator {
             foreach ($clients as $operationGroup => $operations) {
-                yield from Client::generate(
+                yield from Clients::generate(
                     $operationGroup,
                     self::dirname($namespace . 'Operation/' . $operationGroup),
                     self::basename($namespace . 'Operation/' . $operationGroup),
@@ -139,7 +139,7 @@ final class Generator
                 );
 
             }
-            yield from Clients::generate(
+            yield from Client::generate(
                 $namespace,
                 $clients,
                 $schemaRegistry,

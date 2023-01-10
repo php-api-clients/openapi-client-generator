@@ -27,18 +27,24 @@ final class Schema
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
 
+        $schemaJson = new Node\Stmt\ClassConst(
+            [
+                new Node\Const_(
+                    'SCHEMA_JSON',
+                    new Node\Scalar\String_(
+                        json_encode($schema->getSerializableData())
+                    )
+                ),
+            ],
+            Class_::MODIFIER_PUBLIC
+        );
+
+        if ($schema->type === 'array') {
+            $schema = $schema->items;
+        }
+
         $class = $factory->class($className)->makeFinal()->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
-                        'SCHEMA_JSON',
-                        new Node\Scalar\String_(
-                            json_encode($schema->getSerializableData())
-                        )
-                    ),
-                ],
-                Class_::MODIFIER_PUBLIC
-            )
+            $schemaJson
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [

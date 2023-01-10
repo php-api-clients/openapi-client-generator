@@ -20,6 +20,7 @@ use Psr\Http\Message\ServerRequestInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 use RingCentral\Psr7\Request;
+use Rx\Observable;
 
 final class Client
 {
@@ -109,8 +110,10 @@ final class Client
                 $returnType = [];
                 foreach ($operationDetails['operation']->responses as $code => $spec) {
                     foreach ($spec->content as $contentType => $contentTypeSchema) {
-                        $fallbackName = $operationGroup . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code))->toPascal();
-                        $callReturnTypes[] = $returnType[] = '\\' . $namespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
+                        $fallbackName = 'Operation\\' . $operationGroup . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code ))->toPascal();
+                        $object = '\\' . $namespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
+                        $callReturnTypes[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
+                        $returnType[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
                     }
                 }
                 $operationCalls[] = [

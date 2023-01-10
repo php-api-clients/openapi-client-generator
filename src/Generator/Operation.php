@@ -14,7 +14,10 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use React\Promise\PromiseInterface;
 use RingCentral\Psr7\Request;
+use Rx\Observable;
+use Rx\Scheduler\ImmediateScheduler;
 use WyriHaximus\Hydrator\Hydrator;
 
 final class Operation
@@ -152,7 +155,7 @@ final class Operation
         }
         $class->addStmt($constructor);
         $requestParameters = [
-            new Node\Arg(new Node\Scalar\String_($method)),
+            new Node\Arg(new Node\Scalar\String_(strtoupper($method))),
             new Node\Arg(new Node\Expr\FuncCall(
                 new Node\Name('\str_replace'),
                 [
@@ -212,12 +215,23 @@ final class Operation
         );
         $cases = [];
         $returnType = [];
+        $returnTypeRaw = [];
         foreach ($operation->responses as $code => $spec) {
             $contentTypeCases = [];
             foreach ($spec->content as $contentType => $contentTypeSchema) {
-                $fallbackName = $className . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code))->toPascal();
+                $fallbackName = 'Operation\\' . $className . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code))->toPascal();
                 $srs = $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
-                $returnType[] = $object = '\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
+                $object = '\\' . $rootNamespace . 'Schema\\' . $srs;
+                $returnType[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
+                $returnTypeRaw[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
+                $hydrate = new Node\Expr\MethodCall(
+                    new Node\Expr\Variable('hydrator'),
+                    new Node\Name('hydrate'),
+                    [
+                        new Node\Arg(new Node\Scalar\String_($object)),
+                        new Node\Arg(new Node\Expr\Variable('body')),
+                    ],
+                );
                 $ctc = new Node\Stmt\Case_(
                     new Node\Scalar\String_($contentType),
                     [
@@ -238,14 +252,39 @@ final class Operation
                                 ])),
                             ]
                         )),
-                        new Node\Stmt\Return_(new Node\Expr\MethodCall(
-                            new Node\Expr\Variable('hydrator'),
-                            new Node\Name('hydrate'),
-                            [
-                                new Node\Arg(new Node\Scalar\String_($object)),
-                                new Node\Arg(new Node\Expr\Variable('body')),
-                            ]
-                        )),
+                        new Node\Stmt\Return_(
+                            $contentTypeSchema->schema->type === 'array' ? new Node\Expr\MethodCall(
+                                new Node\Expr\StaticCall(
+                                    new Node\Name('\\' . Observable::class),
+                                    new Node\Name('fromArray'),
+                                    [
+                                        new Node\Arg(new Node\Expr\Variable('body')),
+                                        new Node\Arg(
+                                            new Node\Expr\New_(
+                                                new Node\Name('\\' . ImmediateScheduler::class),
+                                            ),
+                                        ),
+                                    ]
+                                ),
+                                new Node\Name('map'),
+                                [
+                                    new Arg(new Node\Expr\Closure([
+                                        'stmts' => [
+                                            new Node\Stmt\Return_(
+                                                $hydrate,
+                                            ),
+                                        ],
+                                        'params' => [
+                                            new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))
+                                        ],
+                                        'uses' => [
+                                            new Node\Expr\Variable('hydrator'),
+                                        ],
+                                        'returnType' => $object,
+                                    ]))
+                                ]
+                            ) : $hydrate,
+                        ),
                     ]
                 );
                 $contentTypeCases[] = $ctc;
@@ -264,10 +303,16 @@ final class Operation
             $case->setDocComment(new Doc('/**' . $spec->description . '**/'));
         }
         $class->addStmt(
-            $factory->method('createResponse')->addParam(
+            $factory->method('createResponse')->setDocComment(
+                new Doc(implode(PHP_EOL, [
+                    '/**',
+                    ' * @return ' . implode('|', array_unique($returnType)),
+                    ' */',
+                ]))
+            )->addParam(
                 $factory->param('response')->setType('\\' . ResponseInterface::class)
             )->setReturnType(
-                new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), array_unique($returnType)))
+                new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), array_unique($returnTypeRaw)))
             )->addStmt(
                 new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
             )->addStmt(

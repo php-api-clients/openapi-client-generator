@@ -22,12 +22,18 @@ final class SchemaRegistry
 
     public function addClassName(string $className, Schema $schema): void
     {
+        if ($schema->type === 'array') {
+            $schema = $schema->items;
+        }
         $this->splHash[spl_object_hash($schema)] = $className;
         $this->json[json_encode($schema->getSerializableData())] = $className;
     }
 
     public function get(\cebe\openapi\spec\Schema $schema, string $fallbackName): string
     {
+        if ($schema->type === 'array') {
+            $schema = $schema->items;
+        }
         $hash = spl_object_hash($schema);
         if (array_key_exists($hash, $this->splHash)) {
             return $this->splHash[$hash];

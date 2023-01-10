@@ -30,7 +30,8 @@
         "wyrihaximus/composer-update-bin-autoload-path": "^1 || ^1.0.1",
         "wyrihaximus/hydrator": "dev-master",
         "league/openapi-psr7-validator": "^0.16",
-        "react/http": "^1.8"
+        "react/http": "^1.8",
+        "reactivex/rxphp": "^2.0"
     },
     "autoload": {
         "psr-4": {

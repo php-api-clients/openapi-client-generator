@@ -166,6 +166,50 @@ final class Client
                             new Node\Expr\ClassConstFetch(new Node\Name($operationCall['className']), 'OPERATION_MATCH'),
                             [
                                 new Node\Stmt\Expression(new Node\Expr\Assign(
+                                    new Node\Expr\Variable('requestBodyData'),
+                                    new Node\Expr\Array_(),
+                                )),
+                                new Node\Stmt\Foreach_(new Node\Expr\FuncCall(
+                                    new Node\Name('\array_keys'),
+                                    [
+                                        new Arg(new Node\Expr\Variable(new Node\Name('params'))),
+                                    ],
+                                ), new Node\Expr\Variable(new Node\Name('param')), [
+                                    'stmts' => [
+                                        new Node\Stmt\If_(
+                                            new Node\Expr\BinaryOp\NotEqual(
+                                                new Node\Expr\FuncCall(
+                                                    new Node\Name('\in_array'),
+                                                    [
+                                                        new Arg(new Node\Expr\Variable(new Node\Name('param'))),
+                                                        new Arg(new Node\Expr\Array_(
+                                                            iterator_to_array((function (array $params): iterable {
+                                                                foreach ($params as $param) {
+                                                                    yield new Node\Expr\ArrayItem(new Node\Scalar\String_($param));
+                                                                }
+                                                            })($operationCall['params'])),
+                                                        )),
+                                                    ],
+                                                ),
+                                                new Node\Expr\ConstFetch(new Node\Name('false'))
+                                            ),
+                                            [
+                                                'stmts' => [
+                                                    new Node\Stmt\Expression(
+                                                        new Node\Expr\FuncCall(
+                                                            new Node\Name('\array_push'),
+                                                            [
+                                                                new Arg(new Node\Expr\Variable(new Node\Name('requestBodyData'))),
+                                                                new Arg(new Node\Expr\Variable(new Node\Name('param'))),
+                                                            ],
+                                                        ),
+                                                    ),
+                                                ],
+                                            ]
+                                        ),
+                                    ],
+                                ]),
+                                new Node\Stmt\Expression(new Node\Expr\Assign(
                                     new Node\Expr\Variable('operation'),
                                     new Node\Expr\MethodCall(
                                         new Node\Expr\MethodCall(
@@ -181,7 +225,9 @@ final class Client
                                         })($operationCall['params'])),
                                     )
                                 )),
-                                new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', []))),
+                                new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', [
+                                    new Arg(new Node\Expr\Variable(new Node\Name('requestBodyData')))
+                                ]))),
                                 new Node\Stmt\Return_(new Node\Expr\MethodCall(
                                     new Node\Expr\MethodCall(
                                         new Node\Expr\PropertyFetch(

@@ -187,7 +187,7 @@ final class Operation
                             new Node\Arg(new Node\Expr\Variable('data')),
                             new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                 new Node\Expr\ClassConstFetch(
-                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema, $className . '\\Request')),
+                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema, $className . '\\Request\\' . (new Convert(str_replace('/', '\\', $requestBodyContentType)))->toPascal())),
                                     new Node\Name('SCHEMA_JSON'),
                                 ),
                                 new Node\Scalar\String_('\cebe\openapi\spec\Schema'),

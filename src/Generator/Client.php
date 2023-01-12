@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
@@ -34,7 +35,7 @@ final class Client
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
         $class = $factory->class('Client')->makeFinal()->addStmt(
-            $factory->property('authentication')->setType('\\' . $namespace . Authentication::INTERFACE_NAME)->makeReadonly()->makePrivate()
+            $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
         )->addStmt(
@@ -43,7 +44,7 @@ final class Client
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new Param('authentication'))->setType('\\' . $namespace . Authentication::INTERFACE_NAME)
+                (new Param('authentication'))->setType('\\' . AuthenticationInterface::class)
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(

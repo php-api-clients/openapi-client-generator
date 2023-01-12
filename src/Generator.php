@@ -177,10 +177,6 @@ final class Generator
             );
         }
 
-        yield from Authentication::generate(
-            $namespace,
-        );
-
         while ($schemaRegistry->hasUnknownSchemas()) {
             foreach ($schemaRegistry->unknownSchemas() as $schema) {
                 yield from Schema::generate(

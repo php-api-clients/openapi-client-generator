@@ -292,13 +292,16 @@ final class Operation
             $case = new Node\Stmt\Case_(
                 new Node\Scalar\LNumber($code),
                 [
-                    new Node\Stmt\Switch_(
+                    count($contentTypeCases) > 0 ? new Node\Stmt\Switch_(
                         new Node\Expr\Variable('contentType'),
                         $contentTypeCases
-                    ),
+                    ) : new Node\Stmt\Return_(new Node\Scalar\LNumber($code)),
                     new Node\Stmt\Break_()
                 ]
             );
+            if (count($contentTypeCases) === 0) {
+                $returnType[] = $returnTypeRaw[] = 'int';
+            }
             $cases[] = $case;
             $case->setDocComment(new Doc('/**' . $spec->description . '**/'));
         }

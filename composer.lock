@@ -4,8 +4,49 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "65fec1a74f3e4210ee255eb17d13a0bf",
+    "content-hash": "5ecac2f20017f0c3a4901c07d4858065",
     "packages": [
+        {
+            "name": "api-clients/contracts",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-api-clients/contracts.git",
+                "reference": "8da5e2581c5ca36c9d04e3d85d82fc65bc0112f9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-api-clients/contracts/zipball/8da5e2581c5ca36c9d04e3d85d82fc65bc0112f9",
+                "reference": "8da5e2581c5ca36c9d04e3d85d82fc65bc0112f9",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ApiClients\\Contracts\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cees-Jan Kiewiet",
+                    "email": "ceesjank@gmail.com"
+                }
+            ],
+            "description": "PHP API Clients wide contracts",
+            "support": {
+                "issues": "https://github.com/php-api-clients/contracts/issues",
+                "source": "https://github.com/php-api-clients/contracts/tree/main"
+            },
+            "time": "2023-01-12T21:32:54+00:00"
+        },
         {
             "name": "cebe/php-openapi",
             "version": "dev-openapi-31",
@@ -2891,16 +2932,17 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "cebe/php-openapi": 20,
-        "wyrihaximus/hydrator": 20
+        "wyrihaximus/hydrator": 20,
+        "api-clients/contracts": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.1"
+        "php": "^8.2"
     },
     "platform-dev": [],
     "platform-overrides": {
-        "php": "8.1.99"
+        "php": "8.2.13"
     },
     "plugin-api-version": "2.3.0"
 }

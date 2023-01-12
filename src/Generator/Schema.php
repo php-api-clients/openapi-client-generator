@@ -98,7 +98,7 @@ final class Schema
             $propertyStmt = $factory->property($propertyName)->makePrivate();
             $propertyDocBlock = [];
             $methodDocBlock = [];
-            if (strlen($property->description) > 0) {
+            if (is_string($property->description) && strlen($property->description) > 0) {
                 $propertyDocBlock[] = $property->description;
                 $methodDocBlock[] = $property->description;
             }

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright Copyright (c) 2021 Carsten Brandt <mail@cebe.cc> and contributors
+ * @copyright Copyright (c) 2018 Carsten Brandt <mail@cebe.cc> and contributors
  * @license https://github.com/cebe/php-openapi/blob/master/LICENSE
  */
 
@@ -20,17 +20,20 @@ use IteratorAggregate;
 use Traversable;
 
 /**
- * Holds the webhook events to the individual endpoints and their operations.
+ * Holds the relative paths to the individual endpoints and their operations.
  *
- * @link https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.1.0.md#oasWebhooks
+ * The path is appended to the URL from the Server Object in order to construct the full URL.
+ * The Paths MAY be empty, due to ACL constraints.
+ *
+ * @link https://github.com/OAI/OpenAPI-Specification/blob/3.0.2/versions/3.0.2.md#pathsObject
  *
  */
-class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAccess, Countable, IteratorAggregate
+class Paths implements SpecObjectInterface, DocumentContextInterface, ArrayAccess, Countable, IteratorAggregate
 {
     /**
      * @var (PathItem|null)[]
      */
-    private $_webHooks = [];
+    private $_paths = [];
     /**
      * @var array
      */
@@ -54,11 +57,11 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
     {
         foreach ($data as $path => $object) {
             if ($object === null) {
-                $this->_webHooks[$path] = null;
+                $this->_paths[$path] = null;
             } elseif (is_array($object)) {
-                $this->_webHooks[$path] = new PathItem($object);
+                $this->_paths[$path] = new PathItem($object);
             } elseif ($object instanceof PathItem) {
-                $this->_webHooks[$path] = $object;
+                $this->_paths[$path] = $object;
             } else {
                 $givenType = gettype($object);
                 if ($givenType === 'object') {
@@ -76,7 +79,7 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
     public function getSerializableData()
     {
         $data = [];
-        foreach ($this->_webHooks as $path => $pathItem) {
+        foreach ($this->_paths as $path => $pathItem) {
             $data[$path] = ($pathItem === null) ? null : $pathItem->getSerializableData();
         }
         return (object) $data;
@@ -86,43 +89,43 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @param string $name path name
      * @return bool
      */
-    public function hasWebHook(string $name): bool
+    public function hasPath(string $name): bool
     {
-        return isset($this->_webHooks[$name]);
+        return isset($this->_paths[$name]);
     }
 
     /**
      * @param string $name path name
      * @return PathItem
      */
-    public function getWebHook(string $name): ?PathItem
+    public function getPath(string $name): ?PathItem
     {
-        return $this->_webHooks[$name] ?? null;
+        return $this->_paths[$name] ?? null;
     }
 
     /**
      * @param string $name path name
      * @param PathItem $pathItem the path item to add
      */
-    public function addWebHook(string $name, PathItem $pathItem): void
+    public function addPath(string $name, PathItem $pathItem): void
     {
-        $this->_webHooks[$name] = $pathItem;
+        $this->_paths[$name] = $pathItem;
     }
 
     /**
      * @param string $name path name
      */
-    public function removeWebHook(string $name): void
+    public function removePath(string $name): void
     {
-        unset($this->_webHooks[$name]);
+        unset($this->_paths[$name]);
     }
 
     /**
      * @return PathItem[]
      */
-    public function getWebHooks(): array
+    public function getPaths(): array
     {
-        return $this->_webHooks;
+        return $this->_paths;
     }
 
     /**
@@ -134,12 +137,15 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
     {
         $valid = true;
         $this->_errors = [];
-        foreach ($this->_webHooks as $key => $path) {
+        foreach ($this->_paths as $key => $path) {
             if ($path === null) {
                 continue;
             }
             if (!$path->validate()) {
                 $valid = false;
+            }
+            if (strpos($key, '/') !== 0) {
+                $this->_errors[] = "Path must begin with /: $key";
             }
         }
         return $valid && empty($this->_errors);
@@ -161,7 +167,7 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
             $errors = [$this->_errors];
         }
 
-        foreach ($this->_webHooks as $path) {
+        foreach ($this->_paths as $path) {
             if ($path === null) {
                 continue;
             }
@@ -177,9 +183,9 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @return boolean true on success or false on failure.
      * The return value will be casted to boolean if non-boolean was returned.
      */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
-        return $this->hasWebHook($offset);
+        return $this->hasPath($offset);
     }
 
     /**
@@ -188,9 +194,10 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @param mixed $offset The offset to retrieve.
      * @return PathItem Can return all value types.
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
-        return $this->getWebHook($offset);
+        return $this->getPath($offset);
     }
 
     /**
@@ -199,9 +206,9 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @param mixed $offset The offset to assign the value to.
      * @param mixed $value The value to set.
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
-        $this->addWebHook($offset, $value);
+        $this->addPath($offset, $value);
     }
 
     /**
@@ -209,9 +216,9 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @link http://php.net/manual/en/arrayaccess.offsetunset.php
      * @param mixed $offset The offset to unset.
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
-        $this->removeWebHook($offset);
+        $this->removePath($offset);
     }
 
     /**
@@ -220,9 +227,9 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @return int The custom count as an integer.
      * The return value is cast to an integer.
      */
-    public function count()
+    public function count(): int
     {
-        return count($this->_webHooks);
+        return count($this->_paths);
     }
 
     /**
@@ -230,9 +237,9 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      * @link http://php.net/manual/en/iteratoraggregate.getiterator.php
      * @return Traversable An instance of an object implementing <b>Iterator</b> or <b>Traversable</b>
      */
-    public function getIterator()
+    public function getIterator(): Traversable
     {
-        return new ArrayIterator($this->_webHooks);
+        return new ArrayIterator($this->_paths);
     }
 
     /**
@@ -241,7 +248,7 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      */
     public function resolveReferences(ReferenceContext $context = null)
     {
-        foreach ($this->_webHooks as $key => $path) {
+        foreach ($this->_paths as $key => $path) {
             if ($path === null) {
                 continue;
             }
@@ -254,7 +261,7 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
      */
     public function setReferenceContext(ReferenceContext $context)
     {
-        foreach ($this->_webHooks as $key => $path) {
+        foreach ($this->_paths as $key => $path) {
             if ($path === null) {
                 continue;
             }
@@ -275,7 +282,7 @@ class WebHooks implements SpecObjectInterface, DocumentContextInterface, ArrayAc
         $this->_baseDocument = $baseDocument;
         $this->_jsonPointer = $jsonPointer;
 
-        foreach ($this->_webHooks as $key => $path) {
+        foreach ($this->_paths as $key => $path) {
             if ($path instanceof DocumentContextInterface) {
                 $path->setDocumentContext($baseDocument, $jsonPointer->append($key));
             }

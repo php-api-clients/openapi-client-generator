@@ -110,11 +110,15 @@ final class Client
             foreach ($operations as $operationOperation => $operationDetails) {
                 $returnType = [];
                 foreach ($operationDetails['operation']->responses as $code => $spec) {
+                    $contentTypeCases = [];
                     foreach ($spec->content as $contentType => $contentTypeSchema) {
                         $fallbackName = 'Operation\\' . $operationGroup . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code ))->toPascal();
                         $object = '\\' . $namespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
                         $callReturnTypes[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
-                        $returnType[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
+                        $contentTypeCases[] = $returnType[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
+                    }
+                    if (count($contentTypeCases) === 0) {
+                        $returnType[] = $callReturnTypes[] = 'int';
                     }
                 }
                 $operationCalls[] = [
@@ -153,7 +157,9 @@ final class Client
         }
 
         $class->addStmt(
-            $factory->method('call')->makePublic()->setDocComment(
+            $factory->method('call')->makePublic()->setReturnType(
+                new Node\Name('\\' . PromiseInterface::class)
+            )->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
                     ' * @return \\' . PromiseInterface::class . '<' . implode('|', array_unique($callReturnTypes)) . '>',

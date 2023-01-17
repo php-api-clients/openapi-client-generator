@@ -42,6 +42,7 @@
             "external_files/cebe/JsonReference.php",
             "external_files/cebe/Paths.php",
             "external_files/cebe/Responses.php",
+            "external_files/cebe/SpecBaseObject.php",
             "external_files/thephpleague/SchemaValidator.php",
             "external_files/thephpleague/Type.php"
         ]

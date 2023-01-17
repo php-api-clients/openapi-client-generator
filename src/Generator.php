@@ -40,7 +40,7 @@ final class Generator
 
     public static function className(string $className): string
     {
-        return str_replace(['{', '}', '-', '$', '_', '+'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus'], (new Convert($className))->toPascal()) . (self::isKeyword($className) ? '_' : '');
+        return str_replace(['{', '}', '-', '$', '_', '+'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus'], (new Convert($className))->toPascal()) . (self::isKeyword(self::basename($className)) ? '_' : '');
     }
 
     private static function cleanUpNamespace(string $namespace): string

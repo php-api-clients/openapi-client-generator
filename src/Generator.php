@@ -13,7 +13,10 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
+use EventSauce\ObjectHydrator\ObjectMapperCodeGenerator;
 use Jawira\CaseConverter\Convert;
+use League\ConstructFinder\ConstructFinder;
+use PhpParser\Node;
 use PhpParser\PrettyPrinter\Standard;
 
 final class Generator
@@ -31,16 +34,17 @@ final class Generator
         $namespace = self::cleanUpNamespace($namespace);
         $codePrinter = new Standard();
 
-        foreach ($this->all($namespace) as $file) {
-            $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn(), strlen($namespace)));
+        foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR) as $file) {
+            $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace)));
             @mkdir(dirname($fileName), 0744, true);
-            file_put_contents($fileName . '.php', $codePrinter->prettyPrintFile([$file->contents()]) . PHP_EOL);
+            file_put_contents($fileName . '.php', ($file->contents instanceof Node ? $codePrinter->prettyPrintFile([$file->contents]) : $file->contents) . PHP_EOL);
+            include_once $fileName . '.php';
         }
     }
 
     public static function className(string $className): string
     {
-        return str_replace(['{', '}', '-', '$', '_', '+'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus'], (new Convert($className))->toPascal()) . (self::isKeyword(self::basename($className)) ? '_' : '');
+        return str_replace(['{', '}', '-', '$', '_', '+', '*', '.'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus', 'Obelix', 'Dot'], (new Convert($className))->toPascal()) . (self::isKeyword(self::basename($className)) ? '_' : '');
     }
 
     private static function cleanUpNamespace(string $namespace): string
@@ -56,8 +60,9 @@ final class Generator
      * @param string $destinationPath
      * @return iterable<File>
      */
-    private function all(string $namespace): iterable
+    private function all(string $namespace, string $rootPath): iterable
     {
+        $schemaClasses = [];
         $schemaRegistry = new SchemaRegistry();
         if (count($this->spec->components->schemas ?? []) > 0) {
             foreach ($this->spec->components->schemas as $name => $schema) {
@@ -73,6 +78,7 @@ final class Generator
                     continue;
                 }
 
+                $schemaClasses[] = $namespace . 'Schema/' . $schemaClassName;
                 yield from Schema::generate(
                     $name,
                     self::dirname($namespace . 'Schema/' . $schemaClassName),
@@ -134,6 +140,7 @@ final class Generator
                 yield from Clients::generate(
                     $operationGroup,
                     self::dirname($namespace . 'Operation/' . $operationGroup),
+                    $namespace,
                     self::basename($namespace . 'Operation/' . $operationGroup),
                     $operations,
                 );
@@ -166,10 +173,6 @@ final class Generator
                 );
             }
 
-            yield from WebHookInterface::generate(
-                self::dirname($namespace . 'WebHookInterface'),
-                'WebHookInterface',
-            );
             yield from WebHooks::generate(
                 self::dirname($namespace . 'WebHooks'),
                 $namespace,
@@ -179,6 +182,7 @@ final class Generator
 
         while ($schemaRegistry->hasUnknownSchemas()) {
             foreach ($schemaRegistry->unknownSchemas() as $schema) {
+                $schemaClasses[] = $namespace . 'Schema/' . $schema['className'];
                 yield from Schema::generate(
                     $schema['name'],
                     self::dirname($namespace . 'Schema/' . $schema['className']),
@@ -189,6 +193,14 @@ final class Generator
                 );
             }
         }
+
+        yield new File(
+            $namespace . 'OptimizedHydratorMapper',
+            (new ObjectMapperCodeGenerator())->dump(
+                array_unique(array_filter(array_map(static fn (string $className): string => str_replace('/', '\\', $className), $schemaClasses), static fn (string $className): bool => count((new \ReflectionMethod($className, '__construct'))->getParameters()) > 0)),
+                $namespace . 'OptimizedHydratorMapper'
+            )
+        );
     }
 
     private static function fqcn(string $fqcn): string
@@ -212,6 +224,6 @@ final class Generator
 
     private static function isKeyword(string $name): bool
     {
-        return in_array(strtolower($name), array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self'), false);
+        return in_array(strtolower($name), array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self', 'parent', 'object'), false);
     }
 }

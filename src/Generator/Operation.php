@@ -72,6 +72,8 @@ final class Operation
           $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()  
         )->addStmt(
           $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()  
+        )->addStmt(
+            $factory->property('hydrator')->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
         );
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
@@ -94,6 +96,16 @@ final class Operation
                 ),
                 new Node\Expr\Variable('responseSchemaValidator'),
             )
+        )->addParam(
+            (new Param('hydrator'))->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')
+        )->addStmt(
+            new Node\Expr\Assign(
+                new Node\Expr\PropertyFetch(
+                    new Node\Expr\Variable('this'),
+                    'hydrator'
+                ),
+                new Node\Expr\Variable('hydrator'),
+            )
         );
         $requestReplaces = [];
         $query = [];
@@ -113,7 +125,7 @@ final class Operation
                     'bool',
                 ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type])));
             }
-            $class->addStmt($paramterStmt->makeReadonly()->makePrivate());
+            $class->addStmt($paramterStmt->makePrivate());
 
             $param = new Param($parameter->name);
             if ($parameter->schema->type !== null) {
@@ -225,8 +237,11 @@ final class Operation
                 $returnType[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
                 $returnTypeRaw[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
                 $hydrate = new Node\Expr\MethodCall(
-                    new Node\Expr\Variable('hydrator'),
-                    new Node\Name('hydrate'),
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Name('hydrateObject'),
                     [
                         new Node\Arg(new Node\Scalar\String_($object)),
                         new Node\Arg(new Node\Expr\Variable('body')),
@@ -277,9 +292,6 @@ final class Operation
                                         'params' => [
                                             new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))
                                         ],
-                                        'uses' => [
-                                            new Node\Expr\Variable('hydrator'),
-                                        ],
                                         'returnType' => $object,
                                     ]))
                                 ]
@@ -320,8 +332,6 @@ final class Operation
                 new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
             )->addStmt(
                 new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
-            )->addStmt(
-                new Node\Expr\Assign(new Node\Expr\Variable('hydrator'), new Node\Expr\New_(new Node\Name('\\' . Hydrator::class)))
             )->addStmt(
                 new Node\Stmt\Switch_(
                     new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getStatusCode'),

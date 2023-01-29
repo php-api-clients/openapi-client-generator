@@ -13,22 +13,9 @@ use PhpParser\PrettyPrinter\Standard;
 
 final class File
 {
-    private string $fqcn;
-    private Node $contents;
-
-    public function __construct(string $path, Node $contents)
-    {
-        $this->fqcn = $path;
-        $this->contents = $contents;
-    }
-
-    public function fqcn(): string
-    {
-        return $this->fqcn;
-    }
-
-    public function contents(): Node
-    {
-        return $this->contents;
+    public function __construct(
+        public readonly string $fqcn,
+        public readonly Node|string $contents,
+    ){
     }
 }

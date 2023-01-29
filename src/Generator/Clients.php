@@ -17,7 +17,7 @@ final class Clients
      * @param array<string, string> $operations
      * @return iterable<Node>
      */
-    public static function generate(string $operationGroup, string $namespace, string $className, array $operations): iterable
+    public static function generate(string $operationGroup, string $namespace, string $rootNamespace, string $className, array $operations): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
@@ -26,6 +26,8 @@ final class Clients
             $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->property('hydrator')->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
                 (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
@@ -47,6 +49,16 @@ final class Clients
                     ),
                     new Node\Expr\Variable('responseSchemaValidator'),
                 )
+            )->addParam(
+                (new Param('hydrator'))->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Expr\Variable('hydrator'),
+                )
             )
         );
 
@@ -59,6 +71,10 @@ final class Clients
             $params[] = new Node\Expr\PropertyFetch(
                 new Node\Expr\Variable('this'),
                 'responseSchemaValidator'
+            );
+            $params[] = new Node\Expr\PropertyFetch(
+                new Node\Expr\Variable('this'),
+                'hydrator'
             );
             $cn = str_replace('/', '\\', '\\' . $namespace . '\\' . $operationDetails['class']);
             $method = $factory->method(lcfirst($operationOperation))->setReturnType($cn)->makePublic();

@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Contracts\OpenAPI\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
@@ -32,7 +33,7 @@ final class WebHook
         $factory = new BuilderFactory();
         $stmt = $factory->namespace($namespace);
 
-        $class = $factory->class($className)->makeFinal()->implement('\\' . $baseNamespace . 'WebHookInterface');
+        $class = $factory->class($className)->makeFinal()->implement('\\' . WebHookInterface::class);
 
         $method = $factory->method('resolve')->makePublic()->setReturnType('string')->addParam(
             (new Param('data'))->setType('array')

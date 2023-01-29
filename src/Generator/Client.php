@@ -43,6 +43,8 @@ final class Client
         )->addStmt(
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
+            $factory->property('hydrator')->setType('\\' . $namespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
+        )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
                 (new Param('authentication'))->setType('\\' . AuthenticationInterface::class)
             )->addStmt(
@@ -98,6 +100,18 @@ final class Client
                         ]
                     ),
                 )
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name('\\' . $namespace . 'OptimizedHydratorMapper'),
+                        [
+                        ]
+                    ),
+                )
             )
         );
 
@@ -148,6 +162,10 @@ final class Client
                                 new Node\Arg(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
                                     'responseSchemaValidator'
+                                )),
+                                new Node\Arg(new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'hydrator'
                                 )),
                             ]
                         )

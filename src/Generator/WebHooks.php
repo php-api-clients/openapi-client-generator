@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Contracts\OpenAPI\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
 use cebe\openapi\spec\PathItem;
@@ -50,7 +51,7 @@ final class WebHooks
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('\\' . $baseNamespace . 'WebHookInterface')->addParam(
+            $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('\\' . WebHookInterface::class)->addParam(
                 (new Param('event'))->setType('string')
             )->addStmt(
                 new Node\Stmt\If_(

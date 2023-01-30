@@ -311,7 +311,13 @@ final class Client
 //                        yield new Node\Stmt\Echo_([new Node\Scalar\String_('/**' . @var_export($operationCall, true) . '*/')]);
                     }
                 })($operationCalls))
-            ))
+            ))->addStmt(
+                new Node\Stmt\Throw_(
+                    new Node\Expr\New_(
+                        new Node\Name('\InvalidArgumentException')
+                    )
+                )
+            )
         );
 
         $class->addStmt(

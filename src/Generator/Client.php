@@ -34,7 +34,7 @@ final class Client
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
-        $class = $factory->class('Client')->makeFinal()->addStmt(
+        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->addStmt(
             $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()

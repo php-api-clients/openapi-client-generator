@@ -4,6 +4,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Authentication;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\ClientInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Clients;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
@@ -146,6 +147,11 @@ final class Generator
                 );
 
             }
+            yield from ClientInterface::generate(
+                $namespace,
+                $clients,
+                $schemaRegistry,
+            );
             yield from Client::generate(
                 $namespace,
                 $clients,

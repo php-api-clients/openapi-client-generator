@@ -314,6 +314,26 @@ final class Client
             ))
         );
 
+        $class->addStmt(
+            $factory->method('hydrateObject')->makePublic()->setReturnType('object')->addParam(
+                (new Param('className'))->setType('string')
+            )->addParam(
+                (new Param('data'))->setType('array')
+            )->addStmt(new Node\Stmt\Return_(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Name('hydrateObject'),
+                    [
+                        new Node\Arg(new Node\Expr\Variable('className')),
+                        new Node\Arg(new Node\Expr\Variable('data')),
+                    ]
+                )
+            ))
+        );
+
         yield new File($namespace . '\\' . 'Client', $stmt->addStmt($class)->getNode());
     }
 }

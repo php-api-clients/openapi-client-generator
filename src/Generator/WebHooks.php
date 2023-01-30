@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Contracts\OpenAPI\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
@@ -14,6 +15,7 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\Browser;
 use RingCentral\Psr7\Request;
 
 final class WebHooks
@@ -49,6 +51,22 @@ final class WebHooks
                     ),
                 ],
                 Class_::MODIFIER_PUBLIC
+            )
+        )->addStmt(
+            $factory->property('hydrator')->setType('\\' . $namespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
+        )->addStmt(
+            $factory->method('__construct')->makePublic()->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name('\\' . $namespace . 'OptimizedHydratorMapper'),
+                        [
+                        ]
+                    ),
+                )
             )
         )->addStmt(
             $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('\\' . WebHookInterface::class)->addParam(
@@ -97,6 +115,36 @@ final class WebHooks
                     new Node\Expr\Variable(
                         new Node\Name('class')
                     )
+                )
+            ))
+        )->addStmt(
+            $factory->method('hydrate')->makePublic()->setReturnType('object')->addParam(
+                (new Param('event'))->setType('string')
+            )->addParam(
+                (new Param('data'))->setType('array')
+            )->addStmt(new Node\Stmt\Return_(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Name('hydrateObject'),
+                    [
+                        new Node\Arg(new Node\Expr\MethodCall(
+                            new Node\Expr\StaticCall(
+                                new Node\Name('self'),
+                                new Node\Name('resolve'),
+                                [
+                                    new Node\Arg(new Node\Expr\Variable('event')),
+                                ]
+                            ),
+                            new Node\Name('resolve'),
+                            [
+                                new Node\Arg(new Node\Expr\Variable('data')),
+                            ]
+                        )),
+                        new Node\Arg(new Node\Expr\Variable('data')),
+                    ]
                 )
             ))
         );

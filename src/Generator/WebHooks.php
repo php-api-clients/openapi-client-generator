@@ -53,7 +53,7 @@ final class WebHooks
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->property('hydrator')->setType('\\' . $namespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
+            $factory->property('hydrator')->setType('\\' . $baseNamespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->method('__construct')->makePublic()->addStmt(
                 new Node\Expr\Assign(
@@ -62,7 +62,7 @@ final class WebHooks
                         'hydrator'
                     ),
                     new Node\Expr\New_(
-                        new Node\Name('\\' . $namespace . 'OptimizedHydratorMapper'),
+                        new Node\Name('\\' . $baseNamespace . 'OptimizedHydratorMapper'),
                         [
                         ]
                     ),

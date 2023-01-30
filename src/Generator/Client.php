@@ -311,6 +311,32 @@ final class Client
 //                        yield new Node\Stmt\Echo_([new Node\Scalar\String_('/**' . @var_export($operationCall, true) . '*/')]);
                     }
                 })($operationCalls))
+            ))->addStmt(
+                new Node\Stmt\Throw_(
+                    new Node\Expr\New_(
+                        new Node\Name('\InvalidArgumentException')
+                    )
+                )
+            )
+        );
+
+        $class->addStmt(
+            $factory->method('hydrateObject')->makePublic()->setReturnType('object')->addParam(
+                (new Param('className'))->setType('string')
+            )->addParam(
+                (new Param('data'))->setType('array')
+            )->addStmt(new Node\Stmt\Return_(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Name('hydrateObject'),
+                    [
+                        new Node\Arg(new Node\Expr\Variable('className')),
+                        new Node\Arg(new Node\Expr\Variable('data')),
+                    ]
+                )
             ))
         );
 

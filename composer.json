@@ -32,7 +32,8 @@
         "react/http": "^1.8",
         "reactivex/rxphp": "^2.0",
         "api-clients/contracts": "dev-main",
-        "eventsauce/object-hydrator": "^1.1"
+        "eventsauce/object-hydrator": "^1.1",
+        "react/async": "^4.0"
     },
     "autoload": {
         "psr-4": {

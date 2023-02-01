@@ -115,6 +115,7 @@ final class Client
             )
         );
 
+        $rawCallReturnTypes = [];
         $operationCalls = [];
         $callReturnTypes = [];
 
@@ -129,10 +130,10 @@ final class Client
                         $fallbackName = 'Operation\\' . $operationGroup . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code ))->toPascal();
                         $object = '\\' . $namespace . 'Schema\\' . $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
                         $callReturnTypes[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
-                        $contentTypeCases[] = $returnType[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
+                        $rawCallReturnTypes[] = $contentTypeCases[] = $returnType[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
                     }
                     if (count($contentTypeCases) === 0) {
-                        $returnType[] = $callReturnTypes[] = 'int';
+                        $rawCallReturnTypes[] = $returnType[] = $callReturnTypes[] = 'int';
                     }
                 }
                 $operationCalls[] = [
@@ -175,7 +176,7 @@ final class Client
         }
 
         $class->addStmt(
-            $factory->method('call')->makePublic()->setReturnType(
+            $factory->method('callAsync')->makePublic()->setReturnType(
                 new Node\Name('\\' . PromiseInterface::class)
             )->setDocComment(
                 new Doc(implode(PHP_EOL, [
@@ -336,6 +337,46 @@ final class Client
                         new Node\Arg(new Node\Expr\Variable('className')),
                         new Node\Arg(new Node\Expr\Variable('data')),
                     ]
+                )
+            ))
+        );
+
+        $class->addStmt(
+            $factory->method('call')->makePublic()->setDocComment(
+                new Doc(implode(PHP_EOL, [
+                    '/**',
+                    ' * @return ' . (function (array $operationCalls): string {
+                        $count = count($operationCalls);
+                        $lastItem = $count - 1;
+                        $left = '';
+                        $right = '';
+                        for ($i = 0; $i < $count; $i++) {
+                            if ($i !== $lastItem) {
+                                $left .= '($call is ' . $operationCalls[$i]['className'] . '::OPERATION_MATCH ? ' . implode('|', array_unique($operationCalls[$i]['returnType'])) . ' : ';
+                            } else {
+                                $left .= implode('|', array_unique($operationCalls[$i]['returnType']));
+                            }
+                            $right .= ')';
+                        }
+                        return $left . $right;
+                    })($operationCalls),
+                    ' */',
+                ]))
+            )->setReturnType(implode('|', array_unique($rawCallReturnTypes)))->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(new Node\Stmt\Return_(
+                new Node\Expr\FuncCall(
+                    new Node\Name('\React\Async\await'),
+                    [
+                        new Node\Arg(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable('this'),
+                                new Node\Name('callAsync'),
+                                [
+                                    new Node\Arg(new Node\Expr\Variable('call')),
+                                    new Node\Arg(new Node\Expr\Variable('params')),
+                                ]
+                            )
+                        ),
+                    ],
                 )
             ))
         );

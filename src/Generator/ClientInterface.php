@@ -74,9 +74,7 @@ final class ClientInterface
         }
 
         $class->addStmt(
-            $factory->method('call')->makePublic()->setReturnType(
-                new Node\Name(implode('|', array_unique($rawCallReturnTypes)))
-            )->setDocComment(
+            $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
                     ' * @return ' . (function (array $operationCalls): string {
@@ -100,12 +98,24 @@ final class ClientInterface
         );
 
         $class->addStmt(
-            $factory->method('callAsync')->makePublic()->setReturnType(
-                new Node\Name('\\' . PromiseInterface::class)
-            )->setDocComment(
+            $factory->method('callAsync')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
-                    ' * @return \\' . PromiseInterface::class . '<' . implode('|', array_unique($callReturnTypes)) . '>',
+                    ' * @return ' . (function (array $operationCalls): string {
+                        $count = count($operationCalls);
+                        $lastItem = $count - 1;
+                        $left = '';
+                        $right = '';
+                        for ($i = 0; $i < $count; $i++) {
+                            if ($i !== $lastItem) {
+                                $left .= '($call is ' . $operationCalls[$i]['className'] . '::OPERATION_MATCH ? \\' . PromiseInterface::class . '<' . implode('|', array_unique($operationCalls[$i]['returnType'])) . '> : ';
+                            } else {
+                                $left .= '\\' . PromiseInterface::class . '<' . implode('|', array_unique($operationCalls[$i]['returnType'])) . '>';
+                            }
+                            $right .= ')';
+                        }
+                        return $left . $right;
+                    })($operationCalls),
                     ' */',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))

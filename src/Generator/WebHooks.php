@@ -53,20 +53,6 @@ final class WebHooks
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->method('__construct')->makePublic()->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'hydrator'
-                    ),
-                    new Node\Expr\New_(
-                        new Node\Name('\\' . $baseNamespace . 'OptimizedHydratorMapper'),
-                        [
-                        ]
-                    ),
-                )
-            )
-        )->addStmt(
             $factory->method('resolve')->makePublic()->makeStatic()->setReturnType('\\' . WebHookInterface::class)->addParam(
                 (new Param('event'))->setType('string')
             )->addStmt(

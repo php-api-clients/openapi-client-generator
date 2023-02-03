@@ -53,8 +53,6 @@ final class WebHooks
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->property('hydrator')->setType('\\' . $baseNamespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
-        )->addStmt(
             $factory->method('__construct')->makePublic()->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -117,37 +115,8 @@ final class WebHooks
                     )
                 )
             ))
-        )->addStmt(
-            $factory->method('hydrate')->makePublic()->setReturnType('object')->addParam(
-                (new Param('event'))->setType('string')
-            )->addParam(
-                (new Param('data'))->setType('array')
-            )->addStmt(new Node\Stmt\Return_(
-                new Node\Expr\MethodCall(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'hydrator'
-                    ),
-                    new Node\Name('hydrateObject'),
-                    [
-                        new Node\Arg(new Node\Expr\MethodCall(
-                            new Node\Expr\StaticCall(
-                                new Node\Name('self'),
-                                new Node\Name('resolve'),
-                                [
-                                    new Node\Arg(new Node\Expr\Variable('event')),
-                                ]
-                            ),
-                            new Node\Name('resolve'),
-                            [
-                                new Node\Arg(new Node\Expr\Variable('data')),
-                            ]
-                        )),
-                        new Node\Arg(new Node\Expr\Variable('data')),
-                    ]
-                )
-            ))
         );
+
         yield new File($namespace . '\\' . 'WebHooks', $stmt->addStmt($class)->getNode());
     }
 }

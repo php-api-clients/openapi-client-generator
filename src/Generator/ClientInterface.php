@@ -34,7 +34,13 @@ final class ClientInterface
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
-        $class = $factory->interface('ClientInterface');
+        $class = $factory->interface('ClientInterface')->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @template H',
+                ' */',
+            ]))
+        );
         $rawCallReturnTypes = [];
         $operationCalls = [];
         $callReturnTypes = [];
@@ -112,7 +118,14 @@ final class ClientInterface
         );
 
         $class->addStmt(
-            $factory->method('hydrateObject')->makePublic()->setReturnType('object')->addParam(
+            $factory->method('hydrateObject')->makePublic()->setDocComment(
+                new Doc(implode(PHP_EOL, [
+                    '/**',
+                    ' * @param class-string<H> $className',
+                    ' * @return H',
+                    ' */',
+                ]))
+            )->setReturnType('object')->addParam(
                 (new Param('className'))->setType('string')
             )->addParam(
                 (new Param('data'))->setType('array')

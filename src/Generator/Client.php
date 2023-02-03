@@ -34,7 +34,13 @@ final class Client
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
-        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->addStmt(
+        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @template H',
+                ' */',
+            ]))
+        )->addStmt(
             $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
@@ -374,7 +380,14 @@ final class Client
         );
 
         $class->addStmt(
-            $factory->method('hydrateObject')->makePublic()->setReturnType('object')->addParam(
+            $factory->method('hydrateObject')->makePublic()->setDocComment(
+                new Doc(implode(PHP_EOL, [
+                    '/**',
+                    ' * @param class-string<H> $className',
+                    ' * @return H',
+                    ' */',
+                ]))
+            )->setReturnType('object')->addParam(
                 (new Param('className'))->setType('string')
             )->addParam(
                 (new Param('data'))->setType('array')

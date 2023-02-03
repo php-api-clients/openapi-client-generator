@@ -201,10 +201,10 @@ final class Generator
         }
 
         yield new File(
-            $namespace . 'OptimizedHydratorMapper',
+            $namespace . 'Hydrator',
             (new ObjectMapperCodeGenerator())->dump(
                 array_unique(array_filter(array_map(static fn (string $className): string => str_replace('/', '\\', $className), $schemaClasses), static fn (string $className): bool => count((new \ReflectionMethod($className, '__construct'))->getParameters()) > 0)),
-                $namespace . 'OptimizedHydratorMapper'
+                $namespace . 'Hydrator'
             )
         );
     }

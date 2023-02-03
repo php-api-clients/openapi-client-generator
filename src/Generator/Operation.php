@@ -73,7 +73,7 @@ final class Operation
         )->addStmt(
           $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()  
         )->addStmt(
-            $factory->property('hydrator')->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')->makeReadonly()->makePrivate()
+            $factory->property('hydrator')->setType('\\' . $rootNamespace . 'Hydrator')->makeReadonly()->makePrivate()
         );
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
@@ -97,7 +97,7 @@ final class Operation
                 new Node\Expr\Variable('responseSchemaValidator'),
             )
         )->addParam(
-            (new Param('hydrator'))->setType('\\' . $rootNamespace . 'OptimizedHydratorMapper')
+            (new Param('hydrator'))->setType('\\' . $rootNamespace . 'Hydrator')
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(

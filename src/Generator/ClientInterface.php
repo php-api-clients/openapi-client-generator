@@ -34,13 +34,7 @@ final class ClientInterface
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(rtrim($namespace, '\\'));
 
-        $class = $factory->interface('ClientInterface')->setDocComment(
-            new Doc(implode(PHP_EOL, [
-                '/**',
-                ' * @template H',
-                ' */',
-            ]))
-        );
+        $class = $factory->interface('ClientInterface');
         $rawCallReturnTypes = [];
         $operationCalls = [];
         $callReturnTypes = [];
@@ -131,6 +125,7 @@ final class ClientInterface
             $factory->method('hydrateObject')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
+                    ' * @template H',
                     ' * @param class-string<H> $className',
                     ' * @return H',
                     ' */',

@@ -169,7 +169,8 @@ final class Schema
 
 
             $propertyStmt->setType(($propertyType === 'array' ? '' : $nullable) . $propertyType);
-            $constructor->addParam((new Param($propertyName))->setType($propertyType))->addStmt(
+            $constructorParam = (new Param($propertyName))->setType($propertyType);
+            $constructor->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
@@ -184,10 +185,12 @@ final class Schema
             if (is_array($property->anyOf) && $property->anyOf[0] instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property->anyOf[0]), $schemaClassNameMap)*/) {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->anyOf[0], $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
+                $constructorParam->setType($nullable . $fqcnn);
                 $setDefaylt = false;
             } else if (is_array($property->allOf) && $property->allOf[0] instanceof OpenAPiSchema/* && array_key_exists(spl_object_hash($property->allOf[0]), $schemaClassNameMap)*/) {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->allOf[0], $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
+                $constructorParam->setType($nullable . $fqcnn);
                 $setDefaylt = false;
             }
 
@@ -195,6 +198,7 @@ final class Schema
             if ($propertyType  === 'object') {
                 $fqcnn = '\\' . $rootNamespace . '\\' . $schemaRegistry->get($property, $className . '\\' . (new Convert($propertyName))->toPascal());
                 $propertyStmt->setType($nullable . $fqcnn);
+                $constructorParam->setType($nullable . $fqcnn);
                 $setDefaylt = false;
             }
 
@@ -222,6 +226,7 @@ final class Schema
             }
 
             $class->addStmt($propertyStmt);
+            $constructor->addParam($constructorParam);
         }
 
         if (count($constructDocBlock) > 0) {

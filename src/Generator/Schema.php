@@ -140,21 +140,18 @@ final class Schema
 //                        $constructDocBlock[] = '@param array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '>';
                         $constructDocBlock[] = '@param array<\\' . $rootNamespace . '\\' . $schemaRegistry->get($property->items, $className . '\\' . (new Convert($propertyName))->toPascal()) . '> $' . $propertyName;
 //                    } elseif ($property->items->type === 'object') {
-//                        yield from self::generate($name . '::' . $propertyName, $namespace . '\\' . $className, (new Convert($propertyName))->toPascal(), $property->items, $schemaClassNameMap, $rootNamespace);
 //                        $propertyDocBlock[] = '@var array<\\' . $namespace . '\\' . $className . '\\' . (new Convert($propertyName))->toPascal() . '>';
 //                    }
                 }
 
                 if (is_string($propertyType)) {
                     $propertyType = str_replace([
-                        'object',
                         'integer',
                         'number',
                         'any',
                         'null',
                         'boolean',
                     ], [
-                        'array',
                         'int',
                         'int',
                         '',

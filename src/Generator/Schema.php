@@ -49,6 +49,69 @@ final class Schema
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
+                        'SCHEMA_EXAMPLE',
+                        new Node\Scalar\String_(
+                            json_encode((function (array $schema): array {
+                                $iterate = function (array $schema) use (&$iterate): array {
+                                    $examples = [];
+
+                                    if (!array_key_exists('properties', $schema)) {
+                                        return $examples;
+                                    }
+                                    foreach ($schema['properties'] as $propertyName => $property) {
+                                        if (
+                                            array_key_exists('type', $property) &&
+                                            $property['type'] === 'object' &&
+                                            array_key_exists('properties', $property) &&
+                                            $property['properties'] !== null
+                                        ) {
+                                            $examples[$propertyName] = $iterate($property);
+                                            if (count($examples[$propertyName]) === 0) {
+                                                unset($examples[$propertyName]);
+                                            }
+                                            continue;
+                                        }
+
+                                        if (
+                                            array_key_exists('type', $property) &&
+                                            $property['type'] === 'array' &&
+                                            array_key_exists('items', $property) &&
+                                            $property['items'] !== null &&
+                                            array_key_exists('type', $property['items']) &&
+                                            $property['items']['type'] === 'object'
+                                        ) {
+                                            $items = $iterate($property['items']);
+
+                                            if (count($items) > 0) {
+                                                $examples[$propertyName] = [$items];
+                                            }
+                                            continue;
+                                        }
+
+                                        if (array_key_exists('examples', $property)) {
+                                            $examples[$propertyName] = $property['examples'][count($property['examples']) === 1 ? 0 : mt_rand(0, count($property['examples']) - 1)];
+                                        } else if (
+                                            array_key_exists('example', $property) &&
+                                            $property['example'] !== null
+                                        ) {
+                                            $examples[$propertyName] = $property['example'];
+                                        }
+                                    }
+
+                                    return $examples;
+                                };
+
+                                return $iterate($schema);
+                            })(json_decode(json_encode($schema->getSerializableData()), true)))
+                        )
+                    ),
+                ],
+                Class_::MODIFIER_PUBLIC
+            )
+        )->addStmt(
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
                         'SCHEMA_TITLE',
                         new Node\Scalar\String_(
                             $schema->title ?? $name

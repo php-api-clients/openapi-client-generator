@@ -3,9 +3,10 @@
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
-use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -14,11 +15,9 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use React\Promise\PromiseInterface;
 use RingCentral\Psr7\Request;
 use Rx\Observable;
 use Rx\Scheduler\ImmediateScheduler;
-use WyriHaximus\Hydrator\Hydrator;
 
 final class Operation
 {
@@ -30,12 +29,13 @@ final class Operation
      * @param OpenAPiOperation $operation
      * @return iterable<Node>
      */
-    public static function generate(string $path, string $method, string $namespace, string $rootNamespace, string $className, OpenAPiOperation $operation, SchemaRegistry $schemaRegistry): iterable
+    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, SchemaRegistry $schemaRegistry): iterable
     {
+        $noHydrator = false;
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace($namespace);
+        $stmt = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
 
-        $class = $factory->class($className)->makeFinal()->addStmt(
+        $class = $factory->class(Utils::className(ltrim(Utils::basename($operation->className), '\\')))->makeFinal()->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
@@ -45,7 +45,7 @@ final class Operation
                         )
                     ),
                 ],
-                Class_::MODIFIER_PRIVATE
+                Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
             new Node\Stmt\ClassConst(
@@ -53,100 +53,78 @@ final class Operation
                     new Node\Const_(
                         'OPERATION_MATCH',
                         new Node\Scalar\String_(
-                            strtoupper($method) . ' ' . $path, // Deal with the query
+                            strtoupper($operation->method) . ' ' . $operation->path, // Deal with the query
                         )
                     ),
                 ],
                 Class_::MODIFIER_PUBLIC
             )
         )->addStmt(
-            $factory->method('operationId')->makePublic()->setReturnType('string')->addStmt(
-                new Node\Stmt\Return_(
-                    new Node\Expr\ClassConstFetch(
-                        new Node\Name('self'),
-                        'OPERATION_ID'
-                    )
-                )
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
+                        'METHOD',
+                        new Node\Scalar\String_(
+                            strtoupper($operation->method),
+                        )
+                    ),
+                ],
+                Class_::MODIFIER_PRIVATE
             )
         )->addStmt(
-          $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()  
-        )->addStmt(
-          $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()  
-        )->addStmt(
-            $factory->property('hydrator')->setType('\\' . $rootNamespace . 'Hydrator')->makeReadonly()->makePrivate()
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
+                        'PATH',
+                        new Node\Scalar\String_(
+                            $operation->path, // Deal with the query
+                        )
+                    ),
+                ],
+                Class_::MODIFIER_PRIVATE
+            )
         );
+        if (count($operation->requestBody) > 0) {
+            $class->addStmt(
+                $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+            );
+        }
+        $constructor = $factory->method('__construct')->makePublic();
 
-        $constructor = $factory->method('__construct')->makePublic()->addParam(
-            (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'requestSchemaValidator'
-                ),
-                new Node\Expr\Variable('requestSchemaValidator'),
-            )
-        )->addParam(
-            (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'responseSchemaValidator'
-                ),
-                new Node\Expr\Variable('responseSchemaValidator'),
-            )
-        )->addParam(
-            (new Param('hydrator'))->setType('\\' . $rootNamespace . 'Hydrator')
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'hydrator'
-                ),
-                new Node\Expr\Variable('hydrator'),
-            )
-        );
+        if (count($operation->requestBody) > 0) {
+            $constructor->addParam(
+                (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'requestSchemaValidator'
+                    ),
+                    new Node\Expr\Variable('requestSchemaValidator'),
+                )
+            );
+        }
         $requestReplaces = [];
         $query = [];
+        $constructorParams = [];
         foreach ($operation->parameters as $parameter) {
             $paramterStmt = $factory->property($parameter->name);
-            if (strlen((string)$parameter->description) > 0) {
+            $param = new Param($parameter->name);
+            if (strlen($parameter->description) > 0) {
                 $paramterStmt->setDocComment('/**' . (string)$parameter->description . '**/');
             }
-            if ($parameter->schema->type !== null) {
-                $paramterStmt->setType(str_replace([
-                    'integer',
-                    'any',
-                    'boolean',
-                ], [
-                    'int',
-                    '',
-                    'bool',
-                ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type])));
+            if ($parameter->type !== '') {
+                $paramterStmt->setType($parameter->type);
+
+                $param->setType($parameter->type);
             }
             $class->addStmt($paramterStmt->makePrivate());
 
-            $param = new Param($parameter->name);
-            if ($parameter->schema->type !== null) {
-                $param->setType(
-                    str_replace([
-                        'integer',
-                        'any',
-                        'boolean',
-                    ], [
-                        'int',
-                        '',
-                        'bool',
-                    ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]))
-                );
+            if ($parameter->default !== null) {
+                $param->setDefault($parameter->default);
             }
-            if ($parameter->schema->default !== null) {
-                $param->setDefault($parameter->schema->default);
-            }
-            $constructor->addParam(
-                $param
-            )->addStmt(
+            $constructorParams[] = $param;
+            $constructor->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
@@ -155,25 +133,37 @@ final class Operation
                     new Node\Expr\Variable($parameter->name),
                 )
             );
-            if ($parameter->in === 'path' || $parameter->in === 'query') {
+            if ($parameter->location === 'path' || $parameter->location === 'query') {
                 $requestReplaces['{' . $parameter->name . '}'] = new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
                     $parameter->name
                 );
             }
-            if ($parameter->in === 'query') {
+            if ($parameter->location === 'query') {
                 $query[] = $parameter->name . '={' . $parameter->name . '}';
             }
         }
-        $class->addStmt($constructor);
         $requestParameters = [
-            new Node\Arg(new Node\Scalar\String_(strtoupper($method))),
+            new Node\Arg(new Node\Expr\ClassConstFetch(
+                new Node\Name('self'),
+                new Node\Name('METHOD'),
+            )),
             new Node\Arg(new Node\Expr\FuncCall(
                 new Node\Name('\str_replace'),
                 [
                     new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces))),
                     new Node\Expr\Array_(array_values($requestReplaces)),
-                    new Node\Scalar\String_(rtrim($path . '?' . implode('&', $query), '?')),
+                    count($query) > 0 ?
+                    new Node\Expr\BinaryOp\Concat(
+                        new Node\Expr\ClassConstFetch(
+                            new Node\Name('self'),
+                            new Node\Name('PATH'),
+                        ),
+                        new Node\Scalar\String_(rtrim('?' . implode('&', $query), '?')),
+                    ) : new Node\Expr\ClassConstFetch(
+                        new Node\Name('self'),
+                        new Node\Name('PATH'),
+                    ),
                 ]
             )),
         ];
@@ -182,33 +172,34 @@ final class Operation
             $factory->param('data')->setType('array')->setDefault([])
         );
 
-        if ($operation->requestBody !== null) {
-            foreach ($operation->requestBody->content as $requestBodyContentType => $requestBodyContent) {
-                $requestParameters[] = new Node\Expr\Array_([
-                    new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBodyContentType), new Node\Scalar\String_('Content-Type'))
-                ]);
-                $requestParameters[] = new Node\Expr\FuncCall(new Node\Name('json_encode'), [new Arg(new Node\Expr\Variable('data'))]);
-                $createRequestMethod->addStmt(
-                    new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'requestSchemaValidator'
-                        ),
-                        new Node\Name('validate'),
-                        [
-                            new Node\Arg(new Node\Expr\Variable('data')),
-                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                                new Node\Expr\ClassConstFetch(
-                                    new Node\Name('\\' . $rootNamespace . 'Schema\\' . $schemaRegistry->get($requestBodyContent->schema, $className . '\\Request\\' . (new Convert(str_replace('/', '\\', $requestBodyContentType)))->toPascal())),
-                                    new Node\Name('SCHEMA_JSON'),
-                                ),
-                                new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
-                            ])),
-                        ]
-                    ))
-                );
-                break;
-            }
+        foreach ($operation->requestBody as $requestBody) {
+            $requestParameters[] = new Node\Expr\Array_([
+                new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))
+            ]);
+            $requestParameters[] = new Node\Expr\FuncCall(new Node\Name('json_encode'), [new Arg(new Node\Expr\Variable('data'))]);
+            $createRequestMethod->addStmt(
+                new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'requestSchemaValidator'
+                    ),
+                    new Node\Name('validate'),
+                    [
+                        new Node\Arg(new Node\Expr\Variable('data')),
+                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . \cebe\openapi\Reader::class), new Node\Name('readFromJson'), [
+                            new Node\Expr\ClassConstFetch(
+                                new Node\Name($namespace . 'Schema\\' . $requestBody->schema->className),
+                                new Node\Name('SCHEMA_JSON'),
+                            ),
+                            new Node\Expr\ClassConstFetch(
+                                new Node\Name('\\' . \cebe\openapi\spec\Schema::class),
+                                new Node\Name('class'),
+                            ),
+                        ])),
+                    ]
+                ))
+            );
+            break;
         }
 
         $createRequestMethod->addStmt(
@@ -222,20 +213,20 @@ final class Operation
             )
         );
 
-        $class->addStmt(
-            $createRequestMethod
-        );
+        $codes = array_unique(array_map(static fn (OperationResponse $response): int => $response->code, $operation->response));
         $cases = [];
         $returnType = [];
         $returnTypeRaw = [];
-        foreach ($operation->responses as $code => $spec) {
+        foreach ($codes as $code) {
             $contentTypeCases = [];
-            foreach ($spec->content as $contentType => $contentTypeSchema) {
-                $fallbackName = 'Operation\\' . $className . '\\Response\\' . (new Convert(str_replace('/', '\\', $contentType) . '\\H' . $code))->toPascal();
-                $srs = $schemaRegistry->get($contentTypeSchema->schema, $fallbackName);
-                $object = '\\' . $rootNamespace . 'Schema\\' . $srs;
-                $returnType[] = ($contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->type === 'array' ? '>' : '');
-                $returnTypeRaw[] = $contentTypeSchema->schema->type === 'array' ? '\\' . Observable::class : $object;
+            foreach ($operation->response as $contentTypeSchema) {
+                if ($contentTypeSchema->code !== $code) {
+                    continue;
+                }
+
+                $object = $namespace . 'Schema\\' . $contentTypeSchema->schema->className;
+                $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
+                $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
                 $hydrate = new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
@@ -248,7 +239,7 @@ final class Operation
                     ],
                 );
                 $ctc = new Node\Stmt\Case_(
-                    new Node\Scalar\String_($contentType),
+                    new Node\Scalar\String_($contentTypeSchema->contentType),
                     [
                         new Node\Stmt\Expression(new Node\Expr\MethodCall(
                             new Node\Expr\PropertyFetch(
@@ -260,7 +251,7 @@ final class Operation
                                 new Node\Arg(new Node\Expr\Variable('body')),
                                 new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                     new Node\Expr\ClassConstFetch(
-                                        new Node\Name('\\' . $rootNamespace . 'Schema\\' . $srs),
+                                        new Node\Name($namespace . 'Schema\\' . $contentTypeSchema->schema->className),
                                         new Node\Name('SCHEMA_JSON'),
                                     ),
                                     new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
@@ -268,7 +259,7 @@ final class Operation
                             ]
                         )),
                         new Node\Stmt\Return_(
-                            $contentTypeSchema->schema->type === 'array' ? new Node\Expr\MethodCall(
+                            $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
                                 new Node\Expr\StaticCall(
                                     new Node\Name('\\' . Observable::class),
                                     new Node\Name('fromArray'),
@@ -307,28 +298,20 @@ final class Operation
                     count($contentTypeCases) > 0 ? new Node\Stmt\Switch_(
                         new Node\Expr\Variable('contentType'),
                         $contentTypeCases
-                    ) : new Node\Stmt\Return_(new Node\Scalar\LNumber($code)),
+                    ) : new Node\Stmt\Return_(new Node\Expr\Variable('response')),
                     new Node\Stmt\Break_()
                 ]
             );
             if (count($contentTypeCases) === 0) {
-                $returnType[] = $returnTypeRaw[] = 'int';
+                $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
             }
+            $case->setDocComment(new Doc('/**' . $contentTypeSchema->description . '**/'));
             $cases[] = $case;
-            $case->setDocComment(new Doc('/**' . $spec->description . '**/'));
         }
-        $class->addStmt(
-            $factory->method('createResponse')->setDocComment(
-                new Doc(implode(PHP_EOL, [
-                    '/**',
-                    ' * @return ' . implode('|', array_unique($returnType)),
-                    ' */',
-                ]))
-            )->addParam(
-                $factory->param('response')->setType('\\' . ResponseInterface::class)
-            )->setReturnType(
-                new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), array_unique($returnTypeRaw)))
-            )->addStmt(
+        $createResponseMethod = $factory->method('createResponse');
+
+        if (count($cases) > 0) {
+            $createResponseMethod->addStmt(
                 new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
             )->addStmt(
                 new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
@@ -342,13 +325,64 @@ final class Operation
                     new Node\Expr\New_(
                         new Node\Name('\\' . \RuntimeException::class),
                         [
-                            new Arg(new Node\Scalar\String_('Unable to find matching reponse code and content type'))
+                            new Arg(new Node\Scalar\String_('Unable to find matching response code and content type'))
                         ]
                     )
                 )
-            )
+            );
+        } else {
+            $createResponseMethod->addStmt(new Node\Stmt\Return_(new Node\Expr\Variable('response')));
+            $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
+            $noHydrator = true;
+        }
+        $createResponseMethod->setReturnType(
+            new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), array_unique($returnTypeRaw)))
+        )->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @return ' . implode('|', array_unique($returnType)),
+                ' */',
+            ]))
+        )->addParam(
+            $factory->param('response')->setType('\\' . ResponseInterface::class)
         );
 
-        yield new File($namespace . '\\' . $className, $stmt->addStmt($class)->getNode());
+        if ($noHydrator === false) {
+            $class->addStmt(
+                $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+            )->addStmt(
+                $factory->property('hydrator')->setType($namespace . 'Hydrator\\' . $hydrator->className)->makeReadonly()->makePrivate()
+            );
+
+            $constructor->addParam(
+                (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'responseSchemaValidator'
+                    ),
+                    new Node\Expr\Variable('responseSchemaValidator'),
+                )
+            )->addParam(
+                (new Param('hydrator'))->setType($namespace . 'Hydrator\\' . $hydrator->className)
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'hydrator'
+                    ),
+                    new Node\Expr\Variable('hydrator'),
+                )
+            );
+        }
+
+        $constructor->addParams($constructorParams);
+
+        $class->addStmt($constructor);
+        $class->addStmt($createRequestMethod);
+        $class->addStmt($createResponseMethod);
+
+        yield new File($namespace . 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
     }
 }

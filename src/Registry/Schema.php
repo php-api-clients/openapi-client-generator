@@ -1,10 +1,11 @@
 <?php
 
-namespace ApiClients\Tools\OpenApiClientGenerator;
+namespace ApiClients\Tools\OpenApiClientGenerator\Registry;
 
-use \cebe\openapi\spec\Schema;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
+use \cebe\openapi\spec\Schema as openAPISchema;
 
-final class SchemaRegistry
+final class Schema
 {
     /**
      * @var array<string, class-string>
@@ -20,16 +21,22 @@ final class SchemaRegistry
      */
     private array $unknownSchemas = [];
 
-    public function addClassName(string $className, Schema $schema): void
+    /**
+     * @var array<string, class-string>
+     */
+    private array $unknownSchemasJson = [];
+
+    public function addClassName(string $className, openAPISchema $schema): void
     {
         if ($schema->type === 'array') {
             $schema = $schema->items;
         }
+        $className = Utils::className($className);
         $this->splHash[spl_object_hash($schema)] = $className;
         $this->json[json_encode($schema->getSerializableData())] = $className;
     }
 
-    public function get(\cebe\openapi\spec\Schema $schema, string $fallbackName): string
+    public function get(openAPISchema $schema, string $fallbackName): string
     {
         if ($schema->type === 'array') {
             $schema = $schema->items;
@@ -43,8 +50,17 @@ final class SchemaRegistry
         if (array_key_exists($json, $this->json)) {
             return $this->json[$json];
         }
+        if (array_key_exists($json, $this->unknownSchemasJson)) {
+            return $this->unknownSchemasJson[$json];
+        }
 
-        $className = Generator::className($fallbackName);
+        $className = Utils::fixKeyword($fallbackName);
+        $suffix = 'a';
+        while (array_key_exists($className, $this->unknownSchemas)) {
+            $className = Utils::fixKeyword($fallbackName . strtoupper($suffix++));
+        }
+        $this->splHash[spl_object_hash($schema)] = $className;
+        $this->unknownSchemasJson[$json] = $className;
         $this->unknownSchemas[$className] = [
             'name' => $fallbackName,
             'className' => $className,

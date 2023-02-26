@@ -35,7 +35,7 @@ final class Hydrators
         $hydrators = array_filter($hydrators, static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
 
         foreach ($hydrators as $hydrator) {
-            $class->addStmt($factory->property($hydrator->methodName)->setType('?' . $namespace . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->setDefault(null)->makePrivate());
+            $class->addStmt($factory->property($hydrator->methodName)->setType('?' . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->setDefault(null)->makePrivate());
         }
 
         $class->addStmt(
@@ -223,7 +223,7 @@ final class Hydrators
 
         foreach ($hydrators as $hydrator) {
             $class->addStmt(
-                $factory->method('getObjectMapper' . ucfirst($hydrator->methodName))->makePublic()->setReturnType($namespace . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->addStmts([
+                $factory->method('getObjectMapper' . ucfirst($hydrator->methodName))->makePublic()->setReturnType('Hydrator\\' . str_replace('/', '\\', $hydrator->className))->addStmts([
                     new Node\Stmt\If_(
                         new Node\Expr\BinaryOp\Identical(
                             new Node\Expr\Instanceof_(
@@ -231,7 +231,7 @@ final class Hydrators
                                     new Node\Expr\Variable('this'),
                                     $hydrator->methodName
                                 ),
-                                new Node\Expr\ConstFetch(new Node\Name($namespace . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))),
+                                new Node\Expr\ConstFetch(new Node\Name('Hydrator\\' . str_replace('/', '\\', $hydrator->className))),
                             ),
                             new Node\Expr\ConstFetch(new Node\Name('false')),
                         ),
@@ -244,7 +244,7 @@ final class Hydrators
                                             $hydrator->methodName
                                         ),
                                         new Node\Expr\New_(
-                                            new Node\Name($namespace . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))
+                                            new Node\Name('Hydrator\\' . str_replace('/', '\\', $hydrator->className))
                                         ),
                                     ),
                                 ),

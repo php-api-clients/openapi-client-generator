@@ -85,7 +85,7 @@ final class Schema
             $types = [];
             foreach ($property->type as $type) {
                 if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-                    $types[] = $namespace . 'Schema\\' . $type->payload->className;
+                    $types[] = 'Schema\\' . $type->payload->className;
                     continue;
                 }
 

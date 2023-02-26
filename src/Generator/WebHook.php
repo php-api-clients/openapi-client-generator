@@ -42,6 +42,14 @@ final class WebHook
                 ),
                 new Node\Expr\Variable('requestSchemaValidator'),
             )
+        )->addStmt(
+            new Node\Expr\Assign(
+                new Node\Expr\PropertyFetch(
+                    new Node\Expr\Variable('this'),
+                    'hydrator'
+                ),
+                new Node\Expr\Variable('hydrator'),
+            )
         );
         $class->addStmt($constructor);
 

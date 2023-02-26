@@ -162,22 +162,22 @@ final class Client
             $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
-                    ' * @return ' . (function (string $namespace, array $operations): string {
+                    ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
                         $lastItem = $count - 1;
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : $namespace . 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
                             if ($i !== $lastItem) {
-                                $left .= '($call is ' . $namespace . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
+                                $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                             } else {
                                 $left .= $returnType;
                             }
                             $right .= ')';
                         }
                         return $left . $right;
-                    })($namespace, $operations),
+                    })($operations),
                     ' */',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(new Node\Stmt\Return_(
@@ -203,30 +203,30 @@ final class Client
             $factory->method('callAsync')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
-                    ' * @return ' . (function (string $namespace, array $operations): string {
+                    ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
                         $lastItem = $count - 1;
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : $namespace . 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
                             if ($i !== $lastItem) {
-                                $left .= '($call is ' . $namespace . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
+                                $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
                             } else {
                                 $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
                             }
                             $right .= ')';
                         }
                         return $left . $right;
-                    })($namespace, $operations),
+                    })($operations),
                     ' */',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(new Node\Stmt\Switch_(
                 new Node\Expr\Variable('call'),
-                iterator_to_array((function (string $namespace, array $paths) use ($factory): iterable {
+                iterator_to_array((function (array $paths) use ($factory): iterable {
                     foreach ($paths as $path) {
                         foreach ($path->operations as $operation) {
-                            $operationClassname = $namespace . 'Operation\\' . Utils::className(str_replace('/', '\\', $operation->className));
+                            $operationClassname = 'Operation\\' . Utils::className(str_replace('/', '\\', $operation->className));
                             yield new Node\Stmt\Case_(
                                 new Node\Expr\ClassConstFetch(new Node\Name($operationClassname), 'OPERATION_MATCH'),
                                 [
@@ -280,7 +280,7 @@ final class Client
                                                 new Node\Name('\array_key_exists'),
                                                 [
                                                     new Arg(new Node\Expr\ClassConstFetch(
-                                                        new Node\Name($namespace . 'Hydrator\\' . $path->hydrator->className),
+                                                        new Node\Name('Hydrator\\' . $path->hydrator->className),
                                                         new Node\Name('class'),
                                                     )),
                                                     new Arg(new Node\Expr\PropertyFetch(
@@ -299,7 +299,7 @@ final class Client
                                                             new Node\Expr\Variable('this'),
                                                             'hydrator'
                                                         ), new Node\Expr\ClassConstFetch(
-                                                            new Node\Name($namespace . 'Hydrator\\' . $path->hydrator->className),
+                                                            new Node\Name('Hydrator\\' . $path->hydrator->className),
                                                             new Node\Name('class'),
                                                         )),
                                                         new Node\Expr\MethodCall(
@@ -334,7 +334,7 @@ final class Client
                                                         new Node\Expr\Variable('this'),
                                                         'hydrator'
                                                     ), new Node\Expr\ClassConstFetch(
-                                                        new Node\Name($namespace . 'Hydrator\\' . $path->hydrator->className),
+                                                        new Node\Name('Hydrator\\' . $path->hydrator->className),
                                                         new Node\Name('class'),
                                                     ))),
                                                 ]),
@@ -397,7 +397,7 @@ final class Client
                                                 'uses' => [
                                                     new Node\Expr\Variable('operation'),
                                                 ],
-                                                'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : $namespace . 'Schema\\' . $object), array_unique($operation->returnType))) : null,
+                                                'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique($operation->returnType))) : null,
                                             ]))
                                         ]
                                     )),
@@ -407,7 +407,7 @@ final class Client
                             //                        yield new Node\Stmt\Echo_([new Node\Scalar\String_('/**' . @var_export($operationCall, true) . '*/')]);
                         }
                     }
-                })($namespace, $client->paths))
+                })($client->paths))
             ))->addStmt(
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(

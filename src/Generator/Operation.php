@@ -188,7 +188,7 @@ final class Operation
                         new Node\Arg(new Node\Expr\Variable('data')),
                         new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . \cebe\openapi\Reader::class), new Node\Name('readFromJson'), [
                             new Node\Expr\ClassConstFetch(
-                                new Node\Name($namespace . 'Schema\\' . $requestBody->schema->className),
+                                new Node\Name('Schema\\' . $requestBody->schema->className),
                                 new Node\Name('SCHEMA_JSON'),
                             ),
                             new Node\Expr\ClassConstFetch(
@@ -224,7 +224,7 @@ final class Operation
                     continue;
                 }
 
-                $object = $namespace . 'Schema\\' . $contentTypeSchema->schema->className;
+                $object = 'Schema\\' . $contentTypeSchema->schema->className;
                 $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
                 $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
                 $hydrate = new Node\Expr\MethodCall(
@@ -251,7 +251,7 @@ final class Operation
                                 new Node\Arg(new Node\Expr\Variable('body')),
                                 new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                                     new Node\Expr\ClassConstFetch(
-                                        new Node\Name($namespace . 'Schema\\' . $contentTypeSchema->schema->className),
+                                        new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
                                         new Node\Name('SCHEMA_JSON'),
                                     ),
                                     new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
@@ -351,7 +351,7 @@ final class Operation
             $class->addStmt(
                 $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
             )->addStmt(
-                $factory->property('hydrator')->setType($namespace . 'Hydrator\\' . $hydrator->className)->makeReadonly()->makePrivate()
+                $factory->property('hydrator')->setType('Hydrator\\' . $hydrator->className)->makeReadonly()->makePrivate()
             );
 
             $constructor->addParam(
@@ -365,7 +365,7 @@ final class Operation
                     new Node\Expr\Variable('responseSchemaValidator'),
                 )
             )->addParam(
-                (new Param('hydrator'))->setType($namespace . 'Hydrator\\' . $hydrator->className)
+                (new Param('hydrator'))->setType('Hydrator\\' . $hydrator->className)
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(

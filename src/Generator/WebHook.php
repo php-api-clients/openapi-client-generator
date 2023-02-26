@@ -27,13 +27,13 @@ final class WebHook
             ' */',
         ])));
         $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class)->makeReadonly()->makePrivate());
-        $class->addStmt($factory->property('hydrator')->setType($namespace . 'Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('hydrator')->setType('Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
 
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
             (new Param('requestSchemaValidator'))->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class)
         )->addParam(
-            (new Param('hydrator'))->setType($namespace . 'Hydrator\\WebHook\\' . $className)
+            (new Param('hydrator'))->setType('Hydrator\\WebHook\\' . $className)
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
@@ -79,7 +79,7 @@ final class WebHook
                         )),
                         new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
                             new Node\Expr\ClassConstFetch(
-                                new Node\Name($namespace . 'Schema\\' . $header->schema->className),
+                                new Node\Name('Schema\\' . $header->schema->className),
                                 new Node\Name('SCHEMA_JSON'),
                             ),
                             new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
@@ -88,7 +88,7 @@ final class WebHook
                 ));
             }
             foreach ($webHook->schema as $contentTYpe => $schema) {
-                $resolveReturnTypes[] = $namespace . 'Schema\\' . $schema->className;
+                $resolveReturnTypes[] = 'Schema\\' . $schema->className;
                 $tmts[] = new Node\Stmt\If_(
                     new Node\Expr\BinaryOp\Equal(
                         new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('headers')), new Node\Scalar\String_('content-type')),
@@ -106,7 +106,7 @@ final class WebHook
                                     new Node\Name('hydrateObject'),
                                     [
                                         new Node\Arg(new Node\Expr\ClassConstFetch(
-                                            new Node\Name($namespace . 'Schema\\' . $schema->className),
+                                            new Node\Name('Schema\\' . $schema->className),
                                             new Node\Name('class'),
                                         )),
                                         new Node\Arg(new Node\Expr\Variable('data')),

@@ -79,22 +79,22 @@ final class ClientInterface
             $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
-                    ' * @return ' . (function (string $namespace, array $operations): string {
+                    ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
                         $lastItem = $count - 1;
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : $namespace . 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
                             if ($i !== $lastItem) {
-                                $left .= '($call is ' . $namespace . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
+                                $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                             } else {
                                 $left .= $returnType;
                             }
                             $right .= ')';
                         }
                         return $left . $right;
-                    })($namespace, $operations),
+                    })($operations),
                     ' */',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))
@@ -104,22 +104,22 @@ final class ClientInterface
             $factory->method('callAsync')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '/**',
-                    ' * @return ' . (function (string $namespace,array $operations): string {
+                    ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
                         $lastItem = $count - 1;
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : $namespace . 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
                             if ($i !== $lastItem) {
-                                $left .= '($call is ' . $namespace . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
+                                $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
                             } else {
                                 $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
                             }
                             $right .= ')';
                         }
                         return $left . $right;
-                    })($namespace, $operations),
+                    })($operations),
                     ' */',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))

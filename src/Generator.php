@@ -36,7 +36,39 @@ final class Generator
 
         foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR) as $file) {
             $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace))) . '.php';
-            $fileContents = ($file->contents instanceof Node ? $codePrinter->prettyPrintFile([
+            if ($file->contents instanceof Node\Stmt\Namespace_) {
+                array_unshift($file->contents->stmts, ...[
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                $namespace . 'Hydrator',
+                            )
+                        )
+                    ]),
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                $namespace . 'Operation',
+                            )
+                        )
+                    ]),
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                $namespace . 'Schema',
+                            )
+                        )
+                    ]),
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                $namespace . 'WebHook',
+                            )
+                        )
+                    ]),
+                ]);
+            }
+            $fileContents = ($file->contents instanceof Node\Stmt\Namespace_ ? $codePrinter->prettyPrintFile([
                 new Node\Stmt\Declare_([
                     new Node\Stmt\DeclareDeclare('strict_types', new Node\Scalar\LNumber(1)),
                 ]),

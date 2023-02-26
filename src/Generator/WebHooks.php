@@ -121,7 +121,7 @@ final class WebHooks
                     $schemas = [];
                     foreach ($webHooks as $webHook) {
                         foreach ($webHook->schema as $schema) {
-                            $schemas[] = $namespace . 'Schema\\' . $schema->className;
+                            $schemas[] = 'Schema\\' . $schema->className;
                         }
                     }
 
@@ -211,7 +211,7 @@ final class WebHooks
         );
 
         foreach ($webHooks as $event => $hooks) {
-            $eventClassname = $namespace . 'WebHook\\' .Utils::className($event);
+            $eventClassname = 'WebHook\\' .Utils::className($event);
             $eventSanitized = lcfirst((new Convert($event))->toPascal());
 
             $class->addStmt($factory->property($eventSanitized)->setType('?' . $eventClassname)->setDefault(null)->makePrivate());

@@ -21,8 +21,10 @@ final class WebHookHydrator
 
         $schemaClasses = [];
         foreach ($webHooks as $webHook) {
-            foreach ($webHook->schema as $schema) {
-                $schemaClasses[] = $schema;
+            foreach ($webHook->schema as $webHookSchema) {
+                foreach (self::listSchemas($webHookSchema) as $schema) {
+                    $schemaClasses[] = $schema;
+                }
             }
         }
 
@@ -30,5 +32,20 @@ final class WebHookHydrator
             'WebHook\\' . Utils::className($event),
             ...$schemaClasses,
         );
+    }
+
+    /**
+     * @return iterable<\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema>
+     */
+    private static function listSchemas(\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
+    {
+        foreach ($schema->properties as $property) {
+            foreach ($property->type as $propertyType) {
+                if ($propertyType->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                    yield $propertyType->payload;
+                    yield from self::listSchemas($propertyType->payload);
+                }
+            }
+        }
     }
 }

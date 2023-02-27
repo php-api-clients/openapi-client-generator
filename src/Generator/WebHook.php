@@ -106,6 +106,23 @@ final class WebHook
                         'stmts' => [
                             new Node\Stmt\TryCatch([
                                 ...$headers,
+                                new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'requestSchemaValidator'
+                                    ),
+                                    new Node\Name('validate'),
+                                    [
+                                        new Node\Arg(new Node\Expr\Variable('data')),
+                                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                                            new Node\Expr\ClassConstFetch(
+                                                new Node\Name('Schema\\' . $schema->className),
+                                                new Node\Name('SCHEMA_JSON'),
+                                            ),
+                                            new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                                        ])),
+                                    ]
+                                )),
                                 new Node\Stmt\Return_(new Node\Expr\MethodCall(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),

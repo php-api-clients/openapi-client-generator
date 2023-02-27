@@ -20,7 +20,7 @@ final class Schema
         }
 
         $properties = [];
-        $example = [];
+        $example = $schema->example ?? [];
         foreach ($schema->properties as $propertyName => $property) {
             $gatheredProperty = Property::gather(
                 $className,
@@ -30,7 +30,10 @@ final class Schema
                 $schemaRegistry
             );
             $properties[] = $gatheredProperty;
-            $example[$gatheredProperty->name] = $gatheredProperty->exampleData;
+
+            if (!array_key_exists($gatheredProperty->name, $example)) {
+                $example[$gatheredProperty->name] = $gatheredProperty->exampleData;
+            }
         }
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
             $className,

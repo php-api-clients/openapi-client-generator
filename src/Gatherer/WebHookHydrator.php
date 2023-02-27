@@ -39,6 +39,7 @@ final class WebHookHydrator
      */
     private static function listSchemas(\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
     {
+        yield $schema;
         foreach ($schema->properties as $property) {
             foreach ($property->type as $propertyType) {
                 if ($propertyType->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {

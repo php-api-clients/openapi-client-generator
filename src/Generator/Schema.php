@@ -9,6 +9,7 @@ use cebe\openapi\spec\Schema as OpenAPiSchema;
 use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
+use PhpParser\BuilderHelpers;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
@@ -62,6 +63,16 @@ final class Schema
                         new Node\Scalar\String_(
                             $schema->description
                         )
+                    ),
+                ],
+                Class_::MODIFIER_PUBLIC
+            )
+        )->addStmt(
+            new Node\Stmt\ClassConst(
+                [
+                    new Node\Const_(
+                        'SCHEMA_EXAMPLE_DATA',
+                        (new BuilderFactory)->val($schema->example),
                     ),
                 ],
                 Class_::MODIFIER_PUBLIC

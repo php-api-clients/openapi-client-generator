@@ -17,6 +17,7 @@ final class Property
         baseSchema $property,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Property {
+        $exampleData = null;
         $propertyName = str_replace([
             '@',
             '+',
@@ -82,7 +83,15 @@ final class Property
                     $schemaRegistry,
                 )
             );
+            $exampleData = $type->payload->example;
         } else {
+            if ($type === 'int') {
+                $exampleData = 13;
+            } elseif ($type === 'bool') {
+                $exampleData = false;
+            } else {
+                $exampleData = 'generated_' . $propertyName;
+            }
             $type = new PropertyType(
                 'scalar',
                 $type
@@ -93,6 +102,6 @@ final class Property
             $type = [$type];
         }
 
-        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $type, $nullable);
+        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, $type, $nullable);
     }
 }

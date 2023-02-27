@@ -20,19 +20,23 @@ final class Schema
         }
 
         $properties = [];
+        $example = [];
         foreach ($schema->properties as $propertyName => $property) {
-            $properties[] = Property::gather(
+            $gatheredProperty = Property::gather(
                 $className,
                 $propertyName,
                 is_array($schema->required) && !in_array($propertyName, $schema->required, false),
                 $property,
                 $schemaRegistry
             );
+            $properties[] = $gatheredProperty;
+            $example[$gatheredProperty->name] = $gatheredProperty->exampleData;
         }
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
             $className,
             $schema->title ?? '',
             $schema->description ?? '',
+            $example,
             $properties,
             $schema,
             $isArray,

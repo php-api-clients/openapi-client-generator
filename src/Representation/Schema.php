@@ -10,6 +10,8 @@ final class Schema
         public readonly string $className,
         public readonly string $title,
         public readonly string $description,
+        /** @var array<mixed> */
+        public readonly array $example,
         /** @var array<Property> */
         public readonly array $properties,
         public readonly baseSchema $schema,

@@ -41,28 +41,28 @@ final class Generator
                     new Node\Stmt\Use_([
                         new Node\Stmt\UseUse(
                             new Node\Name(
-                                $namespace . 'Hydrator',
+                                ltrim($namespace, '\\') . 'Hydrator',
                             )
                         )
                     ]),
                     new Node\Stmt\Use_([
                         new Node\Stmt\UseUse(
                             new Node\Name(
-                                $namespace . 'Operation',
+                                ltrim($namespace, '\\') . 'Operation',
                             )
                         )
                     ]),
                     new Node\Stmt\Use_([
                         new Node\Stmt\UseUse(
                             new Node\Name(
-                                $namespace . 'Schema',
+                                ltrim($namespace, '\\') . 'Schema',
                             )
                         )
                     ]),
                     new Node\Stmt\Use_([
                         new Node\Stmt\UseUse(
                             new Node\Name(
-                                $namespace . 'WebHook',
+                                ltrim($namespace, '\\') . 'WebHook',
                             )
                         )
                     ]),

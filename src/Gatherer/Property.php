@@ -18,6 +18,13 @@ final class Property
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Property {
         $exampleData = null;
+
+        if (count($property->examples ?? []) > 0) {
+            $exampleData = $property->examples[count($property->examples) === 1 ? 0 : mt_rand(0, count($property->examples) - 1)];
+        } else if ($property->example !== null) {
+            $exampleData = $property->example;
+        }
+
         $propertyName = str_replace([
             '@',
             '+',
@@ -83,14 +90,16 @@ final class Property
                     $schemaRegistry,
                 )
             );
-            $exampleData = $type->payload->example;
+            $exampleData = ($exampleData ?? []) + $type->payload->example;
         } else {
-            if ($type === 'int') {
-                $exampleData = 13;
-            } elseif ($type === 'bool') {
-                $exampleData = false;
-            } else {
-                $exampleData = 'generated_' . $propertyName;
+            if ($exampleData === null) {
+                if ($type === 'int') {
+                    $exampleData = 13;
+                } elseif ($type === 'bool') {
+                    $exampleData = false;
+                } else {
+                    $exampleData = 'generated_' . $propertyName;
+                }
             }
             $type = new PropertyType(
                 'scalar',

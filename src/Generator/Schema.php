@@ -72,7 +72,7 @@ final class Schema
                 [
                     new Node\Const_(
                         'SCHEMA_EXAMPLE_DATA',
-                        (new BuilderFactory)->val($schema->example),
+                        $factory->val(json_encode($schema->example)),
                     ),
                 ],
                 Class_::MODIFIER_PUBLIC

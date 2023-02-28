@@ -6,7 +6,8 @@ final class PropertyType
 {
     public function __construct(
         public readonly string $type,
-        public readonly string|Schema $payload,
+        public readonly string|Schema|PropertyType $payload,
+        public readonly bool $nullable,
     ){
     }
 }

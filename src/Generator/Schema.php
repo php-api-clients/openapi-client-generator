@@ -95,6 +95,12 @@ final class Schema
 
             $types = [];
             foreach ($property->type as $type) {
+                if ($type->type === 'array') {
+                    $propertyDocBlock[] = '@var array<' . ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ? 'Schema\\' . $type->payload->payload->className : $type->payload->payload) . '>';
+                    $types[] = 'array';
+                    continue;
+                }
+
                 if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
                     $types[] = 'Schema\\' . $type->payload->className;
                     continue;

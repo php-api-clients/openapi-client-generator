@@ -37,84 +37,31 @@ final class Property
             '',
         ], $propertyName);
 
-        $type = $property->type;
-        $nullable = !$required;
-
-        if (
-            is_array($type) &&
-            count($type) === 2 &&
-            (
-                in_array(null, $type) ||
-                in_array("null", $type)
-            )
-        ) {
-            foreach ($type as $pt) {
-                if ($pt !== null && $pt !== "null") {
-                    $type = $pt;
-                    break;
-                }
-            }
-
-            $nullable = true;
-        }
-
-        if (is_string($type)) {
-            $type = str_replace([
-                'integer',
-                'number',
-                'any',
-                'null',
-                'boolean',
-            ], [
-                'int',
-                'int',
-                '',
-                '',
-                'bool',
-            ], $type);
-        } else {
-            $type = '';
-        }
-        if ($type === '') {
-            $type = new PropertyType(
-                'scalar',
-                'mixed'
-            );
-            $nullable = false;
-        } else if ($type === 'object') {
-            $type = new PropertyType(
-                'object',
-                Schema::gather(
-                    $schemaRegistry->get($property, $className . '\\' . Utils::className($propertyName)),
-                    $property,
-                    $schemaRegistry,
-                )
-            );
+        $type = Type::gather(
+            $className,
+            $propertyName,
+            $property,
+            $required,
+            $schemaRegistry,
+        );
+        if ($type->type=== 'object') {
             $exampleData = ($exampleData ?? []) + $type->payload->example;
         } else {
             if ($exampleData === null) {
-                if ($type === 'int') {
+                if ($type->type === 'int') {
                     $exampleData = 13;
-                } elseif ($type === 'bool') {
+                } elseif ($type->type === 'bool') {
                     $exampleData = false;
                 } else {
                     $exampleData = 'generated_' . $propertyName;
                 }
             }
-            $type = new PropertyType(
-                'scalar',
-                $type
-            );
         }
 
-        if ($type->payload === 'array') {
+        if ($type->type === 'array') {
             $exampleData = [$exampleData];
         }
 
-        if (!is_array($type)) {
-            $type = [$type];
-        }
-
-        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, $type, $nullable);
+        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, [$type], $type->nullable);
     }
 }

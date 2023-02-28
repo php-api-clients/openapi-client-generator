@@ -100,15 +100,15 @@ final class Property
                 } else {
                     $exampleData = 'generated_' . $propertyName;
                 }
-
-                if ($type === 'array') {
-                    $exampleData = [$exampleData];
-                }
             }
             $type = new PropertyType(
                 'scalar',
                 $type
             );
+        }
+
+        if ($type->payload === 'array') {
+            $exampleData = [$exampleData];
         }
 
         if (!is_array($type)) {

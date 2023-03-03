@@ -23,7 +23,7 @@ final class Error
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(trim(Utils::dirname($namespace . '\\Error\\' . $schema->className), '\\'));
@@ -37,6 +37,6 @@ final class Error
         ));
 
 
-        yield new File($namespace . 'Error\\' . $schema->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'Error\\' . $schema->className, $stmt->addStmt($class)->getNode());
     }
 }

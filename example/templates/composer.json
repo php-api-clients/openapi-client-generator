@@ -1,0 +1,52 @@
+{
+  "name": "api-clients/{{ packageName }}",
+  "description": "Non-Blocking first {{ fullName }} client",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Cees-Jan Kiewiet",
+      "email": "ceesjank@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+{% for require in requires %}
+    "{{ require.name }}": "{{ require.version }}",
+{% endfor %}
+    "api-clients/contracts": "^0.1",
+    "cebe/php-openapi": "dev-openapi-31 as 1.6.0",
+    "eventsauce/object-hydrator": "^1.1",
+    "league/openapi-psr7-validator": "^0.18",
+    "react/async": "^4.0",
+    "wyrihaximus/react-awaitable-observable": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "platform": {
+      "php": "8.2.13"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "composer/package-versions-deprecated": true,
+      "ergebnis/composer-normalize": true,
+      "icanhazstring/composer-unused": true,
+      "wyrihaximus/composer-update-bin-autoload-path": true,
+      "infection/extension-installer": true
+    }
+  },
+{% if suggests|length > 0 %}
+"sugest": {
+{% for suggest in suggests %}
+"api-clients/{{ suggest.name }}": "{{ suggest.reason }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+},
+{% endif %}
+  "require-dev": {
+    "wyrihaximus/async-test-utilities": "^5.0"
+  }
+}

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5861812ae16cfcf6a0763b11b4b1a758",
+    "content-hash": "f824bd9fca752d2a5a9d1f1e4344ca96",
     "packages": [
         {
             "name": "api-clients/contracts",
@@ -2867,6 +2867,104 @@
                 }
             ],
             "time": "2022-08-11T13:15:09+00:00"
+        },
+        {
+            "name": "wyrihaximus/simple-twig",
+            "version": "2.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WyriHaximus/php-simple-twig.git",
+                "reference": "aa0d055c13a25b0318aa55edaea13fe12af15939"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/WyriHaximus/php-simple-twig/zipball/aa0d055c13a25b0318aa55edaea13fe12af15939",
+                "reference": "aa0d055c13a25b0318aa55edaea13fe12af15939",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8 || ^7.4",
+                "twig/twig": "^3.3.2"
+            },
+            "require-dev": {
+                "wyrihaximus/test-utilities": "^3.7.3"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/functions_include.php"
+                ],
+                "psr-4": {
+                    "WyriHaximus\\Twig\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cees-Jan Kiewiet",
+                    "email": "ceesjank@gmail.com"
+                }
+            ],
+            "description": "🌱 Wrapper around Twig making rendering a string template trivial",
+            "support": {
+                "issues": "https://github.com/WyriHaximus/php-simple-twig/issues",
+                "source": "https://github.com/WyriHaximus/php-simple-twig/tree/2.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/WyriHaximus",
+                    "type": "github"
+                }
+            ],
+            "time": "2021-09-08T22:05:38+00:00"
+        },
+        {
+            "name": "wyrihaximus/subsplit-tools",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/WyriHaximus/php-subsplit-tools.git",
+                "reference": "82e56f9e243a1a00b2032ec70a4e7c7b8fb4c49c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/WyriHaximus/php-subsplit-tools/zipball/82e56f9e243a1a00b2032ec70a4e7c7b8fb4c49c",
+                "reference": "82e56f9e243a1a00b2032ec70a4e7c7b8fb4c49c",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.2",
+                "wyrihaximus/simple-twig": "^2.1"
+            },
+            "require-dev": {
+                "wyrihaximus/test-utilities": "^5.4"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "WyriHaximus\\SubSplitTools\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cees-Jan Kiewiet",
+                    "email": "ceesjank@gmail.com"
+                }
+            ],
+            "description": "Tools to do initial code generation for sub split set up",
+            "support": {
+                "issues": "https://github.com/WyriHaximus/php-subsplit-tools/issues",
+                "source": "https://github.com/WyriHaximus/php-subsplit-tools/tree/main"
+            },
+            "time": "2023-03-25T22:08:01+00:00"
         }
     ],
     "packages-dev": [],
@@ -2880,7 +2978,8 @@
     ],
     "minimum-stability": "stable",
     "stability-flags": {
-        "cebe/php-openapi": 20
+        "cebe/php-openapi": 20,
+        "wyrihaximus/subsplit-tools": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

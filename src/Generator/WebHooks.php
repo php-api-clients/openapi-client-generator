@@ -20,7 +20,7 @@ final class WebHooks
      * @param array<string, array<\ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook> $webHooks
      * @return iterable
      */
-    public static function generate(string $namespace, array $webHooksHydrators, array $webHooks): iterable
+    public static function generate(string $pathPrefix, string $namespace, array $webHooksHydrators, array $webHooks): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(trim($namespace, '\\'));
@@ -286,6 +286,6 @@ final class WebHooks
         $method->addStmts($tmts);
         $class->addStmt($method);
 
-        yield new File($namespace . 'WebHooks', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'WebHooks', $stmt->addStmt($class)->getNode());
     }
 }

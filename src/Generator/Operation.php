@@ -28,7 +28,7 @@ final class Operation
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
     {
         $noHydrator = true;
         $factory = new BuilderFactory();
@@ -705,6 +705,6 @@ final class Operation
         $class->addStmt($createRequestMethod);
         $class->addStmt($createResponseMethod);
 
-        yield new File($namespace . 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
     }
 }

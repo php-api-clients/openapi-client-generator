@@ -26,7 +26,7 @@ final class Schema
      * @param OpenAPiSchema $schema
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema, array $aliases): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema, array $aliases): iterable
     {
         $className = $schema->className;
         if (count($aliases) > 0) {
@@ -158,14 +158,13 @@ final class Schema
         $class->addStmt($constructor);
 
 
-        yield new File($namespace . 'Schema\\' . $className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'Schema\\' . $className, $stmt->addStmt($class)->getNode());
 
         foreach ($aliases as $alias) {
             $aliasTms = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $alias), '\\'));
-
             $aliasClass = $factory->class(trim(Utils::basename($alias), '\\'))->makeFinal()->makeReadonly()->extend('Schema\\' . $className);
 
-            yield new File($namespace . 'Schema\\' . $alias, $aliasTms->addStmt($aliasClass)->getNode());
+            yield new File($pathPrefix, $namespace . 'Schema\\' . $alias, $aliasTms->addStmt($aliasClass)->getNode());
         }
     }
 }

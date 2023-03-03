@@ -14,7 +14,7 @@ use PhpParser\Node\Arg;
 
 final class WebHook
 {
-    public static function generate(string $namespace, string $event, SchemaRegistry $schemaRegistry, \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks): iterable
+    public static function generate(string $pathPrefix, string $namespace, string $event, SchemaRegistry $schemaRegistry, \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks): iterable
     {
         $className = Utils::className($event);
 
@@ -162,6 +162,6 @@ final class WebHook
         $method->addStmts($tmts);
         $class->addStmt($method);
 
-        yield new File($namespace . 'WebHook\\' . $className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'WebHook\\' . $className, $stmt->addStmt($class)->getNode());
     }
 }

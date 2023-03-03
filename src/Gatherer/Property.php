@@ -46,15 +46,13 @@ final class Property
         );
         if ($type->type=== 'object') {
             $exampleData = ($exampleData ?? []) + $type->payload->example;
-        } else {
-            if ($exampleData === null) {
-                if ($type->type === 'int') {
-                    $exampleData = 13;
-                } elseif ($type->type === 'bool') {
-                    $exampleData = false;
-                } else {
-                    $exampleData = 'generated_' . $propertyName;
-                }
+        } else if ($exampleData === null && $type->type=== 'scalar') {
+            if ($type->payload === 'int') {
+                $exampleData = 13;
+            } elseif ($type->payload === 'bool') {
+                $exampleData = false;
+            } else {
+                $exampleData = 'generated_' . $propertyName;
             }
         }
 

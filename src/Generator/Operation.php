@@ -53,7 +53,7 @@ final class Operation
                     new Node\Const_(
                         'OPERATION_MATCH',
                         new Node\Scalar\String_(
-                            strtoupper($operation->method) . ' ' . $operation->path, // Deal with the query
+                            $operation->method . ' ' . $operation->path, // Deal with the query
                         )
                     ),
                 ],
@@ -65,7 +65,7 @@ final class Operation
                     new Node\Const_(
                         'METHOD',
                         new Node\Scalar\String_(
-                            strtoupper($operation->method),
+                            $operation->method,
                         )
                     ),
                 ],

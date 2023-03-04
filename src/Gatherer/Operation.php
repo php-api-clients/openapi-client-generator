@@ -87,7 +87,7 @@ final class Operation
             lcfirst(trim(Utils::basename($className),'\\')),
             trim(Utils::dirname($className),'\\'),
             $operation->operationId,
-            $method,
+            strtoupper($method),
             $path,
             $hasPageParameter === true && $hasPerPageParameter === true, // This is very GitHub specific!!!
             array_unique($returnType),

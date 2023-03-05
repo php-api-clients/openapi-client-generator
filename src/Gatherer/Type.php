@@ -46,14 +46,6 @@ final class Type
         $type = $property->type;
         $nullable = !$required;
 
-        if ($type === 'array') {
-            return new PropertyType(
-                'array',
-                Type::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
-                $nullable
-            );
-        }
-
         if (
             is_array($type) &&
             count($type) === 2 &&
@@ -70,6 +62,14 @@ final class Type
             }
 
             $nullable = true;
+        }
+
+        if ($type === 'array') {
+            return new PropertyType(
+                'array',
+                Type::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
+                $nullable
+            );
         }
 
         if (is_string($type)) {

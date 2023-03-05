@@ -51,7 +51,7 @@ final class Property
                 $exampleData = 13;
             } elseif ($type->payload === 'bool') {
                 $exampleData = false;
-            } else {
+            } elseif ($type->payload === 'string') {
                 $exampleData = 'generated_' . $propertyName;
             }
         }

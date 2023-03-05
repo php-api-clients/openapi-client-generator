@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Client\Github\Schema\WebhookLabelEdited\Changes\Name;
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
@@ -27,6 +28,7 @@ use React\Promise\PromiseInterface;
 use RingCentral\Psr7\Request;
 use Rx\Observable;
 use Twig\Node\Expression\Binary\AndBinary;
+use Twig\Node\Expression\Binary\OrBinary;
 
 final class Client
 {
@@ -209,17 +211,92 @@ final class Client
                 } else {
                     $operationPath = explode('/', $operation->path);
                 }
+                $operationPathCount = count($operationPath);
 
                 if (!array_key_exists($operation->method, $sortedOperations)) {
-                    $sortedOperations[$operation->method] = [
+                    $sortedOperations[$operation->method] = [];
+                }
+                if (!array_key_exists($operationPathCount, $sortedOperations[$operation->method])) {
+                    $sortedOperations[$operation->method][$operationPathCount] = [
                         'operations' => [],
                         'paths' => [],
                     ];
                 }
 
-                $sortedOperations[$operation->method] = self::traverseOperationPaths($sortedOperations[$operation->method], $operationPath, $operation, $path);
+                $sortedOperations[$operation->method][$operationPathCount] = self::traverseOperationPaths($sortedOperations[$operation->method][$operationPathCount], $operationPath, $operation, $path);
             }
         }
+
+
+//        new Node\Stmt\Switch_(
+//            new Node\Expr\Variable('method'),
+//            iterator_to_array((function (array $sortedOperations) use ($factory): iterable {
+//                foreach ($sortedOperations as $method => $operation) {
+//                    yield new Node\Stmt\Case_(
+//                        new Node\Scalar\String_($method),
+//                        [
+//                            ...self::traverseOperations($operation['operations'], $operation['paths'], 0),
+//                            new Node\Stmt\Break_(),
+//                        ],
+//                    );
+//                }
+//            })($sortedOperations))
+//        )
+
+        $operationsIfs = [];
+        foreach ($sortedOperations as $method => $ops) {
+            $opsTmts = [];
+            foreach ($ops as $chunkCount => $moar) {
+                $opsTmts[] = [
+                    new Node\Expr\BinaryOp\Identical(
+                        new Node\Expr\Variable('pathChunksCount'),
+                        new Node\Scalar\LNumber($chunkCount),
+                    ),
+                    self::traverseOperations($moar['operations'], $moar['paths'], 0),
+                ];
+            }
+            $operationsIfs[] = [
+                new Node\Expr\BinaryOp\Identical(
+                    new Node\Expr\Variable('method'),
+                    new Node\Scalar\String_($method),
+                ),
+                (static function (array $opsTmts): array {
+                    $first = array_shift($opsTmts);
+                    $elseIfs = [];
+
+                    foreach ($opsTmts as $opsTmt) {
+                        $elseIfs[] = new Node\Stmt\ElseIf_(...$opsTmt);
+                    }
+
+                    return [
+                        new Node\Stmt\If_(
+                            $first[0],
+                            [
+                                'stmts' => $first[1],
+                                'elseifs' => $elseIfs,
+                            ],
+                        )
+                    ];
+                })($opsTmts),
+            ];
+        }
+
+        $firstOperationsIfs = array_shift($operationsIfs);
+        $operationsIf = new Node\Stmt\If_(
+            $firstOperationsIfs[0],
+            [
+                'stmts' => $firstOperationsIfs[1],
+                'elseifs' => (static function (array $operationsIfs): array {
+                    $elseIfs = [];
+
+                    foreach ($operationsIfs as $operationsIf) {
+                        $elseIfs[] = new Node\Stmt\ElseIf_(...$operationsIf);
+                    }
+
+                    return $elseIfs;
+                })($operationsIfs),
+            ],
+        );
 
         $class->addStmt(
             $factory->method('callAsync')->makePublic()->setDocComment(
@@ -282,20 +359,19 @@ final class Client
                         ],
                     )
                 )
-            )->addStmt(new Node\Stmt\Switch_(
-                new Node\Expr\Variable('method'),
-                iterator_to_array((function (array $sortedOperations) use ($factory): iterable {
-                    foreach ($sortedOperations as $method => $operation) {
-                        yield new Node\Stmt\Case_(
-                            new Node\Scalar\String_($method),
-                            [
-                                ...self::traverseOperations($operation['operations'], $operation['paths'], 0),
-                                new Node\Stmt\Break_(),
-                            ],
-                        );
-                    }
-                })($sortedOperations))
-            ))->addStmt(
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable('pathChunksCount'),
+                    new Node\Expr\FuncCall(
+                        new Node\Name('count'),
+                        [
+                            new Arg(
+                                new Node\Expr\Variable('pathChunks'),
+                            ),
+                        ],
+                    )
+                )
+            )->addStmt($operationsIf)->addStmt(
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(
                         new Node\Name('\InvalidArgumentException')
@@ -342,48 +418,35 @@ final class Client
 
     private static function traverseOperations(array $operations, array $paths, int $level): array
     {
+        $nonArgumentPathChunks = [];
+        foreach ($paths as $pathChunk => $_) {
+            if (strpos($pathChunk, '{') === 0) {
+                continue;
+            }
+
+            $nonArgumentPathChunks[] = new Node\Expr\ArrayItem(new Node\Scalar\String_($pathChunk));
+        }
+
         $ifs = [];
         foreach ($operations as $operation) {
             $ifs[] = [
                 new Node\Expr\BinaryOp\Equal(
-                    new Node\Scalar\String_($operation['operation']->method . ' ' . $operation['operation']->path),
                     new Node\Expr\Variable('call'),
+                    new Node\Scalar\String_($operation['operation']->method . ' ' . $operation['operation']->path),
                 ),
-                [
-                    'stmts' => static::callOperation(...$operation),
-                ]
+                static::callOperation(...$operation),
             ];
         }
         foreach ($paths as $pathChunk => $path) {
             $ifs[] = [
-                new Node\Expr\BinaryOp\BooleanAnd(
-                    new Node\Expr\BinaryOp\Equal(
-                        new Node\Expr\FuncCall(
-                            new Node\Name('array_key_exists'),
-                            [
-                                new Arg(
-                                    new Node\Scalar\LNumber($level),
-                                ),
-                                new Arg(
-                                    new Node\Expr\Variable('pathChunks'),
-                                ),
-                            ],
-                        ),
-                        new Node\Expr\ConstFetch(
-                            new Node\Name('true'),
-                        ),
+                new Node\Expr\BinaryOp\Equal(
+                    new Node\Expr\ArrayDimFetch(
+                        new Node\Expr\Variable('pathChunks'),
+                        new Node\Scalar\LNumber($level),
                     ),
-                    new Node\Expr\BinaryOp\Equal(
-                        new Node\Scalar\String_($pathChunk),
-                        new Node\Expr\ArrayDimFetch(
-                            new Node\Expr\Variable('pathChunks'),
-                            new Node\Scalar\LNumber($level),
-                        ),
-                    ),
+                    new Node\Scalar\String_($pathChunk),
                 ),
-                [
-                    'stmts' => self::traverseOperations($path['operations'], $path['paths'], $level + 1),
-                ],
+                self::traverseOperations($path['operations'], $path['paths'], $level + 1),
             ];
         }
 
@@ -394,13 +457,13 @@ final class Client
         $elfseIfs = [];
         $baseIf = array_shift($ifs);
         foreach ($ifs as $if) {
-            $elfseIfs[] = new Node\Stmt\ElseIf_($if[0], $if[1]['stmts']);
+            $elfseIfs[] = new Node\Stmt\ElseIf_($if[0], $if[1]);
         }
 
         return [new Node\Stmt\If_(
             $baseIf[0],
             [
-                'stmts' => $baseIf[1]['stmts'],
+                'stmts' => $baseIf[1],
                 'elseifs' => $elfseIfs,
             ],
         )];
@@ -441,12 +504,15 @@ final class Client
                         [
                             'stmts' => [
                                 new Node\Stmt\Expression(
-                                    new Node\Expr\FuncCall(
-                                        new Node\Name('\array_push'),
-                                        [
-                                            new Arg(new Node\Expr\Variable(new Node\Name('requestBodyData'))),
-                                            new Arg(new Node\Expr\Variable(new Node\Name('param'))),
-                                        ],
+                                    new Node\Expr\Assign(
+                                        new Node\Expr\ArrayDimFetch(
+                                            new Node\Expr\Variable('requestBodyData'),
+                                            new Node\Expr\Variable('param'),
+                                        ),
+                                        new Node\Expr\ArrayDimFetch(
+                                            new Node\Expr\Variable('params'),
+                                            new Node\Expr\Variable('param'),
+                                        ),
                                     ),
                                 ),
                             ],

@@ -17,6 +17,32 @@ final class Type
         bool $required,
         SchemaRegistry $schemaRegistry,
     ): PropertyType {
+        if (is_array($property->allOf)) {
+            return self::gather(
+                $className,
+                $propertyName,
+                $property->allOf[array_keys($property->allOf)[count(array_keys($property->allOf)) - 1]],
+                $required,
+                $schemaRegistry,
+            );
+        } else if (is_array($property->oneOf)) {
+            return self::gather(
+                $className,
+                $propertyName,
+                $property->oneOf[array_keys($property->oneOf)[count(array_keys($property->oneOf)) - 1]],
+                $required,
+                $schemaRegistry,
+            );
+        } else if (is_array($property->anyOf)) {
+            return self::gather(
+                $className,
+                $propertyName,
+                $property->anyOf[array_keys($property->anyOf)[count(array_keys($property->anyOf)) - 1]],
+                $required,
+                $schemaRegistry,
+            );
+        }
+
         $type = $property->type;
         $nullable = !$required;
 

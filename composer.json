@@ -37,7 +37,8 @@
     },
     "autoload": {
         "psr-4": {
-            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/"
+            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/",
+            "ApiClients\\Client\\Github\\": "generated/"
         },
         "files": [
             "external_files/cebe/JsonReference.php",

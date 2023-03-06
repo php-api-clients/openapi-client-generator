@@ -21,7 +21,7 @@ final class Property
         $exampleData = null;
 
         if (count($property->examples ?? []) > 0) {
-            $exampleData = $property->examples[count($property->examples) === 1 ? 0 : mt_rand(0, count($property->examples) - 1)];
+            $exampleData = $property->examples[0];
         } else if ($property->example !== null) {
             $exampleData = $property->example;
         }

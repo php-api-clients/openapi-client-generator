@@ -7,6 +7,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use cebe\openapi\spec\Schema as baseSchema;
 use Jawira\CaseConverter\Convert;
+use function Rikudou\ArrayMergeRecursive\array_merge_recursive;
 
 final class Property
 {
@@ -44,22 +45,35 @@ final class Property
             $required,
             $schemaRegistry,
         );
-        if ($type->type=== 'object') {
-            $exampleData = ($exampleData ?? []) + $type->payload->example;
+        $exampleData = self::generateExampleData($exampleData, $type, $propertyName);
+
+        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, [$type], $type->nullable);
+    }
+
+    private static function generateExampleData(mixed $exampleData, PropertyType $type, string $propertyName): mixed
+    {
+        if ($type->type === 'array') {
+            if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                $exampleData = array_merge_recursive($type->payload->example, $exampleData ?? []);
+            } else if ($type->payload instanceof PropertyType) {
+                $exampleData = self::generateExampleData($exampleData, $type->payload, $propertyName);
+            }
+            return [$exampleData];
+        }
+
+
+        if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+            return array_merge_recursive($type->payload->example, is_array($exampleData) ? $exampleData : []);
         } else if ($exampleData === null && $type->type=== 'scalar') {
             if ($type->payload === 'int') {
-                $exampleData = 13;
+                return 13;
             } elseif ($type->payload === 'bool') {
-                $exampleData = false;
+                return false;
             } elseif ($type->payload === 'string') {
-                $exampleData = 'generated_' . $propertyName;
+                return 'generated_' . $propertyName;
             }
         }
 
-        if ($type->type === 'array') {
-            $exampleData = [$exampleData];
-        }
-
-        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, [$type], $type->nullable);
+        return $exampleData;
     }
 }

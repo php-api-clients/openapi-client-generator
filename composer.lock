@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "28b5456a1aa031efa5767c996db20ca8",
+    "content-hash": "c219e16e3408e444bc67c5d2ce39eb29",
     "packages": [
         {
             "name": "api-clients/contracts",
@@ -1925,6 +1925,52 @@
                 "source": "https://github.com/Respect/Validation/tree/2.2.4"
             },
             "time": "2023-02-15T01:05:24+00:00"
+        },
+        {
+            "name": "rikudou/array-merge-recursive",
+            "version": "v1.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/RikudouSage/ArrayMergeRecursive.git",
+                "reference": "90379c4906bd0fd54a2816486a7511c5d50dd86d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/RikudouSage/ArrayMergeRecursive/zipball/90379c4906bd0fd54a2816486a7511c5d50dd86d",
+                "reference": "90379c4906bd0fd54a2816486a7511c5d50dd86d",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.3|^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^2.18",
+                "php-coveralls/php-coveralls": "^2.4",
+                "phpstan/phpstan": "^0.12.84",
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/array_merge_recursive.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "WTFPL"
+            ],
+            "authors": [
+                {
+                    "name": "Dominik Chrastecky",
+                    "email": "dominik@chrastecky.cz"
+                }
+            ],
+            "description": "Replacement of built-in array_merge_recursive function that doesn't add values to array but replaces them",
+            "support": {
+                "issues": "https://github.com/RikudouSage/ArrayMergeRecursive/issues",
+                "source": "https://github.com/RikudouSage/ArrayMergeRecursive/tree/v1.0.3"
+            },
+            "time": "2021-04-22T14:29:38+00:00"
         },
         {
             "name": "ringcentral/psr7",

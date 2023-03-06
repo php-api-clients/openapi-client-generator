@@ -32,7 +32,15 @@ final class Hydrator
             yield new File(
                 trim($namespace, '\\') . '\\HHydrator\\' . $hydrator->className,
                 (new ObjectMapperCodeGenerator())->dump(
-                    array_unique(array_filter(array_map(static fn(string $className): string => str_replace('/', '\\', $className), $schemaClasses), static fn(string $className): bool => count((new \ReflectionMethod($className, '__construct'))->getParameters()) > 0)),
+                    array_unique(
+                        array_filter(
+                            array_map(
+                                static fn(string $className): string => str_replace('/', '\\', $className),
+                                $schemaClasses,
+                            ),
+                            static fn(string $className): bool => count((new \ReflectionMethod($className, '__construct'))->getParameters()) > 0,
+                        )
+                    ),
                     trim($namespace, '\\') . '\\Hydrator\\' . $hydrator->className
                 )
             );

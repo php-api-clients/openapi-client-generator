@@ -16,11 +16,12 @@ final class Hydrator
 {
     public static function gather(
         string $className,
+        string $nameSpaceSeperator,
         \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ...$schemaClasses,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator {
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator(
             $className,
-            str_replace(['\\', '/'], ['/', '🌀'], lcfirst($className)),
+            str_replace(['\\', '/'], ['/', $nameSpaceSeperator], lcfirst($className)),
             $schemaClasses,
         );
     }

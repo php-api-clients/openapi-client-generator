@@ -33,7 +33,8 @@
         "reactivex/rxphp": "^2.0",
         "api-clients/contracts": "dev-main",
         "eventsauce/object-hydrator": "^1.1",
-        "react/async": "^4.0"
+        "react/async": "^4.0",
+        "rikudou/array-merge-recursive": "^1.0"
     },
     "autoload": {
         "psr-4": {

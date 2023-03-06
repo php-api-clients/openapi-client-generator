@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
@@ -42,11 +43,18 @@ final class WebHookHydrator
         yield $schema;
         foreach ($schema->properties as $property) {
             foreach ($property->type as $propertyType) {
-                if ($propertyType->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-                    yield $propertyType->payload;
-                    yield from self::listSchemas($propertyType->payload);
-                }
+                yield from self::listSchemasFromPropertyType($propertyType);
             }
+        }
+    }
+
+    private static function listSchemasFromPropertyType(PropertyType $propertyType)
+    {
+        if ($propertyType->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+            yield $propertyType->payload;
+            yield from self::listSchemas($propertyType->payload);
+        } else if ($propertyType->payload instanceof PropertyType) {
+            yield from self::listSchemasFromPropertyType($propertyType->payload);
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use cebe\openapi\spec\Schema as OpenAPiSchema;
@@ -82,21 +83,14 @@ final class Schema
         $constructor = (new BuilderFactory())->method('__construct')->makePublic();
         $constructDocBlock = [];
         foreach ($schema->properties as $property) {
-            $propertyStmt = $factory->property($property->name)->makePublic();
-            $propertyDocBlock = [];
             if (is_string($property->description) && strlen($property->description) > 0) {
-                $propertyDocBlock[] = $property->description;
-            }
-
-            $nullable = '';
-            if ($property->nullable) {
-                $nullable = '?';
+                $constructDocBlock[] = $property->name . ': ' . $property->description;
             }
 
             $types = [];
             foreach ($property->type as $type) {
                 if ($type->type === 'array') {
-                    $propertyDocBlock[] = '@var array<' . ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ? 'Schema\\' . $type->payload->payload->className : $type->payload->payload) . '>';
+                    $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ? $namespace . 'Schema\\' . $type->payload->payload->className : $type->payload->payload) . '> $' . $property->name;
                     $types[] = 'array';
                     continue;
                 }
@@ -109,23 +103,14 @@ final class Schema
                 $types[] = $type->payload;
             }
 
-            $propertyStmt->setType(($property->type === 'array' ? '' : $nullable) . implode('|', $types));
-            $constructorParam = (new Param($property->name))->setType(implode('|', $types));
-            $constructor->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        $property->name
-                    ),
-                    new Node\Expr\Variable($property->name),
-                )
-            );
+            $types = array_unique($types);
 
-            if (count($propertyDocBlock) > 0) {
-                $propertyStmt->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', str_replace(['/**', '*/'], '', $propertyDocBlock)) . PHP_EOL .' */');
+            $nullable = '';
+            if ($property->nullable) {
+                $nullable = count($types) > 1 ? 'null|' : '?';
             }
 
-            $class->addStmt($propertyStmt);
+            $constructorParam = (new PromotedPropertyAsParam($property->name))->setType($nullable . implode('|', $types));
             $constructor->addParam($constructorParam);
         }
 

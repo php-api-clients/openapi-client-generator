@@ -234,7 +234,10 @@ final class Operation
                     ),
                     new Node\Name('hydrateObject'),
                     [
-                        new Node\Arg(new Node\Scalar\String_($object)),
+                        new Node\Arg(new Node\Expr\ClassConstFetch(
+                            new Node\Name($object),
+                            new Node\Name('class'),
+                        )),
                         new Node\Arg(new Node\Expr\Variable('body')),
                     ],
                 );

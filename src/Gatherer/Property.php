@@ -45,6 +45,11 @@ final class Property
             $required,
             $schemaRegistry,
         );
+        if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+            if (count($type->payload->properties) === 0) {
+                $type = new PropertyType('scalar', 'mixed', false);
+            }
+        }
         $exampleData = self::generateExampleData($exampleData, $type, $propertyName);
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, [$type], $type->nullable);

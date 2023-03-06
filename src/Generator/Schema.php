@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Client\Github\Schema\WebhookLabelEdited\Changes\Name;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -87,10 +88,25 @@ final class Schema
                 $constructDocBlock[] = $property->name . ': ' . $property->description;
             }
 
+            $constructorParam = new PromotedPropertyAsParam($property->name);
+
             $types = [];
             foreach ($property->type as $type) {
                 if ($type->type === 'array') {
-                    $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ? $namespace . 'Schema\\' . $type->payload->payload->className : $type->payload->payload) . '> $' . $property->name;
+                    $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ? ($namespace . 'Schema\\' . $type->payload->payload->className) : $type->payload->payload) . '> $' . $property->name;
+                    if ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                        $constructorParam->addAttribute(
+                            new Node\Attribute(
+                                new Node\Name('\\' . \EventSauce\ObjectHydrator\PropertyCasters\CastListToType::class),
+                                [
+                                    new Node\Arg(new Node\Expr\ClassConstFetch(
+                                        new Node\Name('Schema\\' . $type->payload->payload->className),
+                                        new Node\Name('class'),
+                                    )),
+                                ],
+                            ),
+                        );
+                    }
                     $types[] = 'array';
                     continue;
                 }
@@ -110,8 +126,7 @@ final class Schema
                 $nullable = count($types) > 1 ? 'null|' : '?';
             }
 
-            $constructorParam = (new PromotedPropertyAsParam($property->name))->setType($nullable . implode('|', $types));
-            $constructor->addParam($constructorParam);
+            $constructor->addParam($constructorParam->setType($nullable . implode('|', $types)));
         }
 
         if (count($constructDocBlock) > 0) {

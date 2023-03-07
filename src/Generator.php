@@ -6,6 +6,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Gatherer\OperationHydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Gatherer\WebHookHydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\ClientInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Error;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrators;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
@@ -13,6 +14,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use PhpParser\Node;
@@ -38,6 +40,14 @@ final class Generator
             $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace))) . '.php';
             if ($file->contents instanceof Node\Stmt\Namespace_) {
                 array_unshift($file->contents->stmts, ...[
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                ltrim($namespace, '\\') . 'Error',
+                            ),
+                            'ErrorSchemas'
+                        )
+                    ]),
                     new Node\Stmt\Use_([
                         new Node\Stmt\UseUse(
                             new Node\Name(
@@ -98,6 +108,7 @@ final class Generator
     {
         $schemas = [];
         $schemaRegistry = new SchemaRegistry();
+        $throwableSchemaRegistry = new ThrowableSchema();
         if (count($this->spec->components->schemas ?? []) > 0) {
             foreach ($this->spec->components->schemas as $name => $schema) {
                 $schemaRegistry->addClassName(Utils::className($name), $schema);
@@ -144,7 +155,7 @@ final class Generator
                     $namespace,
                     $operation,
                     $path->hydrator,
-                    $schemaRegistry,
+                    $throwableSchemaRegistry,
                 );
             }
         }
@@ -159,8 +170,13 @@ final class Generator
             yield from Schema::generate(
                 $namespace,
                 $schema,
-                $schemaRegistry,
             );
+            if ($throwableSchemaRegistry->has($schema->className)) {
+                yield from Error::generate(
+                    $namespace,
+                    $schema,
+                );
+            }
         }
 
         $client = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Client::gather($this->spec, ...$paths);

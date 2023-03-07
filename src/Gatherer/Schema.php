@@ -35,6 +35,18 @@ final class Schema
                 $example[$gatheredProperty->name] = $gatheredProperty->exampleData;
             }
         }
+
+//        if ($className === 'WebhookWorkflowRunCompleted\WorkflowRun') {
+//            var_export([
+//                $className,
+//                $schema->title ?? '',
+//                $schema->description ?? '',
+//                $example,
+////                $properties,
+//                $isArray,
+//            ]);
+//        }
+
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
             $className,
             $schema->title ?? '',

@@ -26,7 +26,7 @@ final class Schema
      * @param OpenAPiSchema $schema
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema, SchemaRegistry $schemaRegistry): iterable
+    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $schema->className), '\\'));

@@ -4,6 +4,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
@@ -29,7 +30,7 @@ final class Operation
      * @param OpenAPiOperation $operation
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, SchemaRegistry $schemaRegistry): iterable
+    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
     {
         $noHydrator = false;
         $factory = new BuilderFactory();
@@ -224,9 +225,19 @@ final class Operation
                     continue;
                 }
 
-                $object = 'Schema\\' . $contentTypeSchema->schema->className;
-                $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
-                $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
+
+                $returnOrThrow = Node\Stmt\Return_::class;
+                $isError = $code >= 400;
+                if ($isError) {
+                    $returnOrThrow = Node\Stmt\Throw_::class;
+                    $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
+                }
+
+                $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
+                if (!$isError) {
+                    $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
+                    $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
+                }
                 $hydrate = new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
@@ -241,6 +252,7 @@ final class Operation
                         new Node\Arg(new Node\Expr\Variable('body')),
                     ],
                 );
+
                 $ctc = new Node\Stmt\Case_(
                     new Node\Scalar\String_($contentTypeSchema->contentType),
                     [
@@ -261,7 +273,7 @@ final class Operation
                                 ])),
                             ]
                         )),
-                        new Node\Stmt\Return_(
+                        new $returnOrThrow(
                             $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
                                 new Node\Expr\StaticCall(
                                     new Node\Name('\\' . Observable::class),
@@ -338,15 +350,25 @@ final class Operation
             $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
             $noHydrator = true;
         }
+        $returnTypeRaw = array_unique($returnTypeRaw);
+        if (count($returnTypeRaw) === 0 ) {
+            $returnTypeRaw[] = 'void';
+        }
         $createResponseMethod->setReturnType(
-            new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), array_unique($returnTypeRaw)))
-        )->setDocComment(
-            new Doc(implode(PHP_EOL, [
-                '/**',
-                ' * @return ' . implode('|', array_unique($returnType)),
-                ' */',
-            ]))
-        )->addParam(
+            new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), $returnTypeRaw))
+        );
+
+        if (count($returnType) > 0) {
+            $createResponseMethod->setDocComment(
+                new Doc(implode(PHP_EOL, [
+                    '/**',
+                    ' * @return ' . implode('|', array_unique($returnType)),
+                    ' */',
+                ]))
+            );
+        }
+
+        $createResponseMethod->addParam(
             $factory->param('response')->setType('\\' . ResponseInterface::class)
         );
 

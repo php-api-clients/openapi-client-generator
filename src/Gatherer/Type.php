@@ -21,7 +21,7 @@ final class Type
             return self::gather(
                 $className,
                 $propertyName,
-                $property->allOf[array_keys($property->allOf)[count(array_keys($property->allOf)) - 1]],
+                $property->allOf[0],
                 $required,
                 $schemaRegistry,
             );
@@ -29,7 +29,7 @@ final class Type
             return self::gather(
                 $className,
                 $propertyName,
-                $property->oneOf[array_keys($property->oneOf)[count(array_keys($property->oneOf)) - 1]],
+                $property->oneOf[0],
                 $required,
                 $schemaRegistry,
             );
@@ -37,7 +37,7 @@ final class Type
             return self::gather(
                 $className,
                 $propertyName,
-                $property->anyOf[array_keys($property->anyOf)[count(array_keys($property->anyOf)) - 1]],
+                $property->anyOf[0],
                 $required,
                 $schemaRegistry,
             );

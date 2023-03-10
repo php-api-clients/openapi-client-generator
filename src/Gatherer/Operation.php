@@ -2,7 +2,9 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
@@ -24,6 +26,7 @@ final class Operation
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
         $parameters = [];
+        $redirects = [];
         $hasPerPageParameter = false;
         $hasPageParameter = false;
         foreach ($operation->parameters as $parameter) {
@@ -71,9 +74,29 @@ final class Operation
                     $code,
                     $contentType,
                     $spec->description,
-                    Schema::gather($responseClassname, $contentTypeMediaType->schema, $schemaRegistry),
+                    Schema::gather(
+                        $responseClassname,
+                        $contentTypeMediaType->schema,
+                        $schemaRegistry,
+                    ),
                 );
                 $returnType[] = $responseClassname;
+            }
+            if ($code >= 300 && $code < 400) {
+                $headers = [];
+                foreach ($spec->headers as $headerName => $headerSpec) {
+                    $headers[$headerName] = new Header($headerName, Schema::gather(
+                        $schemaRegistry->get(
+                            $headerSpec->schema,
+                            'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
+                        ),
+                        $headerSpec->schema,
+                        $schemaRegistry
+                    ));
+                }
+                if (count($headers) > 0) {
+                    $redirects[] = new OperationRedirect($code, $spec->description, $headers);
+                }
             }
         }
 
@@ -97,6 +120,7 @@ final class Operation
             ],
             $requestBody,
             $response,
+            $redirects,
         );
     }
 }

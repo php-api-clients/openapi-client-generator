@@ -2,8 +2,6 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
-use cebe\openapi\spec\RequestBody;
-
 final class Operation
 {
     public function __construct(
@@ -23,6 +21,8 @@ final class Operation
         public readonly array  $requestBody,
         /** @var array<OperationResponse> $response */
         public readonly array  $response,
+        /** @var array<OperationRedirect> $redirect */
+        public readonly array  $redirect,
     ){
     }
 }

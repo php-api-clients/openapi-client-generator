@@ -5,6 +5,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Operation as OpenAPiOperation;
@@ -214,17 +215,22 @@ final class Operation
             )
         );
 
-        $codes = array_unique(array_map(static fn (OperationResponse $response): int => $response->code, $operation->response));
+        $codes = array_unique([
+            ...array_map(static fn (OperationResponse $response): int => $response->code, $operation->response),
+            ...array_map(static fn (OperationRedirect $redirect): int => $redirect->code, $operation->redirect),
+        ]);
+        $getContentTypeAndBody = false;
         $cases = [];
         $returnType = [];
         $returnTypeRaw = [];
         foreach ($codes as $code) {
+            $description = '';
             $contentTypeCases = [];
+            $redirects = [];
             foreach ($operation->response as $contentTypeSchema) {
                 if ($contentTypeSchema->code !== $code) {
                     continue;
                 }
-
 
                 $returnOrThrow = Node\Stmt\Return_::class;
                 $isError = $code >= 400;
@@ -305,32 +311,68 @@ final class Operation
                         ),
                     ]
                 );
+                $description = $contentTypeSchema->description;
                 $contentTypeCases[] = $ctc;
+                $getContentTypeAndBody = true;
+            }
+
+            foreach ($operation->redirect as $redirect) {
+                if ($redirect->code !== $code) {
+                    continue;
+                }
+
+                $arrayItems = [];
+                $arrayItems['code: int'] = new Node\Expr\ArrayItem(
+                    new Node\Scalar\LNumber($code),
+                    new Node\Scalar\String_('code'),
+                );
+                foreach ($redirect->headers as $header) {
+                    $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
+                        new Node\Expr\MethodCall(
+                            new Node\Expr\Variable('response'),
+                            new Node\Name('getHeaderLine'),
+                            [
+                                new Arg(new Node\Scalar\String_($header->name)),
+                            ],
+                        ),
+                        new Node\Scalar\String_(strtolower($header->name))
+                    );
+                }
+                $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
+                $returnTypeRaw[] = 'array';
+                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
+                $description = $redirect->description;
             }
             $case = new Node\Stmt\Case_(
                 new Node\Scalar\LNumber($code),
                 [
-                    count($contentTypeCases) > 0 ? new Node\Stmt\Switch_(
+                    ...(count($contentTypeCases) > 0 ? [new Node\Stmt\Switch_(
                         new Node\Expr\Variable('contentType'),
                         $contentTypeCases
-                    ) : new Node\Stmt\Return_(new Node\Expr\Variable('response')),
+                    )] : (count($redirects) > 0 ? $redirects : new Node\Stmt\Return_(new Node\Expr\Variable('response')))),
                     new Node\Stmt\Break_()
                 ]
             );
-            if (count($contentTypeCases) === 0) {
+            if (strlen($description) > 0) {
+                $case->setDocComment(new Doc('/**' . $description . '**/'));
+            }
+            if (count($contentTypeCases) === 0 && count($redirects) === 0) {
                 $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
             }
-            $case->setDocComment(new Doc('/**' . $contentTypeSchema->description . '**/'));
+
             $cases[] = $case;
         }
         $createResponseMethod = $factory->method('createResponse');
 
         if (count($cases) > 0) {
+            if ($getContentTypeAndBody) {
+                $createResponseMethod->addStmt(
+                    new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
+                )->addStmt(
+                    new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
+                );
+            }
             $createResponseMethod->addStmt(
-                new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
-            )->addStmt(
-                new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
-            )->addStmt(
                 new Node\Stmt\Switch_(
                     new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getStatusCode'),
                     $cases

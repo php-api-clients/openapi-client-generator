@@ -95,7 +95,15 @@ final class Client
                 return new Node\Expr\Assign(new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
                     'browser'
-                ), $assignExpr);
+                ), new Node\Expr\MethodCall(
+                    $assignExpr,
+                    'withFollowRedirects',
+                    [
+                        new Arg(
+                            new Node\Expr\ConstFetch(new Node\Name('false')),
+                        ),
+                    ],
+                ));
             })($client))->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -172,7 +180,10 @@ final class Client
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', [
+                                ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
+                                ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                            ]);
                             if ($i !== $lastItem) {
                                 $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                             } else {
@@ -184,23 +195,52 @@ final class Client
                     })($operations),
                     ' */',
                 ]))
-            )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(new Node\Stmt\Return_(
-                new Node\Expr\FuncCall(
-                    new Node\Name('\React\Async\await'),
-                    [
-                        new Node\Arg(
-                            new Node\Expr\MethodCall(
-                                new Node\Expr\Variable('this'),
-                                new Node\Name('callAsync'),
-                                [
-                                    new Node\Arg(new Node\Expr\Variable('call')),
-                                    new Node\Arg(new Node\Expr\Variable('params')),
-                                ]
-                            )
+            )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmts([
+                new Node\Stmt\Expression(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('result'),
+                        new Node\Expr\FuncCall(
+                            new Node\Name('\React\Async\await'),
+                            [
+                                new Node\Arg(
+                                    new Node\Expr\MethodCall(
+                                        new Node\Expr\Variable('this'),
+                                        new Node\Name('callAsync'),
+                                        [
+                                            new Node\Arg(new Node\Expr\Variable('call')),
+                                            new Node\Arg(new Node\Expr\Variable('params')),
+                                        ]
+                                    )
+                                ),
+                            ],
                         ),
+                    ),
+                ),
+                new Node\Stmt\If_(
+                    new Node\Expr\Instanceof_(
+                        new Node\Expr\Variable('result'),
+                        new Node\Name('\\' . \Rx\Observable::class)
+                    ),
+                    [
+                        'stmts' => [
+                            new Node\Stmt\Expression(
+                                new Node\Expr\Assign(
+                                    new Node\Expr\Variable('result'),
+                                    new Node\Expr\FuncCall(
+                                        new Node\Name('\WyriHaximus\React\awaitObservable'),
+                                        [
+                                            new Arg(new Node\Expr\Variable('result')),
+                                        ],
+                                    )
+                                ),
+                            ),
+                        ],
                     ],
-                )
-            ))
+                ),
+                new Node\Stmt\Return_(
+                    new Node\Expr\Variable('result'),
+                ),
+            ])
         );
 
         $sortedOperations = [];
@@ -213,17 +253,17 @@ final class Client
                 }
                 $operationPathCount = count($operationPath);
 
-                if (!array_key_exists($operation->method, $sortedOperations)) {
-                    $sortedOperations[$operation->method] = [];
+                if (!array_key_exists($operation->matchMethod, $sortedOperations)) {
+                    $sortedOperations[$operation->matchMethod] = [];
                 }
-                if (!array_key_exists($operationPathCount, $sortedOperations[$operation->method])) {
-                    $sortedOperations[$operation->method][$operationPathCount] = [
+                if (!array_key_exists($operationPathCount, $sortedOperations[$operation->matchMethod])) {
+                    $sortedOperations[$operation->matchMethod][$operationPathCount] = [
                         'operations' => [],
                         'paths' => [],
                     ];
                 }
 
-                $sortedOperations[$operation->method][$operationPathCount] = self::traverseOperationPaths($sortedOperations[$operation->method][$operationPathCount], $operationPath, $operation, $path);
+                $sortedOperations[$operation->matchMethod][$operationPathCount] = self::traverseOperationPaths($sortedOperations[$operation->matchMethod][$operationPathCount], $operationPath, $operation, $path);
             }
         }
 
@@ -308,7 +348,10 @@ final class Client
                         $left = '';
                         $right = '';
                         for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)));
+                            $returnType = implode('|', [
+                                ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
+                                ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                            ]);
                             if ($i !== $lastItem) {
                                 $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
                             } else {
@@ -432,7 +475,7 @@ final class Client
             $ifs[] = [
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\Variable('call'),
-                    new Node\Scalar\String_($operation['operation']->method . ' ' . $operation['operation']->path),
+                    new Node\Scalar\String_($operation['operation']->matchMethod . ' ' . $operation['operation']->path),
                 ),
                 static::callOperation(...$operation),
             ];
@@ -584,6 +627,12 @@ final class Client
                                 new Node\Name('class'),
                             ))),
                         ]),
+                        ...($operation->matchMethod === 'STREAM' ? [
+                            new Arg(new Node\Expr\PropertyFetch(
+                                new Node\Expr\Variable('this'),
+                                'browser'
+                            )),
+                        ] : []),
                         ...iterator_to_array((function (array $params): iterable {
                             foreach ($params as $param) {
                                 yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('params')), new Node\Scalar\String_($param->name)));
@@ -643,7 +692,10 @@ final class Client
                         'uses' => [
                             new Node\Expr\Variable('operation'),
                         ],
-                        'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique($operation->returnType))) : null,
+                        'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique([
+                            ...($operation->matchMethod === 'STREAM' ? ['\\' . Observable::class] : []),
+                            ...$operation->returnType,
+                        ]))) : null,
                     ]))
                 ]
             )),

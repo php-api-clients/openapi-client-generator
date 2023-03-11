@@ -17,7 +17,7 @@ use Symfony\Component\Yaml\Yaml;
      */
     exit((function (string $configuration): int {
         $yaml = Yaml::parseFile($configuration);
-        (new Generator($yaml['spec']))->generate($yaml['namespace'] . '\\', dirname($configuration) . DIRECTORY_SEPARATOR . $yaml['destination']);
+        (new Generator($yaml['spec']))->generate($yaml['namespace'] . '\\', dirname($configuration) . DIRECTORY_SEPARATOR . $yaml['destination'], $yaml['voter'] ?? []);
 
         return 0;
     })($configuration));

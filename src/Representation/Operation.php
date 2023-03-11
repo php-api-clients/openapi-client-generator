@@ -10,6 +10,7 @@ final class Operation
         public readonly string $name,
         public readonly string $group,
         public readonly string $operationId,
+        public readonly string $matchMethod,
         public readonly string $method,
         public readonly string $path,
         public readonly bool   $stream,

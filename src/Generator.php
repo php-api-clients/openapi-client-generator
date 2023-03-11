@@ -30,13 +30,13 @@ final class Generator
         $this->spec = Reader::readFromYamlFile($specUrl);
     }
 
-    public function generate(string $namespace, string $destinationPath)
+    public function generate(string $namespace, string $destinationPath, array $voters)
     {
         $existingFiles = iterator_to_array(Files::listExistingFiles($destinationPath . DIRECTORY_SEPARATOR));
         $namespace = Utils::cleanUpNamespace($namespace);
         $codePrinter = new Standard();
 
-        foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR) as $file) {
+        foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR, $voters) as $file) {
             $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace))) . '.php';
             if ($file->contents instanceof Node\Stmt\Namespace_) {
                 array_unshift($file->contents->stmts, ...[
@@ -104,7 +104,7 @@ final class Generator
      * @param string $destinationPath
      * @return iterable<File>
      */
-    private function all(string $namespace, string $rootPath): iterable
+    private function all(string $namespace, string $rootPath, array $voters): iterable
     {
         $schemas = [];
         $schemaRegistry = new SchemaRegistry();
@@ -140,7 +140,7 @@ final class Generator
                     continue;
                 }
 
-                $paths[] = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry);
+                $paths[] = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry, $voters);
 
             }
         }

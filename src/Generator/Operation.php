@@ -17,23 +17,20 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use React\Http\Browser;
 use RingCentral\Psr7\Request;
 use Rx\Observable;
 use Rx\Scheduler\ImmediateScheduler;
+use Rx\Subject\Subject;
 
 final class Operation
 {
     /**
-     * @param string $path
-     * @param string $method
-     * @param string $namespace
-     * @param string $className
-     * @param OpenAPiOperation $operation
      * @return iterable<Node>
      */
     public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
     {
-        $noHydrator = false;
+        $noHydrator = true;
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
 
@@ -55,7 +52,7 @@ final class Operation
                     new Node\Const_(
                         'OPERATION_MATCH',
                         new Node\Scalar\String_(
-                            $operation->method . ' ' . $operation->path, // Deal with the query
+                            $operation->matchMethod . ' ' . $operation->path, // Deal with the query
                         )
                     ),
                 ],
@@ -106,6 +103,7 @@ final class Operation
                 )
             );
         }
+
         $requestReplaces = [];
         $query = [];
         $constructorParams = [];
@@ -321,26 +319,219 @@ final class Operation
                     continue;
                 }
 
-                $arrayItems = [];
-                $arrayItems['code: int'] = new Node\Expr\ArrayItem(
-                    new Node\Scalar\LNumber($code),
-                    new Node\Scalar\String_('code'),
-                );
-                foreach ($redirect->headers as $header) {
-                    $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
+
+                if ($operation->matchMethod === 'STREAM') {
+                    $redirects[] = new Node\Stmt\Expression(
+                        new Node\Expr\Assign(
+                            new Node\Expr\Variable('stream'),
+                            new Node\Expr\New_(
+                                new Node\Name('\\' . Subject::class),
+                            ),
+                        ),
+                    );
+                    $redirects[] = new Node\Stmt\Expression(
                         new Node\Expr\MethodCall(
-                            new Node\Expr\Variable('response'),
-                            new Node\Name('getHeaderLine'),
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'browser'
+                                ),
+                                new Node\Name('requestStreaming'),
+                                [
+                                    new Arg(new Node\Scalar\String_('GET')),
+                                    new Arg(
+                                        new Node\Expr\MethodCall(
+                                            new Node\Expr\Variable('response'),
+                                            new Node\Name('getHeaderLine'),
+                                            [
+                                                new Arg(new Node\Scalar\String_('location')),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            new Node\Name('then'),
                             [
-                                new Arg(new Node\Scalar\String_($header->name)),
+                                new Arg(new Node\Expr\Closure(
+                                    [
+                                        'stmts' => [
+                                            new Node\Stmt\Expression(
+                                                new Node\Expr\Assign(
+                                                    new Node\Expr\Variable('body'),
+                                                    new Node\Expr\MethodCall(
+                                                        new Node\Expr\Variable('response'),
+                                                        new Node\Name('getBody'),
+                                                    ),
+                                                ),
+                                            ),
+                                            new Node\Stmt\If_(
+                                                new Node\Expr\BooleanNot(
+                                                    new Node\Expr\BinaryOp\BooleanAnd(
+                                                        new Node\Expr\Instanceof_(
+                                                            new Node\Expr\Variable('body'),
+                                                            new Node\Name('\\' . \Psr\Http\Message\StreamInterface::class)
+                                                        ),
+                                                        new Node\Expr\Instanceof_(
+                                                            new Node\Expr\Variable('body'),
+                                                            new Node\Name('\\' . \React\Stream\ReadableStreamInterface::class)
+                                                        ),
+                                                    )
+                                                ),
+                                                [
+                                                    'stmts' => [
+                                                        new Node\Stmt\Expression(
+                                                            new Node\Expr\MethodCall(
+                                                                new Node\Expr\Variable('stream'),
+                                                                new Node\Name('onError'),
+                                                                [
+                                                                    new Arg(new Node\Expr\New_(
+                                                                        new Node\Name('\\' . \RuntimeException::class)
+                                                                    )),
+                                                                ],
+                                                            ),
+                                                        ),
+                                                        new Node\Stmt\Return_(),
+                                                    ],
+                                                ],
+                                            ),
+                                            new Node\Stmt\Expression(
+                                                new Node\Expr\MethodCall(
+                                                    new Node\Expr\Variable('body'),
+                                                    new Node\Name('on'),
+                                                    [
+                                                        new Arg(new Node\Scalar\String_('data')),
+                                                        new Arg(new Node\Expr\Closure(
+                                                            [
+                                                                'stmts' => [
+                                                                    new Node\Stmt\Expression(
+                                                                        new Node\Expr\MethodCall(
+                                                                            new Node\Expr\Variable('stream'),
+                                                                            new Node\Name('onNext'),
+                                                                            [
+                                                                                new Arg(new Node\Expr\Variable('data')),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                                'params' => [
+                                                                    $factory->param('data')->setType('string')->getNode(),
+                                                                ],
+                                                                'uses' => [
+                                                                    new Node\Expr\ClosureUse(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                    ),
+                                                                ],
+                                                                'static' => true,
+                                                                'returnType' => new Node\Name('void'),
+                                                            ],
+                                                        )),
+                                                    ],
+                                                ),
+                                            ),
+                                            new Node\Stmt\Expression(
+                                                new Node\Expr\MethodCall(
+                                                    new Node\Expr\Variable('body'),
+                                                    new Node\Name('on'),
+                                                    [
+                                                        new Arg(new Node\Scalar\String_('close')),
+                                                        new Arg(new Node\Expr\Closure(
+                                                            [
+                                                                'stmts' => [
+                                                                    new Node\Stmt\Expression(
+                                                                        new Node\Expr\MethodCall(
+                                                                            new Node\Expr\Variable('stream'),
+                                                                            new Node\Name('onCompleted'),
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                                'uses' => [
+                                                                    new Node\Expr\ClosureUse(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                    ),
+                                                                ],
+                                                                'static' => true,
+                                                                'returnType' => new Node\Name('void'),
+                                                            ],
+                                                        )),
+                                                    ],
+                                                ),
+                                            ),
+                                            new Node\Stmt\Expression(
+                                                new Node\Expr\MethodCall(
+                                                    new Node\Expr\Variable('body'),
+                                                    new Node\Name('on'),
+                                                    [
+                                                        new Arg(new Node\Scalar\String_('error')),
+                                                        new Arg(new Node\Expr\Closure(
+                                                            [
+                                                                'stmts' => [
+                                                                    new Node\Stmt\Expression(
+                                                                        new Node\Expr\MethodCall(
+                                                                            new Node\Expr\Variable('stream'),
+                                                                            new Node\Name('onError'),
+                                                                            [
+                                                                                new Arg(new Node\Expr\Variable('error')),
+                                                                            ],
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                                'params' => [
+                                                                    $factory->param('error')->setType('\\' . \Throwable::class)->getNode(),
+                                                                ],
+                                                                'uses' => [
+                                                                    new Node\Expr\ClosureUse(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                    ),
+                                                                ],
+                                                                'static' => true,
+                                                                'returnType' => new Node\Name('void'),
+                                                            ],
+                                                        )),
+                                                    ],
+                                                ),
+                                            ),
+                                        ],
+                                        'params' => [
+                                            $factory->param('response')->setType('\\' . ResponseInterface::class)->getNode(),
+                                        ],
+                                        'uses' => [
+                                            new Node\Expr\ClosureUse(
+                                                new Node\Expr\Variable('stream'),
+                                            ),
+                                        ],
+                                        'static' => true,
+                                        'returnType' => new Node\Name('void'),
+                                    ],
+                                ))
                             ],
                         ),
-                        new Node\Scalar\String_(strtolower($header->name))
                     );
+                    $redirects[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
+
+                    $returnType[] = '\\' . Observable::class . '<string>';
+                    $returnTypeRaw[] = '\\' . Observable::class;
+                } else {
+                    $arrayItems = [];
+                    $arrayItems['code: int'] = new Node\Expr\ArrayItem(
+                        new Node\Scalar\LNumber($code),
+                        new Node\Scalar\String_('code'),
+                    );
+                    foreach ($redirect->headers as $header) {
+                        $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable('response'),
+                                new Node\Name('getHeaderLine'),
+                                [
+                                    new Arg(new Node\Scalar\String_($header->name)),
+                                ],
+                            ),
+                            new Node\Scalar\String_(strtolower($header->name))
+                        );
+                    }
+                    $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
+                    $returnTypeRaw[] = 'array';
+                    $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
                 }
-                $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
-                $returnTypeRaw[] = 'array';
-                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
                 $description = $redirect->description;
             }
             $case = new Node\Stmt\Case_(
@@ -366,6 +557,7 @@ final class Operation
 
         if (count($cases) > 0) {
             if ($getContentTypeAndBody) {
+                $noHydrator = false;
                 $createResponseMethod->addStmt(
                     new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
                 )->addStmt(
@@ -390,7 +582,6 @@ final class Operation
         } else {
             $createResponseMethod->addStmt(new Node\Stmt\Return_(new Node\Expr\Variable('response')));
             $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
-            $noHydrator = true;
         }
         $returnTypeRaw = array_unique($returnTypeRaw);
         if (count($returnTypeRaw) === 0 ) {
@@ -440,6 +631,23 @@ final class Operation
                         'hydrator'
                     ),
                     new Node\Expr\Variable('hydrator'),
+                )
+            );
+        }
+
+        if ($operation->matchMethod === 'STREAM') {
+            $class->addStmt(
+                $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
+            );
+            $constructor->addParam(
+                (new Param('browser'))->setType('\\' . Browser::class)
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'browser'
+                    ),
+                    new Node\Expr\Variable('browser'),
                 )
             );
         }

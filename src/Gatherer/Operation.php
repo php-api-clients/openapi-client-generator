@@ -19,6 +19,7 @@ final class Operation
 {
     public static function gather(
         string $className,
+        string $matchMethod,
         string $method,
         string $path,
         openAPIOperation $operation,
@@ -110,6 +111,7 @@ final class Operation
             lcfirst(trim(Utils::basename($className),'\\')),
             trim(Utils::dirname($className),'\\'),
             $operation->operationId,
+            strtoupper($matchMethod),
             strtoupper($method),
             $path,
             $hasPageParameter === true && $hasPerPageParameter === true, // This is very GitHub specific!!!

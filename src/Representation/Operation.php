@@ -13,7 +13,7 @@ final class Operation
         public readonly string $matchMethod,
         public readonly string $method,
         public readonly string $path,
-        public readonly bool   $stream,
+        public readonly array  $metaData,
         /** @var array<string> $returnType */
         public readonly array  $returnType,
         /** @var array<Parameter> $parameters */

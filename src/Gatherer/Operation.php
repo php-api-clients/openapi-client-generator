@@ -22,21 +22,14 @@ final class Operation
         string $matchMethod,
         string $method,
         string $path,
+        array $metaData,
         openAPIOperation $operation,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
         $parameters = [];
         $redirects = [];
-        $hasPerPageParameter = false;
-        $hasPageParameter = false;
         foreach ($operation->parameters as $parameter) {
-            if ($parameter->name === 'per_page') {
-                $hasPerPageParameter = true;
-            }
-            if ($parameter->name === 'page') {
-                $hasPageParameter = true;
-            }
             $parameterType = str_replace([
                 'integer',
                 'any',
@@ -114,7 +107,7 @@ final class Operation
             strtoupper($matchMethod),
             strtoupper($method),
             $path,
-            $hasPageParameter === true && $hasPerPageParameter === true, // This is very GitHub specific!!!
+            $metaData,
             array_unique($returnType),
             [
                 ...array_filter($parameters, static fn (Parameter $parameter): bool => $parameter->default === null),

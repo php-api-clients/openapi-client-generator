@@ -32,7 +32,7 @@ final class Hydrators
                 return true;
             });
         }
-        $hydrators = array_filter($hydrators, static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
+        $matchHydrators = array_filter($hydrators, static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
 
         foreach ($hydrators as $hydrator) {
             $class->addStmt($factory->property($hydrator->methodName)->setType('?' . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->setDefault(null)->makePrivate());
@@ -65,7 +65,7 @@ final class Hydrators
                                     ),
                                 ]
                             )
-                        ), $hydrators)
+                        ), $matchHydrators)
                     )
                 )
             )
@@ -160,7 +160,7 @@ final class Hydrators
                                     ),
                                 ]
                             )
-                        ), $hydrators)
+                        ), $matchHydrators)
                     )
                 )
             )

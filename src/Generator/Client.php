@@ -19,16 +19,20 @@ use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use React\EventLoop\Loop;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
 use RingCentral\Psr7\Request;
 use Rx\Observable;
+use Rx\Subject\Subject;
 use Twig\Node\Expression\Binary\AndBinary;
 use Twig\Node\Expression\Binary\OrBinary;
+use function React\Promise\resolve;
 
 final class Client
 {
@@ -184,6 +188,7 @@ final class Client
                                 ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
                                 ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
                             ]);
+                            $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
                             if ($i !== $lastItem) {
                                 $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                             } else {
@@ -352,6 +357,7 @@ final class Client
                                 ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
                                 ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
                             ]);
+                            $returnType = ($operations[$i]->matchMethod === 'LIST' ? '\\' . Observable::class . '<' . $returnType . '>' : $returnType);
                             if ($i !== $lastItem) {
                                 $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
                             } else {
@@ -603,6 +609,162 @@ final class Client
                     ],
                 ]
             )]),
+            ...($operation->matchMethod !== 'LIST' ? self::makeCall($operation, $path, $operationClassname, static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)) : [
+                new Node\Stmt\Expression(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('stream'),
+                        new Node\Expr\New_(
+                            new Node\Name('\\' . Subject::class),
+                        ),
+                    ),
+                ),
+                new Node\Stmt\Expression(
+                    new Node\Expr\StaticCall(
+                        new Node\Name('\\' . Loop::class),
+                        new Node\Name('futureTick'),
+                        [
+                            new Arg(
+                                new Node\Expr\FuncCall(
+                                    new Node\Name('\React\Async\async'),
+                                    [
+                                        new Arg(
+                                            new Node\Expr\Closure([
+                                                'stmts' => [
+                                                    new Node\Stmt\TryCatch([
+                                                        new Node\Stmt\Expression(
+                                                            new Node\Expr\Assign(
+                                                                new Expr\ArrayDimFetch(
+                                                                    new Expr\Variable('requestBodyData'),
+                                                                    new Node\Scalar\String_($operation->metaData['listOperation']['key']),
+                                                                ),
+                                                                new Node\Scalar\LNumber($operation->metaData['listOperation']['initialValue']),
+                                                            ),
+                                                        ),
+                                                        new Node\Stmt\Do_(
+                                                            new Node\Expr\BinaryOp\Greater(
+                                                                new Node\Expr\Variable('itemCount'),
+                                                                new Node\Scalar\LNumber(0),
+                                                            ),
+                                                            [
+                                                                new Node\Stmt\Expression(
+                                                                    new Node\Expr\Assign(
+                                                                        new Node\Expr\Variable('itemCount'),
+                                                                        new Node\Scalar\LNumber(0),
+                                                                    ),
+                                                                ),
+                                                                ...self::makeCall(
+                                                                    $operation,
+                                                                    $path,
+                                                                    $operationClassname,
+                                                                    static fn (Expr $expr): Node\Stmt\Foreach_ => new Node\Stmt\Foreach_(
+                                                                        new Expr\FuncCall(
+                                                                            new Node\Name('\WyriHaximus\React\awaitObservable'),
+                                                                            [
+                                                                                new Arg(
+                                                                                    new Expr\MethodCall(
+                                                                                        new Expr\StaticCall(
+                                                                                            new Node\Name('\\' . Observable::class),
+                                                                                            new Node\Name('fromPromise'),
+                                                                                            [
+                                                                                                new Arg($expr),
+                                                                                            ],
+                                                                                        ),
+                                                                                        new Node\Name('mergeAll'),
+                                                                                    )
+                                                                                ),
+                                                                            ],
+                                                                        ),
+                                                                        new Expr\Variable('item'),
+                                                                        [
+                                                                            'stmts' => [
+                                                                                new Node\Stmt\Expression(
+                                                                                    new Expr\MethodCall(
+                                                                                        new Node\Expr\Variable('stream'),
+                                                                                        new Node\Name('onNext'),
+                                                                                        [
+                                                                                            new Arg(
+                                                                                                new Expr\Variable('item'),
+                                                                                            ),
+                                                                                        ],
+                                                                                    ),
+                                                                                ),
+                                                                                new Node\Stmt\Expression(
+                                                                                    new Expr\PostInc(
+                                                                                        new Node\Expr\Variable('itemCount'),
+                                                                                    ),
+                                                                                ),
+                                                                            ],
+                                                                        ],
+                                                                    ),
+                                                                ),
+                                                                new Node\Stmt\Expression(
+                                                                    new Expr\PostInc(
+                                                                        new Expr\ArrayDimFetch(
+                                                                            new Expr\Variable('requestBodyData'),
+                                                                            new Node\Scalar\String_($operation->metaData['listOperation']['key']),
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        new Node\Stmt\Expression(
+                                                            new Expr\MethodCall(
+                                                                new Node\Expr\Variable('stream'),
+                                                                new Node\Name('onCompleted'),
+                                                            ),
+                                                        ),
+                                                    ], [
+                                                        new Node\Stmt\Catch_(
+                                                            [
+                                                                new Node\Name('\\' . \Throwable::class),
+                                                            ],
+                                                            new Expr\Variable('throwable'),
+                                                            [
+                                                                new Node\Stmt\Expression(
+                                                                    new Expr\MethodCall(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                        new Node\Name('onError'),
+                                                                        [
+                                                                            new Arg(
+                                                                                new Expr\Variable('throwable'),
+                                                                            ),
+                                                                        ],
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ]),
+                                                ],
+                                                'uses' => [
+                                                    new Node\Expr\Variable('requestBodyData'),
+                                                    new Node\Expr\Variable('stream'),
+                                                ],
+                                                'returnType' => new Node\Name('void'),
+                                            ]),
+                                        ),
+                                    ]
+                                ),
+                            )
+                        ],
+                    ),
+                ),
+                new Node\Stmt\Return_(
+                    new Expr\FuncCall(
+                        new Node\Name('\React\Promise\resolve'),
+                        [
+                            new Arg(
+                                new Node\Expr\Variable('stream'),
+                            ),
+                        ],
+                    ),
+                ),
+            ]),
+        ];
+    }
+
+    private static function makeCall(\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Path $path, string $operationClassname, callable $calWrap): array
+    {
+        return [
             new Node\Stmt\Expression(new Node\Expr\Assign(
                 new Node\Expr\Variable('operation'),
                 new Node\Expr\New_(
@@ -635,7 +797,7 @@ final class Client
                         ] : []),
                         ...iterator_to_array((function (array $params): iterable {
                             foreach ($params as $param) {
-                                yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('params')), new Node\Scalar\String_($param->name)));
+                                yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('requestBodyData')), new Node\Scalar\String_($param->name)));
                             }
                         })($operation->parameters)),
                     ],
@@ -644,7 +806,7 @@ final class Client
             new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', [
                 new Arg(new Node\Expr\Variable(new Node\Name('requestBodyData')))
             ]))),
-            new Node\Stmt\Return_(new Node\Expr\MethodCall(
+            $calWrap(new Node\Expr\MethodCall(
                 new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
@@ -693,7 +855,7 @@ final class Client
                             new Node\Expr\Variable('operation'),
                         ],
                         'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique([
-                            ...($operation->matchMethod === 'STREAM' ? ['\\' . Observable::class] : []),
+                            ...($operation->matchMethod === 'STREAM' || $operation->matchMethod === 'LIST' ? ['\\' . Observable::class] : []),
                             ...$operation->returnType,
                         ]))) : null,
                     ]))

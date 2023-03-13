@@ -3,5 +3,7 @@ spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/a
 namespace: ApiClients\Client\Github
 destination: generated
 voter:
+  listOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
   streamOperation:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId

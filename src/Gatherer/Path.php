@@ -33,9 +33,37 @@ final class Path
                 $method,
                 $method,
                 $path,
+                [],
                 $operation,
                 $schemaRegistry,
             );
+
+            if (array_key_exists('listOperation', $voters)) {
+                $shouldStream = false;
+                foreach ($voters['listOperation'] as $voter) {
+                    if ($voter::list($opp)) {
+                        $shouldStream = true;
+                        break;
+                    }
+                }
+                if ($shouldStream) {
+                    $operations[] = Operation::gather(
+                        $operationClassName . 'Listing',
+                        'LIST',
+                        $method,
+                        $path,
+                        [
+                            'listOperation' => [
+                                'key' => $voter::incrementorKey(),
+                                'initialValue' => $voter::incrementorInitialValue(),
+                                'keys' => $voter::keys(),
+                            ],
+                        ],
+                        $operation,
+                        $schemaRegistry,
+                    );
+                }
+            }
 
             if (array_key_exists('streamOperation', $voters)) {
                 $shouldStream = false;
@@ -51,6 +79,7 @@ final class Path
                         'STREAM',
                         $method,
                         $path,
+                        [],
                         $operation,
                         $schemaRegistry,
                     );

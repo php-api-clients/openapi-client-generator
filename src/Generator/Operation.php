@@ -257,26 +257,36 @@ final class Operation
                     ],
                 );
 
+                $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'responseSchemaValidator'
+                    ),
+                    new Node\Name('validate'),
+                    [
+                        new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
+                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                            new Node\Expr\ClassConstFetch(
+                                new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
+                                new Node\Name('SCHEMA_JSON'),
+                            ),
+                            new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                        ])),
+                    ]
+                ));
+
                 $ctc = new Node\Stmt\Case_(
                     new Node\Scalar\String_($contentTypeSchema->contentType),
                     [
-                        new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                            new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'responseSchemaValidator'
-                            ),
-                            new Node\Name('validate'),
+                        $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
+                            new Node\Expr\Variable('body'),
+                            new Node\Expr\Variable('bodyItem'),
                             [
-                                new Node\Arg(new Node\Expr\Variable('body')),
-                                new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                                    new Node\Expr\ClassConstFetch(
-                                        new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                        new Node\Name('SCHEMA_JSON'),
-                                    ),
-                                    new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
-                                ])),
-                            ]
-                        )),
+                                'stmts' => [
+                                    $validate,
+                                ],
+                            ],
+                        ) : $validate,
                         new $returnOrThrow(
                             $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
                                 new Node\Expr\StaticCall(
@@ -559,7 +569,30 @@ final class Operation
             if ($getContentTypeAndBody) {
                 $noHydrator = false;
                 $createResponseMethod->addStmt(
-                    new Node\Expr\Assign(new Node\Expr\Variable('contentType'), new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getHeaderLine', [new Arg(new Node\Scalar\String_('Content-Type'))]))
+                    new Node\Expr\Assign(
+                        new Node\Expr\Array_([
+                            new Node\Expr\ArrayItem(
+                                new Node\Expr\Variable('contentType'),
+                            ),
+                        ], [
+                            'kind' => Node\Expr\Array_::KIND_SHORT,
+                        ]),
+                        new Node\Expr\FuncCall(
+                            new Node\Name('explode'),
+                            [
+                                new Arg(new Node\Scalar\String_(';')),
+                                new Arg(
+                                    new Node\Expr\MethodCall(
+                                        new Node\Expr\Variable('response'),
+                                        'getHeaderLine',
+                                        [
+                                            new Arg(new Node\Scalar\String_('Content-Type')),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
                 )->addStmt(
                     new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
                 );

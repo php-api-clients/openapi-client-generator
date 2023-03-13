@@ -25,7 +25,7 @@ final class Schema
             $gatheredProperty = Property::gather(
                 $className,
                 $propertyName,
-                is_array($schema->required) && !in_array($propertyName, $schema->required, false),
+                is_array($schema->required) && in_array($propertyName, $schema->required, false),
                 $property,
                 $schemaRegistry
             );

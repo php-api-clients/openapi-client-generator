@@ -139,11 +139,33 @@ final class Hydrators
                 (new Param('object'))->setType('object'),
             ])->addStmt(
                 new Node\Stmt\Return_(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable('this'),
+                        new Node\Name('serializeObjectOfType'),
+                        [
+                            new Node\Arg(
+                                new Node\Expr\Variable('object'),
+                            ),
+                            new Node\Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Expr\Variable('object'),
+                                    'class'
+                                ),
+                            ),
+                        ],
+                    ),
+                )
+            )
+        );
+
+        $class->addStmt(
+            $factory->method('serializeObjectOfType')->makePublic()->setReturnType('mixed')->addParams([
+                (new Param('object'))->setType('object'),
+                (new Param('className'))->setType('string'),
+            ])->addStmt(
+                new Node\Stmt\Return_(
                     new Node\Expr\Match_(
-                        new Node\Expr\ClassConstFetch(
-                            new Node\Expr\Variable('object'),
-                            'class'
-                        ),
+                        new Node\Expr\Variable('className'),
                         array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): Node\MatchArm  => new Node\MatchArm(
                             array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
                                 ltrim($namespace, '\\') . 'Schema\\' . $schema->className

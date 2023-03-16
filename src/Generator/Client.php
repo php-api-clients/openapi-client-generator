@@ -845,7 +845,7 @@ final class Client
                     new Arg(new Node\Expr\Closure([
                         'stmts' => [
                             new Node\Stmt\Return_(new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createResponse', [
-                                new Node\Expr\Variable('response')
+                                new Arg(new Node\Expr\Variable('response')),
                             ])),
                         ],
                         'params' => [
@@ -854,10 +854,16 @@ final class Client
                         'uses' => [
                             new Node\Expr\Variable('operation'),
                         ],
-                        'returnType' => count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique([
-                            ...($operation->matchMethod === 'STREAM' || $operation->matchMethod === 'LIST' ? ['\\' . Observable::class] : []),
-                            ...$operation->returnType,
-                        ]))) : null,
+                        'returnType' => (static function (\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation): null|Node\UnionType|Node\Name {
+                            if ($operation->matchMethod === 'LIST') {
+                                return new Node\Name('\\' . Observable::class);
+                            }
+
+                            return count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique([
+                                ...($operation->matchMethod === 'STREAM' ? ['\\' . Observable::class] : []),
+                                ...$operation->returnType,
+                            ]))) : null;
+                        })($operation),
                     ]))
                 ]
             )),

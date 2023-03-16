@@ -62,6 +62,7 @@ final class Operation
         }
         $response = [];
         foreach ($operation->responses as $code => $spec) {
+            $isError = $code >= 400;
             foreach ($spec->content as $contentType => $contentTypeMediaType) {
                 $responseClassname = $schemaRegistry->get($contentTypeMediaType->schema, 'Operation\\' . $classNameSanitized . '\\Response\\' . Utils::className(str_replace('/', '', $contentType) . '\\H' . $code));
                 $response[] = new OperationResponse(
@@ -74,7 +75,9 @@ final class Operation
                         $schemaRegistry,
                     ),
                 );
-                $returnType[] = $responseClassname;
+                if (!$isError) {
+                    $returnType[] = $responseClassname;
+                }
             }
             if ($code >= 300 && $code < 400) {
                 $headers = [];

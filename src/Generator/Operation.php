@@ -253,7 +253,12 @@ final class Operation
                             new Node\Name($object),
                             new Node\Name('class'),
                         )),
-                        new Node\Arg(new Node\Expr\Variable('body')),
+                        $isError ? new Arg(
+                            new Node\Expr\Array_([
+                                new Node\Expr\ArrayItem(new Node\Scalar\LNumber($code), new Node\Scalar\String_('status')),
+                                new Node\Expr\ArrayItem(new Node\Expr\Variable('body'), new Node\Scalar\String_('error')),
+                            ])
+                        ) : new Node\Arg(new Node\Expr\Variable('body')),
                     ],
                 );
 

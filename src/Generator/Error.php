@@ -31,6 +31,8 @@ final class Error
         $class = $factory->class(trim(Utils::basename($schema->className), '\\'))->extend('\\' . \Error::class)->makeFinal();
 
         $class->addStmt((new BuilderFactory())->method('__construct')->makePublic()->addParam(
+            (new PromotedPropertyAsParam('status'))->setType('int')
+        )->addParam(
             (new PromotedPropertyAsParam('error'))->setType('Schema\\' . $schema->className)
         ));
 

@@ -250,17 +250,26 @@ final class Operation
                     new Node\Name('hydrateObject'),
                     [
                         new Node\Arg(new Node\Expr\ClassConstFetch(
-                            new Node\Name($object),
+                            new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
                             new Node\Name('class'),
                         )),
-                        $isError ? new Arg(
-                            new Node\Expr\Array_([
-                                new Node\Expr\ArrayItem(new Node\Scalar\LNumber($code), new Node\Scalar\String_('status')),
-                                new Node\Expr\ArrayItem(new Node\Expr\Variable('body'), new Node\Scalar\String_('error')),
-                            ])
-                        ) : new Node\Arg(new Node\Expr\Variable('body')),
+                        new Node\Arg(new Node\Expr\Variable('body')),
                     ],
                 );
+
+                if ($isError) {
+                    $hydrate = new Node\Expr\New_(
+                        new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
+                        [
+                            new Arg(
+                                new Node\Scalar\LNumber($code),
+                            ),
+                            new Arg(
+                                $hydrate,
+                            ),
+                        ],
+                    );
+                }
 
                 $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(

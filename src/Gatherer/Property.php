@@ -2,12 +2,10 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use cebe\openapi\spec\Schema as baseSchema;
-use Jawira\CaseConverter\Convert;
-use function Rikudou\ArrayMergeRecursive\array_merge_recursive;
+use Ckr\Util\ArrayMerger;
 
 final class Property
 {
@@ -63,7 +61,7 @@ final class Property
     {
         if ($type->type === 'array') {
             if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-                $exampleData = array_merge_recursive($type->payload->example, $exampleData ?? []);
+                $exampleData = ArrayMerger::doMerge($type->payload->example, $exampleData ?? [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY);
             } else if ($type->payload instanceof PropertyType) {
                 $exampleData = self::generateExampleData($exampleData, $type->payload, $propertyName);
             }
@@ -72,7 +70,7 @@ final class Property
 
 
         if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-            return array_merge_recursive($type->payload->example, is_array($exampleData) ? $exampleData : []);
+            return ArrayMerger::doMerge($type->payload->example, is_array($exampleData) ? $exampleData : [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY);
         } else if ($exampleData === null && $type->type=== 'scalar') {
             if ($type->payload === 'int') {
                 return 13;

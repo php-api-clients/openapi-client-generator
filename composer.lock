@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "297dcba4eb9941cce558f6eccd1c64e1",
+    "content-hash": "5e8f3e126bd8184ffe650a85edc330eb",
     "packages": [
         {
             "name": "api-clients/contracts",
@@ -116,6 +116,49 @@
                 "source": "https://github.com/cebe/php-openapi"
             },
             "time": "2022-02-09T13:37:56+00:00"
+        },
+        {
+            "name": "ckr/arraymerger",
+            "version": "3.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ckressibucher/array_merger.git",
+                "reference": "e9ac57360ca8c3002a674fdca9fd0b527dd5b651"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ckressibucher/array_merger/zipball/e9ac57360ca8c3002a674fdca9fd0b527dd5b651",
+                "reference": "e9ac57360ca8c3002a674fdca9fd0b527dd5b651",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0"
+            },
+            "require-dev": {
+                "phpspec/phpspec": "~7.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ckr\\Util\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Claudio Kressibucher",
+                    "email": "ckressibucher@graphicworks.ch"
+                }
+            ],
+            "description": "Provides functionality to merge arrays recursively",
+            "support": {
+                "issues": "https://github.com/ckressibucher/array_merger/issues",
+                "source": "https://github.com/ckressibucher/array_merger/tree/3.0.0"
+            },
+            "time": "2022-04-23T20:26:40+00:00"
         },
         {
             "name": "evenement/evenement",
@@ -1925,52 +1968,6 @@
                 "source": "https://github.com/Respect/Validation/tree/2.2.4"
             },
             "time": "2023-02-15T01:05:24+00:00"
-        },
-        {
-            "name": "rikudou/array-merge-recursive",
-            "version": "v1.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/RikudouSage/ArrayMergeRecursive.git",
-                "reference": "90379c4906bd0fd54a2816486a7511c5d50dd86d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/RikudouSage/ArrayMergeRecursive/zipball/90379c4906bd0fd54a2816486a7511c5d50dd86d",
-                "reference": "90379c4906bd0fd54a2816486a7511c5d50dd86d",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.3|^8.0"
-            },
-            "require-dev": {
-                "friendsofphp/php-cs-fixer": "^2.18",
-                "php-coveralls/php-coveralls": "^2.4",
-                "phpstan/phpstan": "^0.12.84",
-                "phpunit/phpunit": "^9.5"
-            },
-            "type": "library",
-            "autoload": {
-                "files": [
-                    "src/array_merge_recursive.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "WTFPL"
-            ],
-            "authors": [
-                {
-                    "name": "Dominik Chrastecky",
-                    "email": "dominik@chrastecky.cz"
-                }
-            ],
-            "description": "Replacement of built-in array_merge_recursive function that doesn't add values to array but replaces them",
-            "support": {
-                "issues": "https://github.com/RikudouSage/ArrayMergeRecursive/issues",
-                "source": "https://github.com/RikudouSage/ArrayMergeRecursive/tree/v1.0.3"
-            },
-            "time": "2021-04-22T14:29:38+00:00"
         },
         {
             "name": "ringcentral/psr7",

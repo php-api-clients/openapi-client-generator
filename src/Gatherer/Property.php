@@ -61,7 +61,7 @@ final class Property
     {
         if ($type->type === 'array') {
             if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-                $exampleData = ArrayMerger::doMerge($type->payload->example, $exampleData ?? [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY);
+                $exampleData = ArrayMerger::doMerge($type->payload->example, $exampleData ?? [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION);
             } else if ($type->payload instanceof PropertyType) {
                 $exampleData = self::generateExampleData($exampleData, $type->payload, $propertyName);
             }
@@ -70,7 +70,7 @@ final class Property
 
 
         if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
-            return ArrayMerger::doMerge($type->payload->example, is_array($exampleData) ? $exampleData : [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY);
+            return ArrayMerger::doMerge($type->payload->example, is_array($exampleData) ? $exampleData : [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION);
         } else if ($exampleData === null && $type->type=== 'scalar') {
             if ($type->payload === 'int') {
                 return 13;

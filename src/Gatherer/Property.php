@@ -6,6 +6,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use cebe\openapi\spec\Schema as baseSchema;
 use Ckr\Util\ArrayMerger;
+use Ramsey\Uuid\Uuid;
 
 final class Property
 {
@@ -45,11 +46,11 @@ final class Property
         );
         if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
             if (count($type->payload->properties) === 0) {
-                $type = new PropertyType('scalar', 'mixed', false);
+                $type = new PropertyType('scalar', null, 'mixed', false);
             }
         } else if ($type->payload instanceof PropertyType && $type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
             if (count($type->payload->payload->properties) === 0) {
-                $type = new PropertyType('scalar', 'mixed', false);
+                $type = new PropertyType('scalar', null, 'mixed', false);
             }
         }
         $exampleData = self::generateExampleData($exampleData, $type, $propertyName);
@@ -77,7 +78,23 @@ final class Property
             } elseif ($type->payload === 'bool') {
                 return false;
             } elseif ($type->payload === 'string') {
-                return 'generated_' . $propertyName;
+                if ($type->format === 'uri') {
+                    return 'https://example.com/';
+                }
+                if ($type->format === 'date-time') {
+                    return date(\DateTimeInterface::RFC3339, 0);
+                }
+                if ($type->format === 'uuid') {
+                    return Uuid::getFactory()->uuid6()->toString();
+                }
+                if ($type->format === 'ipv4') {
+                    return '127.0.0.1';
+                }
+                if ($type->format === 'ipv6') {
+                    return '::1';
+                }
+
+                return 'generated_' . $propertyName . '_' . ($type->format ?? 'null');
             }
         }
 

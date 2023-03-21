@@ -35,7 +35,8 @@
         "eventsauce/object-hydrator": "^1.2",
         "react/async": "^4.0",
         "wyrihaximus/react-awaitable-observable": "^1.0",
-        "ckr/arraymerger": "^3.0"
+        "ckr/arraymerger": "^3.0",
+        "ramsey/uuid": "^4.7"
     },
     "autoload": {
         "psr-4": {

@@ -23,6 +23,8 @@ final class Property
             $exampleData = $property->examples[0];
         } else if ($property->example !== null) {
             $exampleData = $property->example;
+        } else if (count($property->enum ?? []) > 0) {
+            $exampleData = $property->enum[0];
         }
 
         $propertyName = str_replace([

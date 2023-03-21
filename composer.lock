@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5e8f3e126bd8184ffe650a85edc330eb",
+    "content-hash": "34e0016dc2f865289987221ec2642357",
     "packages": [
         {
             "name": "api-clients/contracts",
@@ -466,20 +466,20 @@
         },
         {
             "name": "league/openapi-psr7-validator",
-            "version": "0.16.4",
+            "version": "0.18",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/openapi-psr7-validator.git",
-                "reference": "a87c402b6c9af07e4638ab542031c606483f75bd"
+                "reference": "5f98f98abf37f4533473699ef2ff2b4dc9b8d52e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/openapi-psr7-validator/zipball/a87c402b6c9af07e4638ab542031c606483f75bd",
-                "reference": "a87c402b6c9af07e4638ab542031c606483f75bd",
+                "url": "https://api.github.com/repos/thephpleague/openapi-psr7-validator/zipball/5f98f98abf37f4533473699ef2ff2b4dc9b8d52e",
+                "reference": "5f98f98abf37f4533473699ef2ff2b4dc9b8d52e",
                 "shasum": ""
             },
             "require": {
-                "cebe/php-openapi": "^1.3",
+                "cebe/php-openapi": "^1.6",
                 "ext-json": "*",
                 "league/uri": "^6.3",
                 "php": ">=7.2",
@@ -495,9 +495,9 @@
                 "guzzlehttp/psr7": "^1.5",
                 "hansott/psr7-cookies": "^3.0.2",
                 "phpstan/extension-installer": "^1.0",
-                "phpstan/phpstan": "^0.12.59",
-                "phpstan/phpstan-phpunit": "^0.12.16",
-                "phpstan/phpstan-webmozart-assert": "^0.12.7",
+                "phpstan/phpstan": "^1",
+                "phpstan/phpstan-phpunit": "^1",
+                "phpstan/phpstan-webmozart-assert": "^1",
                 "phpunit/phpunit": "^7 || ^8 || ^9",
                 "symfony/cache": "^5.1"
             },
@@ -521,9 +521,9 @@
             ],
             "support": {
                 "issues": "https://github.com/thephpleague/openapi-psr7-validator/issues",
-                "source": "https://github.com/thephpleague/openapi-psr7-validator/tree/0.16.4"
+                "source": "https://github.com/thephpleague/openapi-psr7-validator/tree/0.18"
             },
-            "time": "2021-10-06T13:40:02+00:00"
+            "time": "2022-03-01T10:34:32+00:00"
         },
         {
             "name": "league/uri",

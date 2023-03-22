@@ -4,11 +4,11 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7318a7cf9a3f8bd7c83ce2f06f27f192",
+    "content-hash": "5861812ae16cfcf6a0763b11b4b1a758",
     "packages": [
         {
             "name": "api-clients/contracts",
-            "version": "dev-main",
+            "version": "0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-api-clients/contracts.git",
@@ -23,7 +23,6 @@
             "require": {
                 "php": "^8.2"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -43,7 +42,7 @@
             "description": "PHP API Clients wide contracts",
             "support": {
                 "issues": "https://github.com/php-api-clients/contracts/issues",
-                "source": "https://github.com/php-api-clients/contracts/tree/main"
+                "source": "https://github.com/php-api-clients/contracts/tree/0.1.0"
             },
             "time": "2023-02-22T21:38:15+00:00"
         },
@@ -2881,8 +2880,7 @@
     ],
     "minimum-stability": "stable",
     "stability-flags": {
-        "cebe/php-openapi": 20,
-        "api-clients/contracts": 20
+        "cebe/php-openapi": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

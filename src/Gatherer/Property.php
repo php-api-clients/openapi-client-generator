@@ -6,6 +6,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use cebe\openapi\spec\Schema as baseSchema;
 use Ckr\Util\ArrayMerger;
+use Jawira\CaseConverter\Convert;
 use Ramsey\Uuid\Uuid;
 
 final class Property
@@ -57,7 +58,14 @@ final class Property
         }
         $exampleData = self::generateExampleData($exampleData, $type, $propertyName);
 
-        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property($propertyName, $property->description ?? '', $exampleData, [$type], $type->nullable);
+        return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property(
+            (new Convert($propertyName))->toCamel(),
+            $propertyName,
+                $property->description ?? '',
+            $exampleData,
+            [$type],
+            $type->nullable
+        );
     }
 
     private static function generateExampleData(mixed $exampleData, PropertyType $type, string $propertyName): mixed

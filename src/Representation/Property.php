@@ -6,6 +6,7 @@ final class Property
 {
     public function __construct(
         public readonly string $name,
+        public readonly string $sourceName,
         public readonly string $description,
         public readonly mixed $exampleData,
         /** @var array<PropertyType> */

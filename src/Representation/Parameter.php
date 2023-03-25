@@ -6,6 +6,7 @@ final class Parameter
 {
     public function __construct(
         public readonly string $name,
+        public readonly string $targetName,
         public readonly string $description,
         public readonly string $type,
         public readonly string $location,

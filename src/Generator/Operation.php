@@ -134,13 +134,13 @@ final class Operation
                 )
             );
             if ($parameter->location === 'path' || $parameter->location === 'query') {
-                $requestReplaces['{' . $parameter->name . '}'] = new Node\Expr\PropertyFetch(
+                $requestReplaces['{' . $parameter->targetName . '}'] = new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
                     $parameter->name
                 );
             }
             if ($parameter->location === 'query') {
-                $query[] = $parameter->name . '={' . $parameter->name . '}';
+                $query[] = $parameter->name . '={' . $parameter->targetName . '}';
             }
         }
         $requestParameters = [

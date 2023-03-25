@@ -89,6 +89,16 @@ final class Schema
             }
 
             $constructorParam = new PromotedPropertyAsParam($property->name);
+            if ($property->name !== $property->sourceName) {
+                $constructorParam->addAttribute(
+                    new Node\Attribute(
+                        new Node\Name('\\' . \EventSauce\ObjectHydrator\MapFrom::class),
+                        [
+                            new Node\Arg(new Node\Scalar\String_($property->sourceName)),
+                        ],
+                    ),
+                );
+            }
 
             $types = [];
             foreach ($property->type as $type) {

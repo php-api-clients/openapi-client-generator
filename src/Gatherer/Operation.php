@@ -41,6 +41,7 @@ final class Operation
             ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]));
 
             $parameters[] = new Parameter(
+                (new Convert($parameter->name))->toCamel(),
                 $parameter->name,
                 (string)$parameter->description,
                 $parameterType,

@@ -31,8 +31,8 @@ final class Schema
             );
             $properties[] = $gatheredProperty;
 
-            if (!array_key_exists($gatheredProperty->name, $example)) {
-                $example[$gatheredProperty->name] = $gatheredProperty->exampleData;
+            if (!array_key_exists($gatheredProperty->sourceName, $example)) {
+                $example[$gatheredProperty->sourceName] = $gatheredProperty->exampleData;
             }
         }
 

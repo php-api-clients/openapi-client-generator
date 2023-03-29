@@ -26,6 +26,13 @@ final class Schema
      */
     private array $unknownSchemasJson = [];
 
+    private bool $allowDuplicatedSchemas = false;
+
+    public function setAllowDuplicatedSchemas(bool $allow): void
+    {
+        $this->allowDuplicatedSchemas = $allow;
+    }
+
     public function addClassName(string $className, openAPISchema $schema): void
     {
         if ($schema->type === 'array') {
@@ -47,10 +54,10 @@ final class Schema
         }
 
         $json = json_encode($schema->getSerializableData());
-        if (array_key_exists($json, $this->json)) {
+        if (!$this->allowDuplicatedSchemas && array_key_exists($json, $this->json)) {
             return $this->json[$json];
         }
-        if (array_key_exists($json, $this->unknownSchemasJson)) {
+        if (!$this->allowDuplicatedSchemas && array_key_exists($json, $this->unknownSchemasJson)) {
             return $this->unknownSchemasJson[$json];
         }
 

@@ -2,6 +2,8 @@
 spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/api.github.com.yaml
 namespace: ApiClients\Client\Github
 destination: generated
+schemas:
+  allowDuplication: true
 voter:
   listOperation:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery

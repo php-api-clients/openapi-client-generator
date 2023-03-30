@@ -25,12 +25,16 @@ final class Schema
      * @var array<string, class-string>
      */
     private array $unknownSchemasJson = [];
+    /**
+     * @var array<class-string, array<class-string>>
+     */
+    private array $aliasses = [];
 
-    private bool $allowDuplicatedSchemas = false;
-
-    public function setAllowDuplicatedSchemas(bool $allow): void
+    public function __construct(
+        private readonly bool $allowDuplicatedSchemas,
+        private readonly bool $useAliasesForDuplication,
+    )
     {
-        $this->allowDuplicatedSchemas = $allow;
     }
 
     public function addClassName(string $className, openAPISchema $schema): void
@@ -62,6 +66,19 @@ final class Schema
         }
 
         $className = Utils::fixKeyword($fallbackName);
+
+        if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->json)) {
+            $this->aliasses[$this->json[$json]][] = $className;
+
+            return $className;
+        }
+
+        if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->unknownSchemasJson)) {
+            $this->aliasses[$this->unknownSchemasJson[$json]][] = $className;
+
+            return $className;
+        }
+
         $suffix = 'a';
         while (array_key_exists($className, $this->unknownSchemas)) {
             $className = Utils::fixKeyword($fallbackName . strtoupper($suffix++));
@@ -87,5 +104,12 @@ final class Schema
         $unknownSchemas = $this->unknownSchemas;
         $this->unknownSchemas = [];
         yield from $unknownSchemas;
+    }
+
+    public function aliasesForClassName(string $classname): iterable
+    {
+        if (array_key_exists($classname, $this->aliasses)) {
+            yield from array_unique($this->aliasses[$classname]);
+        }
     }
 }

@@ -104,10 +104,10 @@ final class Generator
      */
     private function all(string $namespace, string $rootPath, Configuration $configuration): iterable
     {
-        $schemaRegistry = new SchemaRegistry();
-        if ($configuration->schemas !== null && $configuration->schemas->allowDuplication !== null) {
-            $schemaRegistry->setAllowDuplicatedSchemas($configuration->schemas->allowDuplication);
-        }
+        $schemaRegistry = new SchemaRegistry(
+            $configuration->schemas !== null && $configuration->schemas->allowDuplication !== null ? $configuration->schemas->allowDuplication : false,
+            $configuration->schemas !== null && $configuration->schemas->useAliasesForDuplication !== null ? $configuration->schemas->useAliasesForDuplication : false,
+        );
         $schemas = [];
         $throwableSchemaRegistry = new ThrowableSchema();
         if (count($this->spec->components->schemas ?? []) > 0) {
@@ -171,6 +171,7 @@ final class Generator
             yield from Schema::generate(
                 $namespace,
                 $schema,
+                [...$schemaRegistry->aliasesForClassName($schema->className)],
             );
             if ($throwableSchemaRegistry->has($schema->className)) {
                 yield from Error::generate(

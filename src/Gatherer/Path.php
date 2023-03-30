@@ -2,22 +2,19 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
-use ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\StreamOperation;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Voter;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use cebe\openapi\spec\PathItem;
 
 final class Path
 {
-    /**
-     * @param array{streamOperation: array<StreamOperation>} $voters
-     */
     public static function gather(
         string $className,
         string $path,
         PathItem $pathItem,
         SchemaRegistry $schemaRegistry,
-        array $voters,
+        ?Voter $voters,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Path {
         $className = Utils::fixKeyword($className);
         $operations = [];
@@ -38,9 +35,9 @@ final class Path
                 $schemaRegistry,
             );
 
-            if (array_key_exists('listOperation', $voters)) {
+            if ($voters !== null && is_array($voters->listOperation)) {
                 $shouldStream = false;
-                foreach ($voters['listOperation'] as $voter) {
+                foreach ($voters->listOperation as $voter) {
                     if ($voter::list($opp)) {
                         $shouldStream = true;
                         break;
@@ -65,9 +62,9 @@ final class Path
                 }
             }
 
-            if (array_key_exists('streamOperation', $voters)) {
+            if ($voters !== null && is_array($voters->streamOperation)) {
                 $shouldStream = false;
-                foreach ($voters['streamOperation'] as $voter) {
+                foreach ($voters->streamOperation as $voter) {
                     if ($voter::stream($opp)) {
                         $shouldStream = true;
                         break;

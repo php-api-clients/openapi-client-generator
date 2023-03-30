@@ -30,13 +30,13 @@ final class Generator
         $this->spec = Reader::readFromYamlFile($specUrl);
     }
 
-    public function generate(string $namespace, string $destinationPath, array $schemas, array $voters)
+    public function generate(string $namespace, string $destinationPath, Configuration $configuration)
     {
         $existingFiles = iterator_to_array(Files::listExistingFiles($destinationPath . DIRECTORY_SEPARATOR));
         $namespace = Utils::cleanUpNamespace($namespace);
         $codePrinter = new Standard();
 
-        foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR, $schemas, $voters) as $file) {
+        foreach ($this->all($namespace, $destinationPath . DIRECTORY_SEPARATOR, $configuration) as $file) {
             $fileName = $destinationPath . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace))) . '.php';
             if ($file->contents instanceof Node\Stmt\Namespace_) {
                 array_unshift($file->contents->stmts, ...[
@@ -102,11 +102,11 @@ final class Generator
     /**
      * @return iterable<File>
      */
-    private function all(string $namespace, string $rootPath, array $schemas, array $voters): iterable
+    private function all(string $namespace, string $rootPath, Configuration $configuration): iterable
     {
         $schemaRegistry = new SchemaRegistry();
-        if (array_key_exists('allowDuplication', $schemas)) {
-            $schemaRegistry->setAllowDuplicatedSchemas($schemas['allowDuplication']);
+        if ($configuration->schemas !== null && $configuration->schemas->allowDuplication !== null) {
+            $schemaRegistry->setAllowDuplicatedSchemas($configuration->schemas->allowDuplication);
         }
         $schemas = [];
         $throwableSchemaRegistry = new ThrowableSchema();
@@ -141,7 +141,7 @@ final class Generator
                     continue;
                 }
 
-                $paths[] = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry, $voters);
+                $paths[] = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry, $configuration->voter);
 
             }
         }

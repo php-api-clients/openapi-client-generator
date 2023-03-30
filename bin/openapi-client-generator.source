@@ -1,7 +1,9 @@
 #!/usr/bin/php
 <?php declare(strict_types=1);
 
+use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\Generator;
+use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
 use Symfony\Component\Yaml\Yaml;
 
 (function(): void {
@@ -15,9 +17,9 @@ use Symfony\Component\Yaml\Yaml;
     /**
      * Create and boot up the application
      */
-    exit((function (string $configuration): int {
-        $yaml = Yaml::parseFile($configuration);
-        (new Generator($yaml['spec']))->generate($yaml['namespace'] . '\\', dirname($configuration) . DIRECTORY_SEPARATOR . $yaml['destination'], $yaml['schemas'] ?? [], $yaml['voter'] ?? []);
+    exit((function (string $configurationFile): int {
+        $configuration = (new ObjectMapperUsingReflection())->hydrateObject(Configuration::class, Yaml::parseFile($configurationFile));
+        (new Generator($configuration->spec))->generate($configuration->namespace . '\\', dirname($configurationFile) . DIRECTORY_SEPARATOR . $configuration->destination, $configuration);
 
         return 0;
     })($configuration));

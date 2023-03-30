@@ -26,10 +26,15 @@ final class Schema
      * @param OpenAPiSchema $schema
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): iterable
+    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema, array $aliases): iterable
     {
+        $className = $schema->className;
+        if (count($aliases) > 0) {
+            $className = 'AliasAbstract\\Abstract' . md5(json_encode($schema->schema->getSerializableData()));
+            $aliases[] = $schema->className;
+        }
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $schema->className), '\\'));
+        $stmt = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $className), '\\'));
 
         $schemaJson = new Node\Stmt\ClassConst(
             [
@@ -43,7 +48,14 @@ final class Schema
             Class_::MODIFIER_PUBLIC
         );
 
-        $class = $factory->class(trim(Utils::basename($schema->className), '\\'))->makeFinal()->makeReadonly()->addStmt(
+        $class = $factory->class(trim(Utils::basename($className), '\\'))->makeReadonly();
+
+        if (count($aliases) === 0) {
+            $class = $class->makeFinal();
+        } else {
+            $class = $class->makeAbstract();
+        }
+        $class->addStmt(
             $schemaJson
         )->addStmt(
             new Node\Stmt\ClassConst(
@@ -146,6 +158,14 @@ final class Schema
         $class->addStmt($constructor);
 
 
-        yield new File($namespace . 'Schema\\' . $schema->className, $stmt->addStmt($class)->getNode());
+        yield new File($namespace . 'Schema\\' . $className, $stmt->addStmt($class)->getNode());
+
+        foreach ($aliases as $alias) {
+            $aliasTms = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $alias), '\\'));
+
+            $aliasClass = $factory->class(trim(Utils::basename($alias), '\\'))->makeFinal()->makeReadonly()->extend('Schema\\' . $className);
+
+            yield new File($namespace . 'Schema\\' . $alias, $aliasTms->addStmt($aliasClass)->getNode());
+        }
     }
 }

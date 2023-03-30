@@ -4,6 +4,7 @@ namespace: ApiClients\Client\Github
 destination: generated
 schemas:
   allowDuplication: true
+  useAliasesForDuplication: true
 voter:
   listOperation:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery

@@ -1,2 +1,4 @@
 bin/openapi-client-generator
+example/generated
+example/generated-subsplit
 vendor

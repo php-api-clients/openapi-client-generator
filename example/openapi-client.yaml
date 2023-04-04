@@ -1,0 +1,29 @@
+#spec: https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
+spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/example/api.github.com.yaml
+namespace: ApiClients\Client\Github
+destination:
+  root: generated-subsplit
+  source: src
+schemas:
+  allowDuplication: true
+  useAliasesForDuplication: true
+voter:
+  listOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
+  streamOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId
+subSplit:
+  templatesDir: templates
+  branch: v0.3.x
+  subSplitConfiguration: etc/config.subsplit-publish.json
+  fullName: GitHub {{ section }}
+  vendor: api-clients
+  sectionGenerator:
+    - ApiClients\Tools\OpenApiClientGenerator\SectionGenerator\OperationIdSlash
+    - ApiClients\Tools\OpenApiClientGenerator\SectionGenerator\WebHooks
+  rootPackage:
+    name: github
+    repository: git@github.com:php-api-clients/github.git
+  sectionPackage:
+    name: github-{{ section }}
+    repository: git@github.com:php-api-clients/github-{{ section }}.git

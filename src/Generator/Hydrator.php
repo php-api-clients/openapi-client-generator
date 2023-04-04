@@ -20,7 +20,7 @@ final class Hydrator
      * @param array<string, string> $operations
      * @return iterable<Node>
      */
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): iterable
     {
         $schemaClasses = [];
 
@@ -30,6 +30,7 @@ final class Hydrator
 
         if (count($schemaClasses) > 0) {
             yield new File(
+                $pathPrefix,
                 trim($namespace, '\\') . '\\HHydrator\\' . $hydrator->className,
                 (new ObjectMapperCodeGenerator())->dump(
                     array_unique(

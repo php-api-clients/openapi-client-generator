@@ -14,6 +14,7 @@ use PhpParser\PrettyPrinter\Standard;
 final class File
 {
     public function __construct(
+        public readonly string $pathPrefix,
         public readonly string $fqcn,
         public readonly Node|string $contents,
     ){

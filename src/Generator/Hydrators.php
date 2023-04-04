@@ -13,7 +13,7 @@ use PhpParser\Node;
 
 final class Hydrators
 {
-    public static function generate(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator ...$hydrators): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator ...$hydrators): iterable
     {
         $knownScehmas = [];
         $factory = new BuilderFactory();
@@ -284,6 +284,6 @@ final class Hydrators
 
         }
 
-        yield new File($namespace . 'Hydrators', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'Hydrators', $stmt->addStmt($class)->getNode());
     }
 }

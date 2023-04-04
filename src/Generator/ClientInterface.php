@@ -31,7 +31,7 @@ final class ClientInterface
      * @param array<\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation> $paths
      * @return iterable
      */
-    public static function generate(string $namespace, array $operations): iterable
+    public static function generate(string $pathPrefix, string $namespace, array $operations): iterable
     {
         $factory = new BuilderFactory();
         $stmt = $factory->namespace(trim($namespace, '\\'));
@@ -153,6 +153,6 @@ final class ClientInterface
             $factory->method('webHooks')->setReturnType('\\' . WebHooksInterface::class)->makePublic()
         );
 
-        yield new File($namespace . 'ClientInterface', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $namespace . 'ClientInterface', $stmt->addStmt($class)->getNode());
     }
 }

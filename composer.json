@@ -36,11 +36,14 @@
         "react/async": "^4.0",
         "wyrihaximus/react-awaitable-observable": "^1.0",
         "ckr/arraymerger": "^3.0",
-        "ramsey/uuid": "^4.7"
+        "ramsey/uuid": "^4.7",
+        "wyrihaximus/subsplit-tools": "dev-main",
+        "wyrihaximus/simple-twig": "^2.1"
     },
     "autoload": {
         "psr-4": {
-            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/"
+            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/",
+            "ApiClients\\Client\\Github\\": "generated/"
         },
         "files": [
             "external_files/cebe/JsonReference.php",

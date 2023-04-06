@@ -1,8 +1,0 @@
-spec: {{ specUrl }}
-namespace: ApiClients\Client\{{ namespace }}
-destination: ../src
-voter:
-  listOperation:
-    - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
-  streamOperation:
-    - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId

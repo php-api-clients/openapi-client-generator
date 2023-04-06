@@ -297,7 +297,7 @@ final class Client
                         new Node\Expr\Variable('pathChunksCount'),
                         new Node\Scalar\LNumber($chunkCount),
                     ),
-                    self::traverseOperations($moar['operations'], $moar['paths'], 0),
+                    self::traverseOperations($namespace, $moar['operations'], $moar['paths'], 0),
                 ];
             }
             $operationsIfs[] = [
@@ -438,7 +438,7 @@ final class Client
             ))
         );
 
-        yield new File($pathPrefix, $namespace . 'Client', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Client', $stmt->addStmt($class)->getNode());
     }
 
     private static function traverseOperationPaths(array $operations, array &$operationPath, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Path $path): array
@@ -465,7 +465,7 @@ final class Client
         return $operations;
     }
 
-    private static function traverseOperations(array $operations, array $paths, int $level): array
+    private static function traverseOperations(string $namespace, array $operations, array $paths, int $level): array
     {
         $nonArgumentPathChunks = [];
         foreach ($paths as $pathChunk => $_) {
@@ -483,7 +483,7 @@ final class Client
                     new Node\Expr\Variable('call'),
                     new Node\Scalar\String_($operation['operation']->matchMethod . ' ' . $operation['operation']->path),
                 ),
-                static::callOperation(...$operation),
+                static::callOperation($namespace, ...$operation),
             ];
         }
         foreach ($paths as $pathChunk => $path) {
@@ -495,7 +495,7 @@ final class Client
                     ),
                     new Node\Scalar\String_($pathChunk),
                 ),
-                self::traverseOperations($path['operations'], $path['paths'], $level + 1),
+                self::traverseOperations($namespace, $path['operations'], $path['paths'], $level + 1),
             ];
         }
 
@@ -518,58 +518,67 @@ final class Client
         )];
     }
 
-    private static function callOperation(\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Path $path): array
+    private static function callOperation(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Path $path): array
     {
         $operationClassname = 'Operation\\' . Utils::className(str_replace('/', '\\', $operation->className));
         return [
             new Node\Stmt\Expression(new Node\Expr\Assign(
-                new Node\Expr\Variable('requestBodyData'),
+                new Node\Expr\Variable('arguments'),
                 new Node\Expr\Array_(),
             )),
-            new Node\Stmt\Foreach_(new Node\Expr\FuncCall(
-                new Node\Name('\array_keys'),
-                [
-                    new Arg(new Node\Expr\Variable(new Node\Name('params'))),
-                ],
-            ), new Node\Expr\Variable(new Node\Name('param')), [
-                'stmts' => [
-                    new Node\Stmt\If_(
-                        new Node\Expr\BinaryOp\NotEqual(
-                            new Node\Expr\FuncCall(
-                                new Node\Name('\in_array'),
+            ...(function (array $params): iterable {
+                foreach ($params as $param) {
+                    yield new Node\Stmt\If_(
+                        new Expr\BinaryOp\Identical(
+                            new Expr\FuncCall(
+                                new Node\Name('array_key_exists'),
                                 [
-                                    new Arg(new Node\Expr\Variable(new Node\Name('param'))),
-                                    new Arg(new Node\Expr\Array_(
-                                        iterator_to_array((function (array $params): iterable {
-                                            foreach ($params as $param) {
-                                                yield new Node\Expr\ArrayItem(new Node\Scalar\String_($param->name));
-                                            }
-                                        })($operation->parameters)),
-                                    )),
+                                    new Arg(new Node\Scalar\String_($param->targetName)),
+                                    new Arg(new Node\Expr\Variable('params')),
                                 ],
                             ),
-                            new Node\Expr\ConstFetch(new Node\Name('false'))
+                            new Expr\ConstFetch(
+                                new Node\Name(
+                                    'false'
+                                )
+                            ),
                         ),
                         [
                             'stmts' => [
-                                new Node\Stmt\Expression(
-                                    new Node\Expr\Assign(
-                                        new Node\Expr\ArrayDimFetch(
-                                            new Node\Expr\Variable('requestBodyData'),
-                                            new Node\Expr\Variable('param'),
-                                        ),
-                                        new Node\Expr\ArrayDimFetch(
-                                            new Node\Expr\Variable('params'),
-                                            new Node\Expr\Variable('param'),
-                                        ),
+                                new Node\Stmt\Throw_(
+                                    new Node\Expr\New_(
+                                        new Node\Name('\InvalidArgumentException'),
+                                        [
+                                            new Arg(
+                                                new Node\Scalar\String_('Missing mandatory field: ' . $param->targetName)
+                                            )
+                                        ],
                                     ),
                                 ),
                             ],
-                        ]
-                    ),
-                ],
-            ]),
-            ...(implode('|', $operation->returnType) === ('\\' . ResponseInterface::class) ? [] : [new Node\Stmt\If_(
+                        ],
+                    );
+                    yield new Node\Stmt\Expression(
+                        new Node\Expr\Assign(
+                            new Node\Expr\ArrayDimFetch(
+                                new Node\Expr\Variable('arguments'),
+                                new Node\Scalar\String_($param->targetName),
+                            ),
+                            new Node\Expr\ArrayDimFetch(
+                                new Node\Expr\Variable('params'),
+                                new Node\Scalar\String_($param->targetName),
+                            ),
+                        ),
+                    );
+                    yield new Node\Stmt\Unset_([
+                        new Node\Expr\ArrayDimFetch(
+                            new Node\Expr\Variable('params'),
+                            new Node\Scalar\String_($param->targetName),
+                        ),
+                    ]);
+                }
+            })($operation->parameters),
+            ...(count(array_filter((new \ReflectionClass($namespace . $operationClassname))->getConstructor()->getParameters(), static fn (\ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0 ? [new Node\Stmt\If_(
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\FuncCall(
                         new Node\Name('\array_key_exists'),
@@ -608,8 +617,8 @@ final class Client
                         ),
                     ],
                 ]
-            )]),
-            ...($operation->matchMethod !== 'LIST' ? self::makeCall($operation, $path, $operationClassname, static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)) : [
+            )] : []),
+            ...($operation->matchMethod !== 'LIST' ? self::makeCall($namespace, $operation, $path, $operationClassname, static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)) : [
                 new Node\Stmt\Expression(
                     new Node\Expr\Assign(
                         new Node\Expr\Variable('stream'),
@@ -634,7 +643,7 @@ final class Client
                                                         new Node\Stmt\Expression(
                                                             new Node\Expr\Assign(
                                                                 new Expr\ArrayDimFetch(
-                                                                    new Expr\Variable('requestBodyData'),
+                                                                    new Expr\Variable('arguments'),
                                                                     new Node\Scalar\String_($operation->metaData['listOperation']['key']),
                                                                 ),
                                                                 new Node\Scalar\LNumber($operation->metaData['listOperation']['initialValue']),
@@ -653,6 +662,7 @@ final class Client
                                                                     ),
                                                                 ),
                                                                 ...self::makeCall(
+                                                                    $namespace,
                                                                     $operation,
                                                                     $path,
                                                                     $operationClassname,
@@ -700,7 +710,7 @@ final class Client
                                                                 new Node\Stmt\Expression(
                                                                     new Expr\PostInc(
                                                                         new Expr\ArrayDimFetch(
-                                                                            new Expr\Variable('requestBodyData'),
+                                                                            new Expr\Variable('argguments'),
                                                                             new Node\Scalar\String_($operation->metaData['listOperation']['key']),
                                                                         ),
                                                                     ),
@@ -762,7 +772,7 @@ final class Client
         ];
     }
 
-    private static function makeCall(\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Path $path, string $operationClassname, callable $calWrap): array
+    private static function makeCall(string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Path $path, string $operationClassname, callable $calWrap): array
     {
         return [
             new Node\Stmt\Expression(new Node\Expr\Assign(
@@ -776,7 +786,7 @@ final class Client
                                 'requestSchemaValidator'
                             )),
                         ] : []),
-                        ...(implode('|', $operation->returnType) === ('\\' . ResponseInterface::class) ? [] : [
+                        ...(count(array_filter((new \ReflectionClass($namespace . $operationClassname))->getConstructor()->getParameters(), static fn (\ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0 ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
                                 'responseSchemaValidator'
@@ -788,7 +798,7 @@ final class Client
                                 new Node\Name('Hydrator\\' . $path->hydrator->className),
                                 new Node\Name('class'),
                             ))),
-                        ]),
+                        ] : []),
                         ...($operation->matchMethod === 'STREAM' ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
@@ -797,7 +807,7 @@ final class Client
                         ] : []),
                         ...iterator_to_array((function (array $params): iterable {
                             foreach ($params as $param) {
-                                yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('requestBodyData')), new Node\Scalar\String_($param->name)));
+                                yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('arguments')), new Node\Scalar\String_($param->targetName)));
                             }
                         })($operation->parameters)),
                     ],
@@ -815,7 +825,7 @@ final class Client
                     'request',
                     [
                         new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getMethod'),),
-                        new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getUri'),),
+                        new Node\Arg(new Expr\Cast\String_(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getUri'))),
                         new Node\Arg(
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
@@ -837,7 +847,7 @@ final class Client
                                 'getHeaders'
                             ),
                         ),
-                        new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getBody'),),
+                        new Node\Arg(new Expr\Cast\String_(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getBody'))),
                     ]
                 ),
                 'then',
@@ -854,16 +864,17 @@ final class Client
                         'uses' => [
                             new Node\Expr\Variable('operation'),
                         ],
-                        'returnType' => (static function (\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation): null|Node\UnionType|Node\Name {
-                            if ($operation->matchMethod === 'LIST') {
-                                return new Node\Name('\\' . Observable::class);
+                        'returnType' => (static function (\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, string $namespace, string $operationClassname): null|Node\UnionType|Node\Name {
+                            $returnType = (new \ReflectionClass($namespace . $operationClassname))->getMethod('createResponse')->getReturnType();
+                            if ($returnType === null) {
+                                return null;
+                            }
+                            if ((string)$returnType === 'mixed') {
+                                return new Node\Name((string)$returnType);
                             }
 
-                            return count($operation->returnType) > 0 ? new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name(strpos($object, '\\') === 0 ? $object : 'Schema\\' . $object), array_unique([
-                                ...($operation->matchMethod === 'STREAM' ? ['\\' . Observable::class] : []),
-                                ...$operation->returnType,
-                            ]))) : null;
-                        })($operation),
+                            return new Node\UnionType(array_map(static fn(string $object): Node\Name => new Node\Name('\\' . $object), explode('|', (string)$returnType)));
+                        })($operation, $namespace, $operationClassname),
                     ]))
                 ]
             )),

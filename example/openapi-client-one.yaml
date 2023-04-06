@@ -1,0 +1,22 @@
+spec: https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
+#spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/example/api.github.com.yaml
+namespace:
+  source: ApiClients\Client\Github
+  test: ApiClients\Tests\Client\Github
+destination:
+  root: generated
+  source: src
+  test: tests
+templates:
+  dir: templates
+  variables:
+    fullname: GitHub
+    packageName: github
+schemas:
+  allowDuplication: true
+  useAliasesForDuplication: true
+voter:
+  listOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
+  streamOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId

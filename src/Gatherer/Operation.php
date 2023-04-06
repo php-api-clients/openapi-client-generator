@@ -13,7 +13,9 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
 use cebe\openapi\spec\Operation as openAPIOperation;
 use cebe\openapi\spec\PathItem;
 use Jawira\CaseConverter\Convert;
+use PhpParser\Node;
 use Psr\Http\Message\ResponseInterface;
+use Ramsey\Uuid\Uuid;
 
 final class Operation
 {
@@ -40,13 +42,54 @@ final class Operation
                 'bool',
             ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]));
 
+            [$example, $exampleNode] = (static function (string $type, ?string $format): array {
+                if ($type === 'int' || $type === '?int') {
+                    return [13, new Node\Scalar\LNumber(13)];
+                } elseif ($type === 'float' || $type === '?float') {
+                    return [13.13, new Node\Scalar\LNumber(13.13)];
+                } elseif ($type === 'bool' || $type === '?bool') {
+                    return [false, new Node\Expr\ConstFetch(
+                        new Node\Name(
+                            'false',
+                        ),
+                    )];
+                } elseif ($type === 'string' || $type === '?string') {
+                    if ($format === 'uri') {
+                        return ['https://example.com/', new Node\Scalar\String_('https://example.com/')];
+                    }
+                    if ($format === 'date-time') {
+                        return [date(\DateTimeInterface::RFC3339, 0), new Node\Scalar\String_(date(\DateTimeInterface::RFC3339, 0))];
+                    }
+                    if ($format === 'uuid') {
+                        return ['4ccda740-74c3-4cfa-8571-ebf83c8f300a', new Node\Scalar\String_('4ccda740-74c3-4cfa-8571-ebf83c8f300a')];
+                    }
+                    if ($format === 'ipv4') {
+                        return ['127.0.0.1', new Node\Scalar\String_('127.0.0.1')];
+                    }
+                    if ($format === 'ipv6') {
+                        return ['::1', new Node\Scalar\String_('::1')];
+                    }
+
+                    return ['generated_' . ($parameter->format ?? 'null'), new Node\Scalar\String_('generated_' . ($parameter->format ?? 'null'))];
+                }
+
+                return [null, new Node\Expr\ConstFetch(
+                    new Node\Name(
+                        'null',
+                    ),
+                )];
+            })($parameterType, $parameter->schema->format);
+
             $parameters[] = new Parameter(
                 (new Convert($parameter->name))->toCamel(),
                 $parameter->name,
                 (string)$parameter->description,
                 $parameterType,
+                $parameter->schema->format,
                 $parameter->in,
                 $parameter->schema->default,
+                $example,
+                $exampleNode,
             );
         }
 

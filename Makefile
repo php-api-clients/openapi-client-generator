@@ -70,5 +70,10 @@ help: ## Show this help ###
 	@printf "\033[33mUsage:\033[0m\n  make [target]\n\n\033[33mTargets:\033[0m\n"
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[32m%-32s\033[0m %s\n", $$1, $$2}' | tr -d '#'
 
-generate-example-client:
-	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client.yaml
+generate-example-clients: generate-example-client-one generate-example-client-subsplit
+
+generate-example-client-one:
+	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client-one.yaml
+
+generate-example-client-subsplit:
+	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client-subsplit.yaml

@@ -22,8 +22,9 @@ use Symfony\Component\Yaml\Yaml;
         (new Generator(
             $configuration->spec
         ))->generate(
-            $configuration->namespace . '\\',
-            dirname($configurationFile) . DIRECTORY_SEPARATOR . $configuration->destination->root . DIRECTORY_SEPARATOR,
+            $configuration->namespace->source . '\\',
+            $configuration->namespace->test . '\\',
+            dirname($configurationFile) . DIRECTORY_SEPARATOR,
             $configuration,
         );
 

@@ -1,0 +1,114 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - 'main'
+      - 'master'
+      - 'refs/heads/v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+jobs:
+  generate-and-test-client:
+    runs-on: ubuntu-latest
+    name: Generate and test client
+    container:
+      image: ghcr.io/wyrihaximusnet/php:8.2-nts-alpine-dev-root
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          persist-credentials: 'false'
+      - uses: "ramsey/composer-install@v2"
+      - run: make generate-example-client-one
+      - name: Tar example files
+        run: tar -czf example.tar ./example
+      - name: Upload Generated Client
+        uses: actions/upload-artifact@v3
+        with:
+          name: example-single-client
+          path: ./example.tar
+  supported-versions-matrix:
+    name: Supported Versions Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.supported-versions-matrix.outputs.version }}
+      upcoming: ${{ steps.supported-versions-matrix.outputs.upcoming }}
+    steps:
+      - uses: actions/checkout@v3
+      - id: supported-versions-matrix
+        uses: WyriHaximus/github-action-composer-php-versions-in-range@v1
+        with:
+          upcomingReleases: true
+  supported-checks-matrix:
+    name: Supported Checks Matrix
+    runs-on: ubuntu-latest
+    needs:
+      - generate-and-test-client
+    outputs:
+      check: ${{ steps.supported-checks-matrix.outputs.check }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download Generated Client
+        uses: actions/download-artifact@v3
+        with:
+          name: example-single-client
+          path: ./
+      - name: UnTar example files
+        run:  tar -xzf example.tar
+      - id: supported-checks-matrix
+        name: Generate check
+        run: |
+          cd example/generated
+          printf "Checks found: %s\r\n" $(make task-list-ci)
+          printf "::set-output name=check::%s" $(make task-list-ci)
+  qa:
+    name: Run ${{ matrix.check }} on PHP ${{ matrix.php }} with ${{ matrix.composer }} dependency preference
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ${{ fromJson(needs.supported-versions-matrix.outputs.version) }}
+        composer: [lowest, locked, highest]
+        check: ${{ fromJson(needs.supported-checks-matrix.outputs.check) }}
+    needs:
+      - supported-checks-matrix
+      - supported-versions-matrix
+      - generate-and-test-client
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/wyrihaximusnet/php:${{ matrix.php }}-nts-alpine-dev-root
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - run: git config --global --add safe.directory $GITHUB_WORKSPACE # Do this ourself because `actions/checkout@v3 doesn't succeed in doing this
+      - name: Download Generated Client
+        uses: actions/download-artifact@v3
+        with:
+          name: example-single-client
+          path: ./
+      - name: UnTar example files
+        run:  tar -xzf example.tar
+      - uses: ramsey/composer-install@v2
+        with:
+          working-directory: "example/generated/"
+          ignore-cache: "yes"
+      - run: |
+          cd example/generated
+          make ${{ matrix.check }} || true
+        if: needs.supported-versions-matrix.outputs.upcoming == matrix.php
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_RUN_LOCALLY: ${{ secrets.COVERALLS_RUN_LOCALLY }}
+      - run: |
+          cd example/generated
+          make ${{ matrix.check }}
+        if: needs.supported-versions-matrix.outputs.upcoming != matrix.php
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_RUN_LOCALLY: ${{ secrets.COVERALLS_RUN_LOCALLY }}
+  check-mark:
+    name: ✔️
+    needs:
+      - qa
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "✔️"

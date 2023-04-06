@@ -140,7 +140,7 @@ final class Operation
                 );
             }
             if ($parameter->location === 'query') {
-                $query[] = $parameter->name . '={' . $parameter->targetName . '}';
+                $query[] = $parameter->targetName . '={' . $parameter->targetName . '}';
             }
         }
         $requestParameters = [
@@ -153,8 +153,7 @@ final class Operation
                 [
                     new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces))),
                     new Node\Expr\Array_(array_values($requestReplaces)),
-                    count($query) > 0 ?
-                    new Node\Expr\BinaryOp\Concat(
+                    count($query) > 0 ? new Node\Expr\BinaryOp\Concat(
                         new Node\Expr\ClassConstFetch(
                             new Node\Name('self'),
                             new Node\Name('PATH'),
@@ -170,7 +169,7 @@ final class Operation
 
         $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->addParam(
             $factory->param('data')->setType('array')->setDefault([])
-        );
+        )->makePublic();
 
         foreach ($operation->requestBody as $requestBody) {
             $requestParameters[] = new Node\Expr\Array_([
@@ -187,14 +186,14 @@ final class Operation
                     [
                         new Node\Arg(new Node\Expr\Variable('data')),
                         new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . \cebe\openapi\Reader::class), new Node\Name('readFromJson'), [
-                            new Node\Expr\ClassConstFetch(
+                            new Arg(new Node\Expr\ClassConstFetch(
                                 new Node\Name('Schema\\' . $requestBody->schema->className),
                                 new Node\Name('SCHEMA_JSON'),
-                            ),
-                            new Node\Expr\ClassConstFetch(
+                            )),
+                            new Arg(new Node\Expr\ClassConstFetch(
                                 new Node\Name('\\' . \cebe\openapi\spec\Schema::class),
                                 new Node\Name('class'),
-                            ),
+                            )),
                         ])),
                     ]
                 ))
@@ -217,6 +216,9 @@ final class Operation
             ...array_map(static fn (OperationResponse $response): int => $response->code, $operation->response),
             ...array_map(static fn (OperationRedirect $redirect): int => $redirect->code, $operation->redirect),
         ]);
+
+        sort($codes);
+
         $getContentTypeAndBody = false;
         $cases = [];
         $returnType = [];
@@ -577,7 +579,7 @@ final class Operation
 
             $cases[] = $case;
         }
-        $createResponseMethod = $factory->method('createResponse');
+        $createResponseMethod = $factory->method('createResponse')->makePublic();
 
         if (count($cases) > 0) {
             if ($getContentTypeAndBody) {
@@ -632,7 +634,7 @@ final class Operation
         }
         $returnTypeRaw = array_unique($returnTypeRaw);
         if (count($returnTypeRaw) === 0 ) {
-            $returnTypeRaw[] = 'void';
+            $returnTypeRaw[] = 'mixed';
         }
         $createResponseMethod->setReturnType(
             new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), $returnTypeRaw))
@@ -705,6 +707,6 @@ final class Operation
         $class->addStmt($createRequestMethod);
         $class->addStmt($createResponseMethod);
 
-        yield new File($pathPrefix, $namespace . 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
     }
 }

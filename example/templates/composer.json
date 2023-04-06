@@ -10,17 +10,34 @@
   ],
   "require": {
     "php": "^8.2",
+{% if requires is iterable %}
 {% for require in requires %}
     "{{ require.name }}": "{{ require.version }}",
 {% endfor %}
+{% endif %}
     "api-clients/contracts": "^0.1",
     "cebe/php-openapi": "dev-openapi-31 as 1.6.0",
     "eventsauce/object-hydrator": "^1.1",
     "league/openapi-psr7-validator": "^0.18",
+    "psr/http-message": "^1.0",
+    "react/http": "^1.8",
     "react/async": "^4.0",
     "wyrihaximus/react-awaitable-observable": "^1.0"
   },
+  "require-dev": {
+{% if require-dev is iterable %}
+{% for require in requires-dev %}
+    "{{ require.name }}": "{{ require.version }}",
+{% endfor %}
+{% endif %}
+    "wyrihaximus/async-test-utilities": "^6.1"
+  },
   "autoload": {
+    "psr-4": {
+      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+    }
+  },
+  "autoload-dev": {
     "psr-4": {
       "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
     }
@@ -39,7 +56,7 @@
       "infection/extension-installer": true
     }
   },
-{% if suggests|length > 0 %}
+{% if suggests is iterable and suggests|length > 0 %}
 "sugest": {
 {% for suggest in suggests %}
 "api-clients/{{ suggest.name }}": "{{ suggest.reason }}"{% if not loop.last %},{% endif %}

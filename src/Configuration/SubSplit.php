@@ -13,9 +13,11 @@ final readonly class SubSplit
      * @param array<class-string<SectionGenerator>>|null $sectionGenerator
      */
     public function __construct(
-        #[MapFrom('templatesDir')]
-        public string $templatesDir,
+        #[MapFrom('subSplitsDestination')]
+        public string $subSplitsDestination,
         public string $branch,
+        #[MapFrom('targetVersion')]
+        public string $targetVersion,
         #[MapFrom('subSplitConfiguration')]
         public string $subSplitConfiguration,
         #[MapFrom('fullName')]

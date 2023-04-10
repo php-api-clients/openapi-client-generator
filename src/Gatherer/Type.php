@@ -17,7 +17,7 @@ final class Type
         bool $required,
         SchemaRegistry $schemaRegistry,
     ): PropertyType {
-        if (is_array($property->allOf)) {
+        if (is_array($property->allOf) && count($property->allOf) > 0) {
             return self::gather(
                 $className,
                 $propertyName,
@@ -25,7 +25,21 @@ final class Type
                 $required,
                 $schemaRegistry,
             );
-        } else if (is_array($property->oneOf)) {
+        } else if (is_array($property->oneOf) && count($property->oneOf) > 0) {
+            // Check if nullable
+            if (
+                count($property->oneOf) === 2 &&
+                count(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
+            ) {
+                return self::gather(
+                    $className,
+                    $propertyName,
+                    current(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
+                    false,
+                    $schemaRegistry,
+                );
+            }
+
             return self::gather(
                 $className,
                 $propertyName,
@@ -33,7 +47,21 @@ final class Type
                 $required,
                 $schemaRegistry,
             );
-        } else if (is_array($property->anyOf)) {
+        } else if (is_array($property->anyOf) && count($property->anyOf) > 0) {
+            // Check if nullable
+            if (
+                count($property->anyOf) === 2 &&
+                count(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
+            ) {
+                return self::gather(
+                    $className,
+                    $propertyName,
+                    current(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
+                    false,
+                    $schemaRegistry,
+                );
+            }
+
             return self::gather(
                 $className,
                 $propertyName,

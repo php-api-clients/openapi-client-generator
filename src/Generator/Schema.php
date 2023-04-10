@@ -145,7 +145,7 @@ final class Schema
 
             $nullable = '';
             if ($property->nullable) {
-                $nullable = count($types) > 1 ? 'null|' : '?';
+                $nullable = (count($types) > 1 || count(explode('|', implode('|', $types))) > 1) ? 'null|' : '?';
             }
 
             $constructor->addParam($constructorParam->setType($nullable . implode('|', $types)));

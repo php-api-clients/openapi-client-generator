@@ -45,7 +45,7 @@ final class Operation
             [$example, $exampleNode] = (static function (string $type, ?string $format): array {
                 if ($type === 'int' || $type === '?int') {
                     return [13, new Node\Scalar\LNumber(13)];
-                } elseif ($type === 'float' || $type === '?float') {
+                } elseif ($type === 'float' || $type === '?float' || $type === 'int|float' || $type === 'null|int}float') {
                     return [13.13, new Node\Scalar\LNumber(13.13)];
                 } elseif ($type === 'bool' || $type === '?bool') {
                     return [false, new Node\Expr\ConstFetch(

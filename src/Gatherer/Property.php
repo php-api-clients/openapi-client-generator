@@ -85,7 +85,7 @@ final class Property
         } else if ($exampleData === null && $type->type=== 'scalar') {
             if ($type->payload === 'int' || $type->payload === '?int') {
                 return 13;
-            } elseif ($type->payload === 'float' || $type->payload === '?float') {
+            } elseif ($type->payload === 'float' || $type->payload === '?float' || $type->payload === 'int|float' || $type->payload === 'null|int|float') {
                 return 13.13;
             } elseif ($type->payload === 'bool' || $type->payload === '?bool') {
                 return false;

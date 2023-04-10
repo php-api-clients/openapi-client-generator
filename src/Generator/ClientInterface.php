@@ -153,6 +153,6 @@ final class ClientInterface
             $factory->method('webHooks')->setReturnType('\\' . WebHooksInterface::class)->makePublic()
         );
 
-        yield new File($pathPrefix, $namespace . 'ClientInterface', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'ClientInterface', $stmt->addStmt($class)->getNode());
     }
 }

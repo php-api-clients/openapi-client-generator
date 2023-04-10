@@ -12,6 +12,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Error;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrators;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\OperationTest;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
@@ -34,14 +35,15 @@ final class Generator
         $this->spec = Reader::readFromYamlFile($specUrl);
     }
 
-    public function generate(string $namespace, string $clientRoot, Configuration $configuration)
+    public function generate(string $namespace, string $namespaceTest, string $configurationLocation, Configuration $configuration)
     {
-        $existingFiles = iterator_to_array(Files::listExistingFiles($clientRoot . $configuration->destination->source . DIRECTORY_SEPARATOR));
+        $existingFiles = iterator_to_array(Files::listExistingFiles($configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR . $configuration->destination->source . DIRECTORY_SEPARATOR));
         $namespace = Utils::cleanUpNamespace($namespace);
+        $namespaceTest = Utils::cleanUpNamespace($namespaceTest);
         $codePrinter = new Standard();
 
-        foreach ($this->all($namespace, $clientRoot, $configuration) as $file) {
-            $fileName = $clientRoot . $configuration->destination->source . DIRECTORY_SEPARATOR . $file->pathPrefix . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, substr($file->fqcn, strlen($namespace))) . '.php';
+        foreach ($this->all($namespace, $namespaceTest, $configurationLocation, $configuration) as $file) {
+            $fileName = $configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR . $file->pathPrefix . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $file->fqcn) . '.php';
             if ($file->contents instanceof Node\Stmt\Namespace_) {
                 array_unshift($file->contents->stmts, ...[
                     new Node\Stmt\Use_([
@@ -92,7 +94,7 @@ final class Generator
                 @mkdir(dirname($fileName), 0744, true);
                 file_put_contents($fileName, $fileContents);
             }
-//            echo $fileName, PHP_EOL;
+
             include_once $fileName;
 //            if (array_key_exists($fileName, $existingFiles)) {
 //                unset($existingFiles[$fileName]);
@@ -107,7 +109,7 @@ final class Generator
     /**
      * @return iterable<File>
      */
-    private function all(string $namespace, string $clientRoot, Configuration $configuration): iterable
+    private function all(string $namespace, string $namespaceTest, string $configurationLocation, Configuration $configuration): iterable
     {
         $schemaRegistry = new SchemaRegistry(
             $configuration->schemas !== null && $configuration->schemas->allowDuplication !== null ? $configuration->schemas->allowDuplication : false,
@@ -152,13 +154,13 @@ final class Generator
         }
 
         if ($configuration->subSplit === null) {
-            yield from $this->oneClient($namespace, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            yield from $this->oneClient($namespace, $namespaceTest, $configurationLocation, $configuration, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
         } else {
-            yield from $this->subSplitClient($namespace, $clientRoot, $configuration, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            yield from $this->subSplitClient($namespace, $namespaceTest, $configurationLocation, $configuration, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
         }
     }
 
-    private function oneClient(string $namespace, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
+    private function oneClient(string $namespace, string $namespaceTest, string $configurationLocation, Configuration $configuration, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
     {
         $hydrators = [];
         $operations = [];
@@ -167,7 +169,15 @@ final class Generator
             $operations = [...$operations, ...$path->operations];
             foreach ($path->operations as $operation) {
                 yield from Operation::generate(
-                    '',
+                    $configuration->destination->source . DIRECTORY_SEPARATOR,
+                    $namespace,
+                    $operation,
+                    $path->hydrator,
+                    $throwableSchemaRegistry,
+                );
+                yield from OperationTest::generate(
+                    $configuration->destination->test . DIRECTORY_SEPARATOR,
+                    $namespaceTest,
                     $namespace,
                     $operation,
                     $path->hydrator,
@@ -184,14 +194,14 @@ final class Generator
 
         foreach ($schemas as $schema) {
             yield from Schema::generate(
-                '',
+                $configuration->destination->source . DIRECTORY_SEPARATOR,
                 $namespace,
                 $schema,
                 [...$schemaRegistry->aliasesForClassName($schema->className)],
             );
             if ($throwableSchemaRegistry->has($schema->className)) {
                 yield from Error::generate(
-                    '',
+                    $configuration->destination->source . DIRECTORY_SEPARATOR,
                     $namespace,
                     $schema,
                 );
@@ -201,12 +211,12 @@ final class Generator
         $client = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Client::gather($this->spec, ...$paths);
 
         yield from ClientInterface::generate(
-            '',
+            $configuration->destination->source . DIRECTORY_SEPARATOR,
             $namespace,
             $operations,
         );
         yield from Client::generate(
-            '',
+            $configuration->destination->source . DIRECTORY_SEPARATOR,
             $namespace,
             $client,
         );
@@ -218,7 +228,7 @@ final class Generator
                 ...$webHook,
             );
             yield from WebHook::generate(
-                '',
+                $configuration->destination->source . DIRECTORY_SEPARATOR,
                 $namespace,
                 $event,
                 $schemaRegistry,
@@ -226,20 +236,31 @@ final class Generator
             );
         }
 
-        yield from WebHooks::generate('', $namespace, $webHooksHydrators, $webHooks);
+        yield from WebHooks::generate($configuration->destination->source . DIRECTORY_SEPARATOR, $namespace, $webHooksHydrators, $webHooks);
 
         foreach ($hydrators as $hydrator) {
-            yield from Hydrator::generate('', $namespace, $hydrator);
+            yield from Hydrator::generate($configuration->destination->source . DIRECTORY_SEPARATOR, $namespace, $hydrator);
         }
 
-        yield from Hydrators::generate('', $namespace, ...$hydrators);
+        yield from Hydrators::generate($configuration->destination->source . DIRECTORY_SEPARATOR, $namespace, ...$hydrators);
+
+        \WyriHaximus\SubSplitTools\Files::setUp(
+            $configurationLocation . $configuration->templates->dir,
+            $configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR,
+            (static function (string $namespace, ?array $variables): array {
+                $vars = $variables ?? [];
+                $vars['namespace'] = $namespace;
+
+                return $vars;
+            })($namespace, $configuration->templates->variables),
+        );
     }
 
     /**
      * @param array<Path> $paths
      * @param array<\ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook> $webHooks
      */
-    private function subSplitClient(string $namespace, string $clientRoot, Configuration $configuration, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
+    private function subSplitClient(string $namespace, string $namespaceTest, string $configurationLocation, Configuration $configuration, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
     {
         $splits = [];
         $hydrators = [];
@@ -256,7 +277,15 @@ final class Generator
             $operations = [...$operations, ...$path->operations];
             foreach ($path->operations as $operation) {
                 yield from Operation::generate(
-                    $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split),
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split) . $configuration->destination->source,
+                    $namespace,
+                    $operation,
+                    $path->hydrator,
+                    $throwableSchemaRegistry,
+                );
+                yield from OperationTest::generate(
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split) . $configuration->destination->test,
+                    $namespaceTest,
                     $namespace,
                     $operation,
                     $path->hydrator,
@@ -319,20 +348,20 @@ final class Generator
         foreach ($schemas as $schema) {
             if ($throwableSchemaRegistry->has($schema->className)) {
                 yield from Schema::generate(
-                    $this->splitPathPrefix($configuration->subSplit->sectionPackage, 'common'),
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, 'common') . $configuration->destination->source,
                     $namespace,
                     $schema,
                     [...$schemaRegistry->aliasesForClassName($schema->className)],
                 );
                 yield from Error::generate(
-                    $this->splitPathPrefix($configuration->subSplit->sectionPackage, 'common'),
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, 'common') . $configuration->destination->source,
                     $namespace,
                     $schema,
                 );
             } else {
                 $aliases = [...$schemaRegistry->aliasesForClassName($schema->className)];
                 yield from Schema::generate(
-                    $this->splitPathPrefix($configuration->subSplit->sectionPackage, count($aliases) > 0 ? 'common' : $sortedSchemas[$schema->className]['section']),
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, count($aliases) > 0 ? 'common' : $sortedSchemas[$schema->className]['section']) . $configuration->destination->source,
                     $namespace,
                     $schema,
                     $aliases,
@@ -343,12 +372,12 @@ final class Generator
         $client = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Client::gather($this->spec, ...$paths);
 
         yield from ClientInterface::generate(
-            $this->splitPathPrefix($configuration->subSplit->rootPackage, ''),
+            $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->rootPackage, '') . $configuration->destination->source,
             $namespace,
             $operations,
         );
         yield from Client::generate(
-            $this->splitPathPrefix($configuration->subSplit->rootPackage, ''),
+            $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->rootPackage, '') . $configuration->destination->source,
             $namespace,
             $client,
         );
@@ -362,7 +391,7 @@ final class Generator
             }
             $splits[] = $split;
             yield from WebHook::generate(
-                $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split),
+                $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split) . $configuration->destination->source,
                 $namespace,
                 $event,
                 $schemaRegistry,
@@ -371,7 +400,7 @@ final class Generator
         }
 
         yield from WebHooks::generate(
-            $this->splitPathPrefix($configuration->subSplit->rootPackage, ''),
+            $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->rootPackage, '') . $configuration->destination->source,
             $namespace,
             $webHooksHydrators,
             $webHooks
@@ -380,7 +409,7 @@ final class Generator
         foreach ($hydrators as $section => $sectionHydrators) {
             foreach ($sectionHydrators as $hydrator) {
                 yield from Hydrator::generate(
-                    $this->splitPathPrefix($configuration->subSplit->sectionPackage, $section),
+                    $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, $section) . $configuration->destination->source,
                     $namespace,
                     $hydrator
                 );
@@ -388,7 +417,7 @@ final class Generator
         }
 
         yield from Hydrators::generate(
-            $this->splitPathPrefix($configuration->subSplit->rootPackage, ''),
+            $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->rootPackage, '') . $configuration->destination->source,
             $namespace,
             ...(static function (array $hydratorSplit): iterable {
                 foreach ($hydratorSplit as $hydrators) {
@@ -407,15 +436,15 @@ final class Generator
             'target-branch' => $configuration->subSplit->branch,
         ];
         \WyriHaximus\SubSplitTools\Files::setUp(
-            $clientRoot . $configuration->subSplit->templatesDir,
-            $clientRoot . $configuration->destination->source . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->rootPackage->name, ''),
+            $configurationLocation . $configuration->templates->dir,
+            $configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR . $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->rootPackage->name, ''),
             [
                 'packageName' => $configuration->subSplit->rootPackage->name,
                 'fullName' => render($configuration->subSplit->fullName, ['section' => '',]),
                 'namespace' => $namespace,
                 'requires' => [
                     [
-                        'name' => $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
+                        'name' => $configuration->subSplit->vendor . '/' . $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
                         'version' => '^0.3',
                     ],
                 ],
@@ -439,12 +468,18 @@ final class Generator
             'target-branch' => $configuration->subSplit->branch,
         ];
         \WyriHaximus\SubSplitTools\Files::setUp(
-            $clientRoot . $configuration->subSplit->templatesDir,
-            $clientRoot . $configuration->destination->source . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
+            $configurationLocation . $configuration->templates->dir,
+            $configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR . $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
             [
                 'packageName' => $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
                 'fullName' => render($configuration->subSplit->fullName, ['section' => 'common']),
                 'namespace' => $namespace,
+                'requires-dev' => [
+                    [
+                        'name' => $configuration->subSplit->vendor . '/' . $configuration->subSplit->rootPackage->name,
+                        'version' => $configuration->subSplit->targetVersion,
+                    ],
+                ],
             ],
         );
 
@@ -456,25 +491,31 @@ final class Generator
                 'target-branch' => $configuration->subSplit->branch,
             ];
             \WyriHaximus\SubSplitTools\Files::setUp(
-                $clientRoot . $configuration->subSplit->templatesDir,
-                $clientRoot . $configuration->destination->source . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->sectionPackage->name, $split),
+                $configurationLocation . $configuration->templates->dir,
+                $configurationLocation . $configuration->destination->root . DIRECTORY_SEPARATOR . $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($configuration->subSplit->sectionPackage->name, $split),
                 [
                     'packageName' => $this->packageName($configuration->subSplit->sectionPackage->name, $split),
                     'fullName' => render($configuration->subSplit->fullName, ['section' => $split]),
                     'namespace' => $namespace,
                     'requires' => [
                         [
-                            'name' => $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
-                            'version' => '^0.3',
+                            'name' => $configuration->subSplit->vendor . '/' . $this->packageName($configuration->subSplit->sectionPackage->name, 'common'),
+                            'version' => $configuration->subSplit->targetVersion,
+                        ],
+                    ],
+                    'requires-dev' => [
+                        [
+                            'name' => $configuration->subSplit->vendor . '/' . $configuration->subSplit->rootPackage->name,
+                            'version' => $configuration->subSplit->targetVersion,
                         ],
                     ],
                 ],
             );
         }
 
-        @mkdir(dirname($clientRoot . $configuration->subSplit->subSplitConfiguration), 0744, true);
+        @mkdir(dirname($configurationLocation . $configuration->subSplit->subSplitConfiguration), 0744, true);
         file_put_contents(
-            $clientRoot . $configuration->subSplit->subSplitConfiguration,
+            $configurationLocation . $configuration->subSplit->subSplitConfiguration,
             json_encode(
                 [
                     'sub-splits' => array_values($subSplitConfig),
@@ -496,6 +537,6 @@ final class Generator
 
     private function splitPathPrefix(RootPackage|SectionPackage $package, string $section): string
     {
-        return $this->packageName($package->name, $section) . '/src';
+        return $this->packageName($package->name, $section) . '/';
     }
 }

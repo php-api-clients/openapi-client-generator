@@ -83,11 +83,13 @@ final class Property
         if ($type->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
             return ArrayMerger::doMerge($type->payload->example, is_array($exampleData) ? $exampleData : [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION);
         } else if ($exampleData === null && $type->type=== 'scalar') {
-            if ($type->payload === 'int') {
+            if ($type->payload === 'int' || $type->payload === '?int') {
                 return 13;
-            } elseif ($type->payload === 'bool') {
+            } elseif ($type->payload === 'float' || $type->payload === '?float') {
+                return 13.13;
+            } elseif ($type->payload === 'bool' || $type->payload === '?bool') {
                 return false;
-            } elseif ($type->payload === 'string') {
+            } elseif ($type->payload === 'string' || $type->payload === '?string') {
                 if ($type->format === 'uri') {
                     return 'https://example.com/';
                 }

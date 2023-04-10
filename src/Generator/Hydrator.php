@@ -31,7 +31,7 @@ final class Hydrator
         if (count($schemaClasses) > 0) {
             yield new File(
                 $pathPrefix,
-                trim($namespace, '\\') . '\\HHydrator\\' . $hydrator->className,
+                '\\Hydrator\\' . $hydrator->className,
                 (new ObjectMapperCodeGenerator())->dump(
                     array_unique(
                         array_filter(

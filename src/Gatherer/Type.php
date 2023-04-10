@@ -82,7 +82,7 @@ final class Type
                 'boolean',
             ], [
                 'int',
-                'int',
+                'float',
                 '',
                 '',
                 'bool',

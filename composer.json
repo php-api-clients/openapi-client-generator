@@ -38,7 +38,10 @@
         "ckr/arraymerger": "^3.0",
         "ramsey/uuid": "^4.7",
         "wyrihaximus/subsplit-tools": "dev-main",
-        "wyrihaximus/simple-twig": "^2.1"
+        "wyrihaximus/simple-twig": "^2.1",
+        "wyrihaximus/async-test-utilities": "^6.1",
+        "api-clients/github": "^0.2@dev",
+        "delight-im/random": "^1.0"
     },
     "autoload": {
         "psr-4": {
@@ -54,17 +57,20 @@
             "external_files/thephpleague/Type.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "ApiClients\\Tests\\Tools\\OpenApiClientGenerator\\": "tests/"
+        }
+    },
     "config": {
         "platform": {
             "php": "8.2.13"
         },
         "allow-plugins": {
-            "wyrihaximus/composer-update-bin-autoload-path": true
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "ApiClients\\Tests\\Tools\\OpenApiClientGenerator\\": "tests/"
+            "wyrihaximus/composer-update-bin-autoload-path": true,
+            "infection/extension-installer": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "ergebnis/composer-normalize": true
         }
     }
 }

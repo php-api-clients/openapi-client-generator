@@ -286,6 +286,6 @@ final class WebHooks
         $method->addStmts($tmts);
         $class->addStmt($method);
 
-        yield new File($pathPrefix, $namespace . 'WebHooks', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'WebHooks', $stmt->addStmt($class)->getNode());
     }
 }

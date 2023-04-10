@@ -284,6 +284,6 @@ final class Hydrators
 
         }
 
-        yield new File($pathPrefix, $namespace . 'Hydrators', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Hydrators', $stmt->addStmt($class)->getNode());
     }
 }

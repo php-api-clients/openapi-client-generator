@@ -37,6 +37,6 @@ final class Error
         ));
 
 
-        yield new File($pathPrefix, $namespace . 'Error\\' . $schema->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Error\\' . $schema->className, $stmt->addStmt($class)->getNode());
     }
 }

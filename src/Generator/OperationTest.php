@@ -4,6 +4,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Client\Github\Schema\InstallationToken;
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
@@ -37,7 +38,7 @@ final class OperationTest
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $pathPrefix, string $namespace, string $sourceNamespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
+    public static function generate(string $pathPrefix, string $namespace, string $sourceNamespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         if (count($operation->response) === 0) {
             return;
@@ -54,21 +55,36 @@ final class OperationTest
             )
         )->makeFinal();
 
-        foreach ($operation->response as $response) {
-            $class->addStmt(
-                self::createMethod(
-                    $factory,
-                    $operation,
-                    $response,
-                    $sourceNamespace,
-                ),
-            );
+        foreach ($operation->response as $contentTypeSchema) {
+            if (count($operation->requestBody) === 0) {
+                $class->addStmt(
+                    self::createMethod(
+                        $factory,
+                        $operation,
+                        null,
+                        $contentTypeSchema,
+                        $sourceNamespace,
+                    ),
+                );
+            } else {
+                foreach ($operation->requestBody as $request) {
+                    $class->addStmt(
+                        self::createMethod(
+                            $factory,
+                            $operation,
+                            $request,
+                            $contentTypeSchema,
+                            $sourceNamespace,
+                        ),
+                    );
+                }
+            }
         }
 
         yield new File($pathPrefix, 'Operation\\' . $operation->className . 'Test', $stmt->addStmt($class)->getNode());
     }
 
-    private static function createMethod(BuilderFactory $factory, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, OperationResponse $response, string $sourceNamespace): Method
+    private static function createMethod(BuilderFactory $factory, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
     {
         $responseSchemaFetch = new Node\Expr\ClassConstFetch(
             new Node\Name(
@@ -79,7 +95,7 @@ final class OperationTest
             ),
         );
 
-        return $factory->method('t' . $response->code . 't' . md5($response->contentType))->makePublic()->setDocComment(
+        return $factory->method('httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . str_replace(['-', '/', '+', '.'], '_', $request->contentType)) . '_responseContentType_' . str_replace(['-', '/', '+', '.'], '_', $response->contentType))->makePublic()->setDocComment(
             new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @test',
@@ -396,15 +412,23 @@ final class OperationTest
                                     ],
                                 ),
                             ),
-                            ...(count($operation->requestBody) > 0 ? array_map(static fn (OperationRequestBody $requestBody): Arg => new Arg(new Node\Expr\ClassConstFetch(
+                            new Arg(
+                                $request === null ? new Node\Expr\StaticCall(
                                     new Node\Name(
-                                        'Schema\\' . $requestBody->schema->className,
+                                        '\\' . Argument::class,
+                                    ),
+                                    new Node\Name(
+                                        'any',
+                                    ),
+                                ) : new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        'Schema\\' . $request->schema->className,
                                     ),
                                     new Node\Name(
                                         'SCHEMA_EXAMPLE_DATA',
                                     ),
                                 ),
-                            ), $operation->requestBody) : [new Node\Scalar\String_('')]),
+                            ),
                         ],
                     ),
                     new Node\Name(
@@ -490,7 +514,7 @@ final class OperationTest
                             ),
                         )
                     ),
-                    ...(count($operation->requestBody) > 0 ? array_map(static fn (OperationRequestBody $requestBody): Arg => new Arg(
+                    new Arg(
                         new Node\Expr\FuncCall(
                             new Node\Expr\Closure(
                                 [
@@ -537,7 +561,7 @@ final class OperationTest
                             ),
                             [
                                 new Arg(
-                                    new Node\Expr\FuncCall(
+                                    ($request === null ? new Node\Expr\Array_() : new Node\Expr\FuncCall(
                                         new Node\Name(
                                             'json_decode',
                                         ),
@@ -545,7 +569,7 @@ final class OperationTest
                                             new Arg(
                                                 new Node\Expr\ClassConstFetch(
                                                     new Node\Name(
-                                                        'Schema\\' . $requestBody->schema->className,
+                                                        'Schema\\' . $request->schema->className,
                                                     ),
                                                     new Node\Name(
                                                         'SCHEMA_EXAMPLE_DATA',
@@ -560,18 +584,11 @@ final class OperationTest
                                                 ),
                                             ),
                                         ],
-                                    ),
+                                    )),
                                 )
                             ],
                         ),
-                    ), $operation->requestBody) : [new Node\Expr\Array_([...((static function (array $parameters): iterable {
-                        foreach ($parameters as $parameter) {
-                            yield new Node\Expr\ArrayItem(
-                                $parameter->exampleNode,
-                                new Node\Scalar\String_($parameter->targetName),
-                            );
-                        }
-                    })($operation->parameters))])]),
+                    ),
                 ],
             ),
         ]);

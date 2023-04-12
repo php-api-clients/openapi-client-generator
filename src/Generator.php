@@ -174,6 +174,7 @@ final class Generator
                     $operation,
                     $path->hydrator,
                     $throwableSchemaRegistry,
+                    $configuration,
                 );
                 yield from OperationTest::generate(
                     $configuration->destination->test . DIRECTORY_SEPARATOR,
@@ -182,6 +183,7 @@ final class Generator
                     $operation,
                     $path->hydrator,
                     $throwableSchemaRegistry,
+                    $configuration,
                 );
             }
         }
@@ -282,6 +284,7 @@ final class Generator
                     $operation,
                     $path->hydrator,
                     $throwableSchemaRegistry,
+                    $configuration,
                 );
                 yield from OperationTest::generate(
                     $configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($configuration->subSplit->sectionPackage, $split) . $configuration->destination->test,
@@ -290,6 +293,7 @@ final class Generator
                     $operation,
                     $path->hydrator,
                     $throwableSchemaRegistry,
+                    $configuration,
                 );
             }
         }

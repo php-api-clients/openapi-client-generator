@@ -2,6 +2,7 @@
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
@@ -28,7 +29,7 @@ final class Operation
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         $noHydrator = true;
         $factory = new BuilderFactory();
@@ -212,413 +213,468 @@ final class Operation
             )
         );
 
-        $codes = array_unique([
-            ...array_map(static fn (OperationResponse $response): int => $response->code, $operation->response),
-            ...array_map(static fn (OperationRedirect $redirect): int => $redirect->code, $operation->redirect),
-        ]);
-
-        sort($codes);
-
-        $getContentTypeAndBody = false;
-        $cases = [];
         $returnType = [];
         $returnTypeRaw = [];
-        foreach ($codes as $code) {
-            $description = '';
-            $contentTypeCases = [];
-            $redirects = [];
-            foreach ($operation->response as $contentTypeSchema) {
-                if ($contentTypeSchema->code !== $code) {
-                    continue;
-                }
+//            $case = new Node\Stmt\Case_(
+//                new Node\Scalar\LNumber($code),
+//                [
+//                    ...(count($contentTypeCases) > 0 ? [new Node\Stmt\Switch_(
+//                        new Node\Expr\Variable('contentType'),
+//                        $contentTypeCases
+//                    )] : (count($redirects) > 0 ? $redirects : new Node\Stmt\Return_(new Node\Expr\Variable('response')))),
+//                    new Node\Stmt\Break_()
+//                ]
+//            );
+//            if (strlen($description) > 0) {
+//                $case->setDocComment(new Doc('/**' . $description . '**/'));
+//            }
+//            if (count($contentTypeCases) === 0 && count($redirects) === 0) {
+//                $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
+//            }
 
-                $returnOrThrow = Node\Stmt\Return_::class;
-                $isError = $code >= 400;
-                if ($isError) {
-                    $returnOrThrow = Node\Stmt\Throw_::class;
-                    $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
-                }
 
-                $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
-                if (!$isError) {
-                    $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
-                    $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
-                }
-                $hydrate = new Node\Expr\MethodCall(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'hydrator'
-                    ),
-                    new Node\Name('hydrateObject'),
-                    [
-                        new Node\Arg(new Node\Expr\ClassConstFetch(
-                            new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                            new Node\Name('class'),
-                        )),
-                        new Node\Arg(new Node\Expr\Variable('body')),
-                    ],
-                );
+        $cases = [];
 
-                if ($isError) {
-                    $hydrate = new Node\Expr\New_(
-                        new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
+        foreach ($configuration->contentType as $contentType) {
+            foreach ($contentType::contentType() as $supportedContentType) {
+                $caseCases = [];
+                foreach ($operation->response as $contentTypeSchema) {
+                    if ($supportedContentType === $contentTypeSchema->contentType) {
+                        $returnOrThrow = Node\Stmt\Return_::class;
+                        $isError = $contentTypeSchema->code >= 400;
+                        if ($isError) {
+                            $returnOrThrow = Node\Stmt\Throw_::class;
+                            $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
+                        }
+
+                        $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
+                        if (!$isError) {
+                            $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
+                            $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
+                        }
+                        $hydrate = new Node\Expr\MethodCall(
+                            new Node\Expr\PropertyFetch(
+                                new Node\Expr\Variable('this'),
+                                'hydrator'
+                            ),
+                            new Node\Name('hydrateObject'),
+                            [
+                                new Node\Arg(new Node\Expr\ClassConstFetch(
+                                    new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
+                                    new Node\Name('class'),
+                                )),
+                                new Node\Arg(new Node\Expr\Variable('body')),
+                            ],
+                        );
+
+                        if ($isError) {
+                            $hydrate = new Node\Expr\New_(
+                                new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
+                                [
+                                    new Arg(
+                                        new Node\Scalar\LNumber($contentTypeSchema->code),
+                                    ),
+                                    new Arg(
+                                        $hydrate,
+                                    ),
+                                ],
+                            );
+                        }
+
+                        $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                            new Node\Expr\PropertyFetch(
+                                new Node\Expr\Variable('this'),
+                                'responseSchemaValidator'
+                            ),
+                            new Node\Name('validate'),
+                            [
+                                new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
+                                new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
+                                        new Node\Name('SCHEMA_JSON'),
+                                    ),
+                                    new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                                ])),
+                            ]
+                        ));
+
+                        $case = new Node\Stmt\Case_(
+                            new Node\Scalar\LNumber($contentTypeSchema->code),
+                            [
+                                $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
+                                    new Node\Expr\Variable('body'),
+                                    new Node\Expr\Variable('bodyItem'),
+                                    [
+                                        'stmts' => [
+                                            $validate,
+                                        ],
+                                    ],
+                                ) : $validate,
+                                new $returnOrThrow(
+                                    $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
+                                        new Node\Expr\StaticCall(
+                                            new Node\Name('\\' . Observable::class),
+                                            new Node\Name('fromArray'),
+                                            [
+                                                new Node\Arg(new Node\Expr\Variable('body')),
+                                                new Node\Arg(
+                                                    new Node\Expr\New_(
+                                                        new Node\Name('\\' . ImmediateScheduler::class),
+                                                    ),
+                                                ),
+                                            ]
+                                        ),
+                                        new Node\Name('map'),
+                                        [
+                                            new Arg(new Node\Expr\Closure([
+                                                'stmts' => [
+                                                    new Node\Stmt\Return_(
+                                                        $hydrate,
+                                                    ),
+                                                ],
+                                                'params' => [
+                                                    new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))
+                                                ],
+                                                'returnType' => $object,
+                                            ]))
+                                        ]
+                                    ) : $hydrate,
+                                ),
+                            ],
+                        );
+
+                        if (strlen($contentTypeSchema->description) > 0) {
+                            $case->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $contentTypeSchema->description . PHP_EOL . '**/'));
+                        }
+                        $caseCases[] = $case;
+                    }
+                }
+                if (count($caseCases) > 0) {
+                    $cases[] = new Node\Stmt\Case_(
+                        new Node\Scalar\String_($supportedContentType),
                         [
-                            new Arg(
-                                new Node\Scalar\LNumber($code),
+                            new Node\Stmt\Expression(
+                                new Node\Expr\Assign(
+                                    new Node\Expr\Variable(
+                                        'body',
+                                    ),
+                                    $contentType::parse(
+                                        new Node\Expr\MethodCall(
+                                            new Node\Expr\MethodCall(
+                                                new Node\Expr\Variable(
+                                                    'response',
+                                                ),
+                                                'getBody',
+                                            ),
+                                            'getContents',
+                                        ),
+                                    ),
+                                ),
                             ),
-                            new Arg(
-                                $hydrate,
+                            new Node\Stmt\Switch_(
+                                new Node\Expr\Variable('code'),
+                                $caseCases,
                             ),
+                            new Node\Stmt\Break_(),
                         ],
                     );
                 }
-
-                $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'responseSchemaValidator'
-                    ),
-                    new Node\Name('validate'),
-                    [
-                        new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
-                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                            new Node\Expr\ClassConstFetch(
-                                new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                new Node\Name('SCHEMA_JSON'),
-                            ),
-                            new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
-                        ])),
-                    ]
-                ));
-
-                $ctc = new Node\Stmt\Case_(
-                    new Node\Scalar\String_($contentTypeSchema->contentType),
-                    [
-                        $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
-                            new Node\Expr\Variable('body'),
-                            new Node\Expr\Variable('bodyItem'),
-                            [
-                                'stmts' => [
-                                    $validate,
-                                ],
-                            ],
-                        ) : $validate,
-                        new $returnOrThrow(
-                            $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
-                                new Node\Expr\StaticCall(
-                                    new Node\Name('\\' . Observable::class),
-                                    new Node\Name('fromArray'),
-                                    [
-                                        new Node\Arg(new Node\Expr\Variable('body')),
-                                        new Node\Arg(
-                                            new Node\Expr\New_(
-                                                new Node\Name('\\' . ImmediateScheduler::class),
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                                new Node\Name('map'),
-                                [
-                                    new Arg(new Node\Expr\Closure([
-                                        'stmts' => [
-                                            new Node\Stmt\Return_(
-                                                $hydrate,
-                                            ),
-                                        ],
-                                        'params' => [
-                                            new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))
-                                        ],
-                                        'returnType' => $object,
-                                    ]))
-                                ]
-                            ) : $hydrate,
-                        ),
-                    ]
-                );
-                $description = $contentTypeSchema->description;
-                $contentTypeCases[] = $ctc;
-                $getContentTypeAndBody = true;
             }
-
-            foreach ($operation->redirect as $redirect) {
-                if ($redirect->code !== $code) {
-                    continue;
-                }
-
-
-                if ($operation->matchMethod === 'STREAM') {
-                    $redirects[] = new Node\Stmt\Expression(
-                        new Node\Expr\Assign(
-                            new Node\Expr\Variable('stream'),
-                            new Node\Expr\New_(
-                                new Node\Name('\\' . Subject::class),
-                            ),
-                        ),
-                    );
-                    $redirects[] = new Node\Stmt\Expression(
-                        new Node\Expr\MethodCall(
-                            new Node\Expr\MethodCall(
-                                new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'browser'
-                                ),
-                                new Node\Name('requestStreaming'),
-                                [
-                                    new Arg(new Node\Scalar\String_('GET')),
-                                    new Arg(
-                                        new Node\Expr\MethodCall(
-                                            new Node\Expr\Variable('response'),
-                                            new Node\Name('getHeaderLine'),
-                                            [
-                                                new Arg(new Node\Scalar\String_('location')),
-                                            ],
-                                        ),
-                                    ),
-                                ],
-                            ),
-                            new Node\Name('then'),
-                            [
-                                new Arg(new Node\Expr\Closure(
-                                    [
-                                        'stmts' => [
-                                            new Node\Stmt\Expression(
-                                                new Node\Expr\Assign(
-                                                    new Node\Expr\Variable('body'),
-                                                    new Node\Expr\MethodCall(
-                                                        new Node\Expr\Variable('response'),
-                                                        new Node\Name('getBody'),
-                                                    ),
-                                                ),
-                                            ),
-                                            new Node\Stmt\If_(
-                                                new Node\Expr\BooleanNot(
-                                                    new Node\Expr\BinaryOp\BooleanAnd(
-                                                        new Node\Expr\Instanceof_(
-                                                            new Node\Expr\Variable('body'),
-                                                            new Node\Name('\\' . \Psr\Http\Message\StreamInterface::class)
-                                                        ),
-                                                        new Node\Expr\Instanceof_(
-                                                            new Node\Expr\Variable('body'),
-                                                            new Node\Name('\\' . \React\Stream\ReadableStreamInterface::class)
-                                                        ),
-                                                    )
-                                                ),
-                                                [
-                                                    'stmts' => [
-                                                        new Node\Stmt\Expression(
-                                                            new Node\Expr\MethodCall(
-                                                                new Node\Expr\Variable('stream'),
-                                                                new Node\Name('onError'),
-                                                                [
-                                                                    new Arg(new Node\Expr\New_(
-                                                                        new Node\Name('\\' . \RuntimeException::class)
-                                                                    )),
-                                                                ],
-                                                            ),
-                                                        ),
-                                                        new Node\Stmt\Return_(),
-                                                    ],
-                                                ],
-                                            ),
-                                            new Node\Stmt\Expression(
-                                                new Node\Expr\MethodCall(
-                                                    new Node\Expr\Variable('body'),
-                                                    new Node\Name('on'),
-                                                    [
-                                                        new Arg(new Node\Scalar\String_('data')),
-                                                        new Arg(new Node\Expr\Closure(
-                                                            [
-                                                                'stmts' => [
-                                                                    new Node\Stmt\Expression(
-                                                                        new Node\Expr\MethodCall(
-                                                                            new Node\Expr\Variable('stream'),
-                                                                            new Node\Name('onNext'),
-                                                                            [
-                                                                                new Arg(new Node\Expr\Variable('data')),
-                                                                            ],
-                                                                        ),
-                                                                    ),
-                                                                ],
-                                                                'params' => [
-                                                                    $factory->param('data')->setType('string')->getNode(),
-                                                                ],
-                                                                'uses' => [
-                                                                    new Node\Expr\ClosureUse(
-                                                                        new Node\Expr\Variable('stream'),
-                                                                    ),
-                                                                ],
-                                                                'static' => true,
-                                                                'returnType' => new Node\Name('void'),
-                                                            ],
-                                                        )),
-                                                    ],
-                                                ),
-                                            ),
-                                            new Node\Stmt\Expression(
-                                                new Node\Expr\MethodCall(
-                                                    new Node\Expr\Variable('body'),
-                                                    new Node\Name('on'),
-                                                    [
-                                                        new Arg(new Node\Scalar\String_('close')),
-                                                        new Arg(new Node\Expr\Closure(
-                                                            [
-                                                                'stmts' => [
-                                                                    new Node\Stmt\Expression(
-                                                                        new Node\Expr\MethodCall(
-                                                                            new Node\Expr\Variable('stream'),
-                                                                            new Node\Name('onCompleted'),
-                                                                        ),
-                                                                    ),
-                                                                ],
-                                                                'uses' => [
-                                                                    new Node\Expr\ClosureUse(
-                                                                        new Node\Expr\Variable('stream'),
-                                                                    ),
-                                                                ],
-                                                                'static' => true,
-                                                                'returnType' => new Node\Name('void'),
-                                                            ],
-                                                        )),
-                                                    ],
-                                                ),
-                                            ),
-                                            new Node\Stmt\Expression(
-                                                new Node\Expr\MethodCall(
-                                                    new Node\Expr\Variable('body'),
-                                                    new Node\Name('on'),
-                                                    [
-                                                        new Arg(new Node\Scalar\String_('error')),
-                                                        new Arg(new Node\Expr\Closure(
-                                                            [
-                                                                'stmts' => [
-                                                                    new Node\Stmt\Expression(
-                                                                        new Node\Expr\MethodCall(
-                                                                            new Node\Expr\Variable('stream'),
-                                                                            new Node\Name('onError'),
-                                                                            [
-                                                                                new Arg(new Node\Expr\Variable('error')),
-                                                                            ],
-                                                                        ),
-                                                                    ),
-                                                                ],
-                                                                'params' => [
-                                                                    $factory->param('error')->setType('\\' . \Throwable::class)->getNode(),
-                                                                ],
-                                                                'uses' => [
-                                                                    new Node\Expr\ClosureUse(
-                                                                        new Node\Expr\Variable('stream'),
-                                                                    ),
-                                                                ],
-                                                                'static' => true,
-                                                                'returnType' => new Node\Name('void'),
-                                                            ],
-                                                        )),
-                                                    ],
-                                                ),
-                                            ),
-                                        ],
-                                        'params' => [
-                                            $factory->param('response')->setType('\\' . ResponseInterface::class)->getNode(),
-                                        ],
-                                        'uses' => [
-                                            new Node\Expr\ClosureUse(
-                                                new Node\Expr\Variable('stream'),
-                                            ),
-                                        ],
-                                        'static' => true,
-                                        'returnType' => new Node\Name('void'),
-                                    ],
-                                ))
-                            ],
-                        ),
-                    );
-                    $redirects[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
-
-                    $returnType[] = '\\' . Observable::class . '<string>';
-                    $returnTypeRaw[] = '\\' . Observable::class;
-                } else {
-                    $arrayItems = [];
-                    $arrayItems['code: int'] = new Node\Expr\ArrayItem(
-                        new Node\Scalar\LNumber($code),
-                        new Node\Scalar\String_('code'),
-                    );
-                    foreach ($redirect->headers as $header) {
-                        $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
-                            new Node\Expr\MethodCall(
-                                new Node\Expr\Variable('response'),
-                                new Node\Name('getHeaderLine'),
-                                [
-                                    new Arg(new Node\Scalar\String_($header->name)),
-                                ],
-                            ),
-                            new Node\Scalar\String_(strtolower($header->name))
-                        );
-                    }
-                    $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
-                    $returnTypeRaw[] = 'array';
-                    $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
-                }
-                $description = $redirect->description;
-            }
-            $case = new Node\Stmt\Case_(
-                new Node\Scalar\LNumber($code),
-                [
-                    ...(count($contentTypeCases) > 0 ? [new Node\Stmt\Switch_(
-                        new Node\Expr\Variable('contentType'),
-                        $contentTypeCases
-                    )] : (count($redirects) > 0 ? $redirects : new Node\Stmt\Return_(new Node\Expr\Variable('response')))),
-                    new Node\Stmt\Break_()
-                ]
-            );
-            if (strlen($description) > 0) {
-                $case->setDocComment(new Doc('/**' . $description . '**/'));
-            }
-            if (count($contentTypeCases) === 0 && count($redirects) === 0) {
-                $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
-            }
-
-            $cases[] = $case;
         }
-        $createResponseMethod = $factory->method('createResponse')->makePublic();
 
-        if (count($cases) > 0) {
-            if ($getContentTypeAndBody) {
-                $noHydrator = false;
-                $createResponseMethod->addStmt(
+        $redirectCases = [];
+        foreach ($operation->redirect as $redirect) {
+            $redirects = [];
+
+            if ($operation->matchMethod === 'STREAM') {
+                $redirects[] = new Node\Stmt\Expression(
                     new Node\Expr\Assign(
-                        new Node\Expr\Array_([
-                            new Node\Expr\ArrayItem(
-                                new Node\Expr\Variable('contentType'),
+                        new Node\Expr\Variable('stream'),
+                        new Node\Expr\New_(
+                            new Node\Name('\\' . Subject::class),
+                        ),
+                    ),
+                );
+                $redirects[] = new Node\Stmt\Expression(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\MethodCall(
+                            new Node\Expr\PropertyFetch(
+                                new Node\Expr\Variable('this'),
+                                'browser'
                             ),
-                        ], [
-                            'kind' => Node\Expr\Array_::KIND_SHORT,
-                        ]),
-                        new Node\Expr\FuncCall(
-                            new Node\Name('explode'),
+                            new Node\Name('requestStreaming'),
                             [
-                                new Arg(new Node\Scalar\String_(';')),
+                                new Arg(new Node\Scalar\String_('GET')),
                                 new Arg(
                                     new Node\Expr\MethodCall(
                                         new Node\Expr\Variable('response'),
-                                        'getHeaderLine',
+                                        new Node\Name('getHeaderLine'),
                                         [
-                                            new Arg(new Node\Scalar\String_('Content-Type')),
+                                            new Arg(new Node\Scalar\String_('location')),
                                         ],
                                     ),
                                 ),
                             ],
                         ),
+                        new Node\Name('then'),
+                        [
+                            new Arg(new Node\Expr\Closure(
+                                [
+                                    'stmts' => [
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\Assign(
+                                                new Node\Expr\Variable('body'),
+                                                new Node\Expr\MethodCall(
+                                                    new Node\Expr\Variable('response'),
+                                                    new Node\Name('getBody'),
+                                                ),
+                                            ),
+                                        ),
+                                        new Node\Stmt\If_(
+                                            new Node\Expr\BooleanNot(
+                                                new Node\Expr\BinaryOp\BooleanAnd(
+                                                    new Node\Expr\Instanceof_(
+                                                        new Node\Expr\Variable('body'),
+                                                        new Node\Name('\\' . \Psr\Http\Message\StreamInterface::class)
+                                                    ),
+                                                    new Node\Expr\Instanceof_(
+                                                        new Node\Expr\Variable('body'),
+                                                        new Node\Name('\\' . \React\Stream\ReadableStreamInterface::class)
+                                                    ),
+                                                )
+                                            ),
+                                            [
+                                                'stmts' => [
+                                                    new Node\Stmt\Expression(
+                                                        new Node\Expr\MethodCall(
+                                                            new Node\Expr\Variable('stream'),
+                                                            new Node\Name('onError'),
+                                                            [
+                                                                new Arg(new Node\Expr\New_(
+                                                                    new Node\Name('\\' . \RuntimeException::class)
+                                                                )),
+                                                            ],
+                                                        ),
+                                                    ),
+                                                    new Node\Stmt\Return_(),
+                                                ],
+                                            ],
+                                        ),
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\MethodCall(
+                                                new Node\Expr\Variable('body'),
+                                                new Node\Name('on'),
+                                                [
+                                                    new Arg(new Node\Scalar\String_('data')),
+                                                    new Arg(new Node\Expr\Closure(
+                                                        [
+                                                            'stmts' => [
+                                                                new Node\Stmt\Expression(
+                                                                    new Node\Expr\MethodCall(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                        new Node\Name('onNext'),
+                                                                        [
+                                                                            new Arg(new Node\Expr\Variable('data')),
+                                                                        ],
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                            'params' => [
+                                                                $factory->param('data')->setType('string')->getNode(),
+                                                            ],
+                                                            'uses' => [
+                                                                new Node\Expr\ClosureUse(
+                                                                    new Node\Expr\Variable('stream'),
+                                                                ),
+                                                            ],
+                                                            'static' => true,
+                                                            'returnType' => new Node\Name('void'),
+                                                        ],
+                                                    )),
+                                                ],
+                                            ),
+                                        ),
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\MethodCall(
+                                                new Node\Expr\Variable('body'),
+                                                new Node\Name('on'),
+                                                [
+                                                    new Arg(new Node\Scalar\String_('close')),
+                                                    new Arg(new Node\Expr\Closure(
+                                                        [
+                                                            'stmts' => [
+                                                                new Node\Stmt\Expression(
+                                                                    new Node\Expr\MethodCall(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                        new Node\Name('onCompleted'),
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                            'uses' => [
+                                                                new Node\Expr\ClosureUse(
+                                                                    new Node\Expr\Variable('stream'),
+                                                                ),
+                                                            ],
+                                                            'static' => true,
+                                                            'returnType' => new Node\Name('void'),
+                                                        ],
+                                                    )),
+                                                ],
+                                            ),
+                                        ),
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\MethodCall(
+                                                new Node\Expr\Variable('body'),
+                                                new Node\Name('on'),
+                                                [
+                                                    new Arg(new Node\Scalar\String_('error')),
+                                                    new Arg(new Node\Expr\Closure(
+                                                        [
+                                                            'stmts' => [
+                                                                new Node\Stmt\Expression(
+                                                                    new Node\Expr\MethodCall(
+                                                                        new Node\Expr\Variable('stream'),
+                                                                        new Node\Name('onError'),
+                                                                        [
+                                                                            new Arg(new Node\Expr\Variable('error')),
+                                                                        ],
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                            'params' => [
+                                                                $factory->param('error')->setType('\\' . \Throwable::class)->getNode(),
+                                                            ],
+                                                            'uses' => [
+                                                                new Node\Expr\ClosureUse(
+                                                                    new Node\Expr\Variable('stream'),
+                                                                ),
+                                                            ],
+                                                            'static' => true,
+                                                            'returnType' => new Node\Name('void'),
+                                                        ],
+                                                    )),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
+                                    'params' => [
+                                        $factory->param('response')->setType('\\' . ResponseInterface::class)->getNode(),
+                                    ],
+                                    'uses' => [
+                                        new Node\Expr\ClosureUse(
+                                            new Node\Expr\Variable('stream'),
+                                        ),
+                                    ],
+                                    'static' => true,
+                                    'returnType' => new Node\Name('void'),
+                                ],
+                            ))
+                        ],
                     ),
-                )->addStmt(
-                    new Node\Expr\Assign(new Node\Expr\Variable('body'), new Node\Expr\FuncCall(new Node\Name('json_decode'), [new Node\Expr\MethodCall(new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getBody'), 'getContents'), new Node\Expr\ConstFetch(new Node\Name('true'))]))
                 );
+                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
+
+                $returnType[] = '\\' . Observable::class . '<string>';
+                $returnTypeRaw[] = '\\' . Observable::class;
+            } else {
+                $arrayItems = [];
+                $arrayItems['code: int'] = new Node\Expr\ArrayItem(
+                    new Node\Scalar\LNumber($redirect->code),
+                    new Node\Scalar\String_('code'),
+                );
+                foreach ($redirect->headers as $header) {
+                    $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
+                        new Node\Expr\MethodCall(
+                            new Node\Expr\Variable('response'),
+                            new Node\Name('getHeaderLine'),
+                            [
+                                new Arg(new Node\Scalar\String_($header->name)),
+                            ],
+                        ),
+                        new Node\Scalar\String_(strtolower($header->name))
+                    );
+                }
+                $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
+                $returnTypeRaw[] = 'array';
+                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
             }
+            $redirectCase = new Node\Stmt\Case_(
+                new Node\Scalar\LNumber($redirect->code),
+                $redirects,
+            );
+            if (strlen($redirect->description) > 0) {
+                $redirectCase->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $redirect->description . PHP_EOL . '**/'));
+            }
+            $redirectCases[] = $redirectCase;
+        }
+
+        $createResponseMethod = $factory->method('createResponse')->makePublic();
+
+        if (count($cases) > 0 || count($redirectCases) > 0) {
+            $createResponseMethod->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'code',
+                    ),
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'response',
+                        ),
+                        'getStatusCode',
+                    ),
+                ),
+            );
+        }
+
+        if (count($cases) > 0) {
+            $noHydrator = false;
+            $createResponseMethod->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\Array_([
+                        new Node\Expr\ArrayItem(
+                            new Node\Expr\Variable('contentType'),
+                        ),
+                    ], [
+                        'kind' => Node\Expr\Array_::KIND_SHORT,
+                    ]),
+                    new Node\Expr\FuncCall(
+                        new Node\Name('explode'),
+                        [
+                            new Arg(new Node\Scalar\String_(';')),
+                            new Arg(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\Variable('response'),
+                                    'getHeaderLine',
+                                    [
+                                        new Arg(new Node\Scalar\String_('Content-Type')),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            );
             $createResponseMethod->addStmt(
                 new Node\Stmt\Switch_(
-                    new Node\Expr\MethodCall(new Node\Expr\Variable('response'), 'getStatusCode'),
-                    $cases
-                )
-            )->addStmt(
+                    new Node\Expr\Variable('contentType'),
+                    $cases,
+                ),
+            );
+
+        }
+
+        if (count($redirectCases) > 0) {
+            $createResponseMethod->addStmt(
+                new Node\Stmt\Switch_(
+                    new Node\Expr\Variable('code'),
+                    $redirectCases,
+                ),
+            );
+        }
+
+        if (count($cases) > 0 || count($redirectCases) > 0) {
+            $createResponseMethod->addStmt(
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(
                         new Node\Name('\\' . \RuntimeException::class),

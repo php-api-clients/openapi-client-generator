@@ -95,7 +95,7 @@ final class OperationTest
             ),
         );
 
-        return $factory->method('httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . str_replace(['-', '/', '+', '.'], '_', $request->contentType)) . '_responseContentType_' . str_replace(['-', '/', '+', '.'], '_', $response->contentType))->makePublic()->setDocComment(
+        return $factory->method('httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
             new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @test',

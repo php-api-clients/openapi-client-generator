@@ -82,6 +82,20 @@ final class Generator
                             )
                         )
                     ]),
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                ltrim($namespace, '\\') . 'Router',
+                            )
+                        )
+                    ]),
+                    new Node\Stmt\Use_([
+                        new Node\Stmt\UseUse(
+                            new Node\Name(
+                                ltrim($namespace, '\\') . 'ChunkSize',
+                            )
+                        )
+                    ]),
                 ]);
             }
             $fileContents = ($file->contents instanceof Node\Stmt\Namespace_ ? $codePrinter->prettyPrintFile([

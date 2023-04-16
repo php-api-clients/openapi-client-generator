@@ -78,6 +78,7 @@ final class ClientInterface
         $class->addStmt(
             $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
+                    '// phpcs:disable',
                     '/**',
                     ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
@@ -100,6 +101,7 @@ final class ClientInterface
                         return $left . $right;
                     })($operations),
                     ' */',
+                    '// phpcs:enable',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))
         );
@@ -107,6 +109,7 @@ final class ClientInterface
         $class->addStmt(
             $factory->method('callAsync')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
+                    '// phpcs:disable',
                     '/**',
                     ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
@@ -129,6 +132,7 @@ final class ClientInterface
                         return $left . $right;
                     })($operations),
                     ' */',
+                    '// phpcs:enable',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))
         );

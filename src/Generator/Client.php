@@ -178,6 +178,7 @@ final class Client
         $class->addStmt(
             $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
+                    '// phpcs:disable',
                     '/**',
                     ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
@@ -200,6 +201,7 @@ final class Client
                         return $left . $right;
                     })($operations),
                     ' */',
+                    '// phpcs:enable',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmts([
                 new Node\Stmt\Expression(
@@ -439,6 +441,7 @@ final class Client
         $class->addStmt(
             $factory->method('callAsync')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
+                    '// phpcs:disable',
                     '/**',
                     ' * @return ' . (function (array $operations): string {
                         $count = count($operations);
@@ -461,6 +464,7 @@ final class Client
                         return $left . $right;
                     })($operations),
                     ' */',
+                    '// phpcs:enable',
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(
                 new Node\Expr\Assign(

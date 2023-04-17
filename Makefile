@@ -21,6 +21,7 @@ else
 		-v "`pwd`:`pwd`" \
 		-v "${COMPOSER_CACHE_DIR}:/home/app/.composer/cache" \
 		-w "`pwd`" \
+		-e "FORCE_GENERATION=$$FORCE_GENERATION" \
 		"wyrihaximusnet/php:8.2-nts-alpine-slim-dev"
 endif
 

@@ -20,12 +20,12 @@ use Symfony\Component\Yaml\Yaml;
     exit((function (string $configurationFile): int {
         $configuration = (new ObjectMapperUsingReflection())->hydrateObject(Configuration::class, Yaml::parseFile($configurationFile));
         (new Generator(
-            $configuration->spec
+            $configuration,
+            dirname($configurationFile) . DIRECTORY_SEPARATOR,
         ))->generate(
             $configuration->namespace->source . '\\',
             $configuration->namespace->test . '\\',
             dirname($configurationFile) . DIRECTORY_SEPARATOR,
-            $configuration,
         );
 
         return 0;

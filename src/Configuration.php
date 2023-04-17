@@ -17,6 +17,7 @@ final readonly class Configuration
      * @param array<class-string<ContentType>>|null $contentType
      */
     public function __construct(
+        public \ApiClients\Tools\OpenApiClientGenerator\Configuration\State $state,
         public string $spec,
         public Templates $templates,
         public Namespace_ $namespace,

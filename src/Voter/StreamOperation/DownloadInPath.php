@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation;
 
 use ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\StreamOperation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
+
+use function strpos;
 
 final class DownloadInPath implements StreamOperation
 {

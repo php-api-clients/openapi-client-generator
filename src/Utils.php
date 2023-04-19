@@ -1,22 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\ClientInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrator;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Operation;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Path;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
-use cebe\openapi\Reader;
-use cebe\openapi\spec\OpenApi;
-use EventSauce\ObjectHydrator\ObjectMapperCodeGenerator;
 use Jawira\CaseConverter\Convert;
-use PhpParser\Node;
-use PhpParser\PrettyPrinter\Standard;
+
+use function basename;
+use function count;
+use function dirname;
+use function explode;
+use function in_array;
+use function str_replace;
+use function strtolower;
 
 final class Utils
 {
@@ -54,11 +50,14 @@ final class Utils
 
     public static function fixKeyword(string $name): string
     {
-        $name = self::fqcn($name);
+        $name     = self::fqcn($name);
         $nameBoom = explode('\\', $name);
+
+        /** @phpstan-ignore-next-line */
         return $name . (in_array(
-            strtolower($nameBoom[count($nameBoom) - 1]), array('__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self', 'parent', 'object'),
-            false
+            strtolower($nameBoom[count($nameBoom) - 1]),
+            ['__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default', 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach', 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print', 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor', 'self', 'parent', 'object'],
+            false,
         ) ? '_' : '');
     }
 }

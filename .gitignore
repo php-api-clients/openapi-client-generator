@@ -1,3 +1,4 @@
+etc/qa/.phpcs.cache
 bin/openapi-client-generator
 example/etc
 example/generated

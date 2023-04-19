@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class Property
@@ -12,6 +14,6 @@ final class Property
         /** @var array<PropertyType> */
         public readonly array $type,
         public readonly bool $nullable,
-    ){
+    ) {
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class PropertyType
@@ -9,6 +11,6 @@ final class PropertyType
         public readonly ?string $format,
         public readonly string|Schema|PropertyType $payload,
         public readonly bool $nullable,
-    ){
+    ) {
     }
 }

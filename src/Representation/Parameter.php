@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 use PhpParser\Node;
@@ -16,6 +18,6 @@ final class Parameter
         public readonly mixed $default,
         public readonly mixed $example,
         public readonly Node $exampleNode,
-    ){
+    ) {
     }
 }

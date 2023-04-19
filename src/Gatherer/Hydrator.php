@@ -1,23 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
-use cebe\openapi\spec\Operation as openAPIOperation;
-use cebe\openapi\spec\PathItem;
-use Jawira\CaseConverter\Convert;
-use Psr\Http\Message\ResponseInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
+
+use function lcfirst;
+use function str_replace;
 
 final class Hydrator
 {
     public static function gather(
         string $className,
         string $nameSpaceSeperator,
-        \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema ...$schemaClasses,
+        Schema ...$schemaClasses,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator {
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator(
             $className,

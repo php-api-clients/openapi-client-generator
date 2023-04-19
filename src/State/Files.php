@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\State;
+
+use function array_key_exists;
+use function array_values;
 
 final class Files
 {
-    /**
-     * @var array<File> $files
-     */
+    /** @var array<File> $files */
     private array $files = [];
 
     /**
@@ -20,7 +23,7 @@ final class Files
         }
     }
 
-    public function upsert(string $fileName, string $hash)
+    public function upsert(string $fileName, string $hash): void
     {
         $this->files[$fileName] = new File($fileName, $hash);
     }

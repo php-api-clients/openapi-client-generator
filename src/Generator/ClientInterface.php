@@ -1,40 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
-use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
-use cebe\openapi\spec\Operation as OpenAPiOperation;
-use cebe\openapi\spec\PathItem;
-use Jawira\CaseConverter\Convert;
-use League\OpenAPIValidation\Schema\Exception\SchemaMismatch;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
-use PhpParser\Node;
-use PhpParser\Node\Arg;
-use PhpParser\Node\Stmt\Class_;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use React\Http\Browser;
 use React\Promise\PromiseInterface;
-use RingCentral\Psr7\Request;
 use Rx\Observable;
+
+use function array_map;
+use function array_unique;
+use function count;
+use function implode;
+use function strpos;
+use function trim;
+
+use const PHP_EOL;
 
 final class ClientInterface
 {
     /**
-     * @param string $namespace
-     * @param array<\ApiClients\Tools\OpenApiClientGenerator\Representation\Operation> $paths
+     * @param array<Operation> $paths
+     *
      * @return iterable
      */
     public static function generate(string $pathPrefix, string $namespace, array $operations): iterable
     {
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(trim($namespace, '\\'));
+        $stmt    = $factory->namespace(trim($namespace, '\\'));
 
         $class = $factory->interface('ClientInterface');
 //        $rawCallReturnTypes = [];
@@ -74,17 +72,16 @@ final class ClientInterface
 //                $factory->method($casedOperationgroup)->setReturnType($cn)->makePublic()
 //            );
 //        }
-//
         $class->addStmt(
             $factory->method('call')->makePublic()->setDocComment(
                 new Doc(implode(PHP_EOL, [
                     '// phpcs:disable',
                     '/**',
-                    ' * @return ' . (function (array $operations): string {
-                        $count = count($operations);
+                    ' * @return ' . (static function (array $operations): string {
+                        $count    = count($operations);
                         $lastItem = $count - 1;
-                        $left = '';
-                        $right = '';
+                        $left     = '';
+                        $right    = '';
                         for ($i = 0; $i < $count; $i++) {
                             $returnType = implode('|', [
                                 ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
@@ -96,8 +93,10 @@ final class ClientInterface
                             } else {
                                 $left .= $returnType;
                             }
+
                             $right .= ')';
                         }
+
                         return $left . $right;
                     })($operations),
                     ' */',
@@ -111,11 +110,11 @@ final class ClientInterface
                 new Doc(implode(PHP_EOL, [
                     '// phpcs:disable',
                     '/**',
-                    ' * @return ' . (function (array $operations): string {
-                        $count = count($operations);
+                    ' * @return ' . (static function (array $operations): string {
+                        $count    = count($operations);
                         $lastItem = $count - 1;
-                        $left = '';
-                        $right = '';
+                        $left     = '';
+                        $right    = '';
                         for ($i = 0; $i < $count; $i++) {
                             $returnType = implode('|', [
                                 ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
@@ -127,8 +126,10 @@ final class ClientInterface
                             } else {
                                 $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
                             }
+
                             $right .= ')';
                         }
+
                         return $left . $right;
                     })($operations),
                     ' */',
@@ -136,7 +137,6 @@ final class ClientInterface
                 ]))
             )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))
         );
-//
 //        $class->addStmt(
 //            $factory->method('hydrateObject')->makePublic()->setDocComment(
 //                new Doc(implode(PHP_EOL, [

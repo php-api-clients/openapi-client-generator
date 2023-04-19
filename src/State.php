@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\State\Files as StateFiles;

@@ -4,25 +4,26 @@ SHELL=bash
 .PHONY: *
 
 DOCKER_CGROUP:=$(shell cat /proc/1/cgroup | grep docker | wc -l)
-COMPOSER_CACHE_DIR=$(shell composer config --global cache-dir -q || echo ${HOME}/.composer/cache)
+COMPOSER_CACHE_DIR:=$(shell composer config --global cache-dir -q || echo ${HOME}/.composer/cache)
 
 ifneq ("$(wildcard /.dockerenv)","")
-    IN_DOCKER=TRUE
+    IN_DOCKER:=TRUE
 else ifneq ("$(DOCKER_CGROUP)","0")
-	IN_DOCKER=TRUE
+	IN_DOCKER:=TRUE
 else
-    IN_DOCKER=FALSe
+    IN_DOCKER:=FALSE
 endif
 
 ifeq ("$(IN_DOCKER)","TRUE")
-	DOCKER_RUN=
+	DOCKER_RUN:=
 else
-	DOCKER_RUN=docker run --rm -it \
+	PHP_VERSION:=$(shell docker run --rm -v "`pwd`:`pwd`" jess/jq jq -r -c '.config.platform.php' "`pwd`/composer.json" | php -r "echo str_replace('|', '.', explode('.', implode('|', explode('.', stream_get_contents(STDIN), 2)), 2)[0]);")
+	DOCKER_RUN:=docker run --rm -it \
 		-v "`pwd`:`pwd`" \
 		-v "${COMPOSER_CACHE_DIR}:/home/app/.composer/cache" \
 		-w "`pwd`" \
 		-e "FORCE_GENERATION=$$FORCE_GENERATION" \
-		"wyrihaximusnet/php:8.2-nts-alpine-slim-dev"
+		"ghcr.io/wyrihaximusnet/php:${PHP_VERSION}-nts-alpine-slim-dev"
 endif
 
 all: ## Runs everything ###
@@ -32,31 +33,23 @@ syntax-php: ## Lint PHP syntax
 	$(DOCKER_RUN) vendor/bin/parallel-lint --exclude vendor .
 
 cs-fix: ## Fix any automatically fixable code style issues
-	$(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc)
+	$(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml || $(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml || $(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml -vvv
 
 cs: ## Check the code for code style issues
-	$(DOCKER_RUN) vendor/bin/phpcs --parallel=$(shell nproc)
+	$(DOCKER_RUN) vendor/bin/phpcs --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml
 
 stan: ## Run static analysis (PHPStan)
-	$(DOCKER_RUN) vendor/bin/phpstan analyse src tests --level max --ansi -c phpstan.neon
+	$(DOCKER_RUN) vendor/bin/phpstan analyse src tests --level max --ansi -c ./etc/qa/phpstan.neon
 
 psalm: ## Run static analysis (Psalm)
-	$(DOCKER_RUN) vendor/bin/psalm --threads=$(shell nproc) --shepherd --stats
+	$(DOCKER_RUN) vendor/bin/psalm --threads=$(shell nproc) --shepherd --stats --config=./etc/qa/psalm.xml
 
-unit: ## Run tests
-	$(DOCKER_RUN) vendor/bin/phpunit --colors=always -c phpunit.xml.dist --coverage-text --coverage-html covHtml --coverage-clover ./build/logs/clover.xml
+unit-testing: ## Run tests
+	$(DOCKER_RUN) vendor/bin/phpunit --colors=always -c ./etc/qa/phpunit.xml
+	$(DOCKER_RUN) test -n "$(COVERALLS_REPO_TOKEN)" && test -n "$(COVERALLS_RUN_LOCALLY)" && test -f ./var/tests-unit-clover-coverage.xml && vendor/bin/php-coveralls -v --coverage_clover ./build/logs/clover.xml --json_path ./var/tests-unit-clover-coverage-upload.json || true
 
-unit-ci: unit
-	if [ -f ./build/logs/clover.xml ]; then wget https://scrutinizer-ci.com/ocular.phar && sleep 3 && php ocular.phar code-coverage:upload --format=php-clover ./build/logs/clover.xml; fi
-
-infection: ## Run mutation testing
-	$(DOCKER_RUN) vendor/bin/infection --ansi --min-msi=100 --min-covered-msi=100 --threads=$(shell nproc)
-
-composer-require-checker: ## Ensure we require every package used in this package directly
-	$(DOCKER_RUN) vendor/bin/composer-require-checker --ignore-parse-errors --ansi -vvv --config-file=composer-require-checker.json
-
-composer-unused: ## Ensure we don't require any package we don't use in this package directly
-	$(DOCKER_RUN) composer unused --ansi
+mutation-testing: ## Run mutation testing
+	$(DOCKER_RUN) vendor/bin/infection --ansi --min-msi=100 --min-covered-msi=100 --threads=$(shell nproc) --ignore-msi-with-no-mutations || (cat ./var/infection.log && false)
 
 backward-compatibility-check: ## Check code for backwards incompatible changes
 	$(DOCKER_RUN) vendor/bin/roave-backward-compatibility-check || true

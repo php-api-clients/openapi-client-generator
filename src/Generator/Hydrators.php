@@ -1,38 +1,52 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use EventSauce\ObjectHydrator\IterableList;
 use EventSauce\ObjectHydrator\ObjectMapper;
-use Jawira\CaseConverter\Convert;
+use Generator;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 
+use function array_filter;
+use function array_key_exists;
+use function array_map;
+use function count;
+use function ltrim;
+use function str_replace;
+use function trim;
+use function ucfirst;
+
 final class Hydrators
 {
-    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator ...$hydrators): iterable
+    public static function generate(string $pathPrefix, string $namespace, Hydrator ...$hydrators): iterable
     {
         $knownScehmas = [];
-        $factory = new BuilderFactory();
-        $stmt = $factory->namespace(trim($namespace, '\\'));
+        $factory      = new BuilderFactory();
+        $stmt         = $factory->namespace(trim($namespace, '\\'));
 
         $class = $factory->class('Hydrators')->makeFinal()->implement('\\' . ObjectMapper::class);
 
         $usefullHydrators = [];
         foreach ($hydrators as $hydrator) {
-            $usefullHydrators[$hydrator->className] = array_filter($hydrator->schemas, function (\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema) use (&$knownScehmas): bool {
+            $usefullHydrators[$hydrator->className] = array_filter($hydrator->schemas, static function (Schema $schema) use (&$knownScehmas): bool {
                 if (array_key_exists($schema->className, $knownScehmas)) {
                     return false;
                 }
 
                 $knownScehmas[$schema->className] = $schema->className;
+
                 return true;
             });
         }
-        $matchHydrators = array_filter($hydrators, static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
+
+        $matchHydrators = array_filter($hydrators, static fn (Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
 
         foreach ($hydrators as $hydrator) {
             $class->addStmt($factory->property($hydrator->methodName)->setType('?' . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->setDefault(null)->makePrivate());
@@ -46,8 +60,8 @@ final class Hydrators
                 new Node\Stmt\Return_(
                     new Node\Expr\Match_(
                         new Node\Expr\Variable('className'),
-                        array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): Node\MatchArm  => new Node\MatchArm(
-                            array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
+                        array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
+                            array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
                                 ltrim($namespace, '\\') . 'Schema\\' . $schema->className
                             ), $usefullHydrators[$hydrator->className]),
                             new Node\Expr\MethodCall(
@@ -93,7 +107,7 @@ final class Hydrators
                                         ),
                                     ]
                                 )
-                            )
+                            ),
                         ]
                     )
                 )
@@ -101,7 +115,7 @@ final class Hydrators
         );
 
         $class->addStmt(
-            $factory->method('doHydrateObjects')->makePrivate()->setReturnType('\\' . \Generator::class)->addParams([
+            $factory->method('doHydrateObjects')->makePrivate()->setReturnType('\\' . Generator::class)->addParams([
                 (new Param('className'))->setType('string'),
                 (new Param('payloads'))->setType('iterable'),
             ])->addStmt(
@@ -127,7 +141,7 @@ final class Hydrators
                                     ),
                                     new Node\Expr\Variable('index'),
                                 )
-                            )
+                            ),
                         ],
                     ],
                 )
@@ -166,8 +180,8 @@ final class Hydrators
                 new Node\Stmt\Return_(
                     new Node\Expr\Match_(
                         new Node\Expr\Variable('className'),
-                        array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): Node\MatchArm  => new Node\MatchArm(
-                            array_map(static fn (\ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
+                        array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
+                            array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
                                 ltrim($namespace, '\\') . 'Schema\\' . $schema->className
                             ), $usefullHydrators[$hydrator->className]),
                             new Node\Expr\MethodCall(
@@ -203,10 +217,10 @@ final class Hydrators
                                     [
                                         new Node\Arg(
                                             new Node\Expr\Variable('payloads')
-                                        )
+                                        ),
                                     ]
                                 )
-                            )
+                            ),
                         ]
                     )
                 )
@@ -214,7 +228,7 @@ final class Hydrators
         );
 
         $class->addStmt(
-            $factory->method('doSerializeObjects')->makePrivate()->setReturnType('\\' . \Generator::class)->addParams([
+            $factory->method('doSerializeObjects')->makePrivate()->setReturnType('\\' . Generator::class)->addParams([
                 (new Param('objects'))->setType('iterable'),
             ])->addStmt(
                 new Node\Stmt\Foreach_(
@@ -231,12 +245,12 @@ final class Hydrators
                                         [
                                             new Node\Arg(
                                                 new Node\Expr\Variable('object')
-                                            )
+                                            ),
                                         ]
                                     ),
                                     new Node\Expr\Variable('index'),
                                 )
-                            )
+                            ),
                         ],
                     ],
                 )
@@ -281,7 +295,6 @@ final class Hydrators
                     ),
                 ])
             );
-
         }
 
         yield new File($pathPrefix, 'Hydrators', $stmt->addStmt($class)->getNode());

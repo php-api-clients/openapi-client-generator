@@ -1,37 +1,51 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
-use ApiClients\Contracts\OpenAPI\WebHookInterface;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use Jawira\CaseConverter\Convert;
+use League\OpenAPIValidation\Schema\SchemaValidator;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use RuntimeException;
+use Throwable;
+
+use function array_unique;
+use function implode;
+use function lcfirst;
+use function trim;
+use function ucfirst;
+
+use const PHP_EOL;
 
 final class WebHooks
 {
     /**
-     * @param array<string, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator> $webHooksHydrators
+     * @param array<string, Hydrator>                                                              $webHooksHydrators
      * @param array<string, array<\ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook> $webHooks
+     *
      * @return iterable
      */
     public static function generate(string $pathPrefix, string $namespace, array $webHooksHydrators, array $webHooks): iterable
     {
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(trim($namespace, '\\'));
+        $stmt    = $factory->namespace(trim($namespace, '\\'));
 
         $class = $factory->class('WebHooks')->makeFinal()->implement('\\' . WebHooksInterface::class);
-        $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class)->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
         $class->addStmt($factory->property('hydrator')->setType('Hydrators')->makeReadonly()->makePrivate());
 
-
         $constructor = $factory->method('__construct')->makePublic()->addParams([
-            (new Param('requestSchemaValidator'))->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class),
+            (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class),
             (new Param('hydrator'))->setType('Hydrators'),
         ])->addStmts([
             new Node\Expr\Assign(
@@ -109,15 +123,15 @@ final class WebHooks
                             ]
                         ),
                         new Node\Scalar\String_('data')
-                    )
+                    ),
                 ])
             ))
         );
 
-        $method = $factory->method('resolve')->makePublic()->setReturnType('object')->setDocComment(new Doc(implode(PHP_EOL, [
+        $method     = $factory->method('resolve')->makePublic()->setReturnType('object')->setDocComment(new Doc(implode(PHP_EOL, [
             '/**',
             ' * @return ' . implode('|', array_unique(
-                (static function (\ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks) use ($namespace): array {
+                (static function (WebHook ...$webHooks): array {
                     $schemas = [];
                     foreach ($webHooks as $webHook) {
                         foreach ($webHook->schema as $schema) {
@@ -135,15 +149,15 @@ final class WebHooks
                     return $hooks;
                 })($webHooks))
             )),
-            ' */'
+            ' */',
         ])))->addParam(
             (new Param('headers'))->setType('array')
         )->addParam(
             (new Param('data'))->setType('array')
         );
         $gotoLabels = 'webhooks_aaaaa';
-        $tmts = [];
-        $tmts[] = new Node\Expr\Assign(
+        $tmts       = [];
+        $tmts[]     = new Node\Expr\Assign(
             new Node\Expr\Variable('headers'),
             new Node\Expr\FuncCall(
                 new Node\Expr\Closure(
@@ -187,7 +201,7 @@ final class WebHooks
                         'params' => [
                             new Node\Param(
                                 new Node\Expr\Variable('headers'),
-                            )
+                            ),
                         ],
                         'returnType' => new Node\Name('array'),
                         'static' => true,
@@ -200,10 +214,10 @@ final class WebHooks
                 ]
             ),
         );
-        $tmts[] = new Node\Expr\Assign(
+        $tmts[]     = new Node\Expr\Assign(
             new Node\Expr\Variable('error'),
             new Node\Expr\New_(
-                new Node\Name('\\' . \RuntimeException::class),
+                new Node\Name('\\' . RuntimeException::class),
                 [
                     new Arg(new Node\Scalar\String_('No event matching given headers and data')),
                 ]
@@ -211,7 +225,7 @@ final class WebHooks
         );
 
         foreach ($webHooks as $event => $hooks) {
-            $eventClassname = 'WebHook\\' .Utils::className($event);
+            $eventClassname = 'WebHook\\' . Utils::className($event);
             $eventSanitized = lcfirst((new Convert($event))->toPascal());
 
             $class->addStmt($factory->property($eventSanitized)->setType('?' . $eventClassname)->setDefault(null)->makePrivate());
@@ -270,7 +284,7 @@ final class WebHooks
                 )),
             ], [
                 new Node\Stmt\Catch_(
-                    [new Node\Name('\\' . \Throwable::class)],
+                    [new Node\Name('\\' . Throwable::class)],
                     new Node\Expr\Variable('error'),
                     [
                         new Node\Stmt\Goto_($gotoLabels),

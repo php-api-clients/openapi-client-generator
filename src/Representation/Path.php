@@ -1,8 +1,8 @@
 <?php
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
+declare(strict_types=1);
 
-use cebe\openapi\spec\Schema as baseSchema;
+namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class Path
 {
@@ -11,6 +11,6 @@ final class Path
         public readonly Hydrator $hydrator,
         /** @var array<Operation> */
         public readonly array $operations,
-    ){
+    ) {
     }
 }

@@ -1,16 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\OpenAPI\WebHookInterface;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
+use League\OpenAPIValidation\Schema\SchemaValidator;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use RuntimeException;
+use Throwable;
+
+use function array_unique;
+use function count;
+use function implode;
+use function ltrim;
+use function strtolower;
+
+use const PHP_EOL;
 
 final class WebHook
 {
@@ -19,19 +32,18 @@ final class WebHook
         $className = Utils::className($event);
 
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(ltrim($namespace . 'WebHook', '\\'));
+        $stmt    = $factory->namespace(ltrim($namespace . 'WebHook', '\\'));
 
         $class = $factory->class($className)->makeFinal()->implement('\\' . WebHookInterface::class)->setDocComment(new Doc(implode(PHP_EOL, [
             '/**',
             ' * @internal',
             ' */',
         ])));
-        $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class)->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
         $class->addStmt($factory->property('hydrator')->setType('Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
 
-
         $constructor = $factory->method('__construct')->makePublic()->addParam(
-            (new Param('requestSchemaValidator'))->setType('\\' . \League\OpenAPIValidation\Schema\SchemaValidator::class)
+            (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class)
         )->addParam(
             (new Param('hydrator'))->setType('Hydrator\\WebHook\\' . $className)
         )->addStmt(
@@ -54,17 +66,17 @@ final class WebHook
         $class->addStmt($constructor);
 
         $resolveReturnTypes = [];
-        $method = $factory->method('resolve')->makePublic()->setReturnType('object')->addParam(
+        $method             = $factory->method('resolve')->makePublic()->setReturnType('object')->addParam(
             (new Param('headers'))->setType('array')
         )->addParam(
             (new Param('data'))->setType('array')
         );
-        $gotoLabels = 'actions_aaaaa';
-        $tmts = [];
-        $tmts[] = new Node\Expr\Assign(
+        $gotoLabels         = 'actions_aaaaa';
+        $tmts               = [];
+        $tmts[]             = new Node\Expr\Assign(
             new Node\Expr\Variable('error'),
             new Node\Expr\New_(
-                new Node\Name('\\' . \RuntimeException::class),
+                new Node\Name('\\' . RuntimeException::class),
                 [
                     new Arg(new Node\Scalar\String_('No action matching given headers and data')),
                 ]
@@ -95,9 +107,10 @@ final class WebHook
                     ]
                 ));
             }
+
             foreach ($webHook->schema as $contentTYpe => $schema) {
                 $resolveReturnTypes[] = 'Schema\\' . $schema->className;
-                $tmts[] = new Node\Stmt\If_(
+                $tmts[]               = new Node\Stmt\If_(
                     new Node\Expr\BinaryOp\Equal(
                         new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('headers')), new Node\Scalar\String_('content-type')),
                         new Node\Scalar\String_($contentTYpe),
@@ -139,7 +152,7 @@ final class WebHook
                                 )),
                             ], [
                                 new Node\Stmt\Catch_(
-                                    [new Node\Name('\\' . \Throwable::class)],
+                                    [new Node\Name('\\' . Throwable::class)],
                                     new Node\Expr\Variable('error'),
                                     [
                                         new Node\Stmt\Goto_($gotoLabels),
@@ -150,6 +163,7 @@ final class WebHook
                     ]
                 );
             }
+
             $tmts[] = new Node\Stmt\Label($gotoLabels);
             $gotoLabels++;
         }
@@ -159,6 +173,7 @@ final class WebHook
         if (count($resolveReturnTypes) > 0) {
             $method->setReturnType(implode('|', array_unique($resolveReturnTypes)));
         }
+
         $method->addStmts($tmts);
         $class->addStmt($method);
 

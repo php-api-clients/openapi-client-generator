@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Registry;
 
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use \cebe\openapi\spec\Schema as openAPISchema;
+use function in_array;
 
 final class ThrowableSchema
 {
+    /**
+     * @var array<string>
+     */
     private array $throwables = [];
 
     public function add(string $class): void
@@ -16,6 +20,6 @@ final class ThrowableSchema
 
     public function has(string $class): bool
     {
-        return in_array($class, $this->throwables);
+        return in_array($class, $this->throwables, true);
     }
 }

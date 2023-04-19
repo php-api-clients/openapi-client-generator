@@ -1,9 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Contract;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook;
 use PhpParser\Node\Expr;
 
 interface ContentType

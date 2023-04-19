@@ -1,29 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
-use ApiClients\Client\Github\Schema\WebhookLabelEdited\Changes\Name;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use cebe\openapi\spec\Schema as OpenAPiSchema;
-use Jawira\CaseConverter\Convert;
-use PhpParser\Builder\Param;
+use EventSauce\ObjectHydrator\MapFrom;
+use EventSauce\ObjectHydrator\PropertyCasters\CastListToType;
 use PhpParser\BuilderFactory;
-use PhpParser\BuilderHelpers;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
-use Psr\Http\Message\RequestInterface;
-use RingCentral\Psr7\Request;
+
+use function array_unique;
+use function count;
+use function explode;
+use function implode;
+use function is_string;
+use function json_encode;
+use function md5;
+use function str_replace;
+use function strlen;
+use function trim;
+
+use const PHP_EOL;
 
 final class Schema
 {
     /**
-     * @param string $name
-     * @param string $namespace
-     * @param string $schema->className
+     * @param string        $name
+     * @param string        $schema->className
      * @param OpenAPiSchema $schema
+     *
      * @return iterable<Node>
      */
     public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema $schema, array $aliases): iterable
@@ -33,8 +43,9 @@ final class Schema
             $className = 'AliasAbstract\\Abstract' . md5(json_encode($schema->schema->getSerializableData()));
             $aliases[] = $schema->className;
         }
+
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $className), '\\'));
+        $stmt    = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $className), '\\'));
 
         $schemaJson = new Node\Stmt\ClassConst(
             [
@@ -55,6 +66,7 @@ final class Schema
         } else {
             $class = $class->makeAbstract();
         }
+
         $class->addStmt(
             $schemaJson
         )->addStmt(
@@ -93,7 +105,7 @@ final class Schema
             )
         );
 
-        $constructor = (new BuilderFactory())->method('__construct')->makePublic();
+        $constructor       = (new BuilderFactory())->method('__construct')->makePublic();
         $constructDocBlock = [];
         foreach ($schema->properties as $property) {
             if (is_string($property->description) && strlen($property->description) > 0) {
@@ -104,7 +116,7 @@ final class Schema
             if ($property->name !== $property->sourceName) {
                 $constructorParam->addAttribute(
                     new Node\Attribute(
-                        new Node\Name('\\' . \EventSauce\ObjectHydrator\MapFrom::class),
+                        new Node\Name('\\' . MapFrom::class),
                         [
                             new Node\Arg(new Node\Scalar\String_($property->sourceName)),
                         ],
@@ -119,7 +131,7 @@ final class Schema
                     if ($type->payload->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
                         $constructorParam->addAttribute(
                             new Node\Attribute(
-                                new Node\Name('\\' . \EventSauce\ObjectHydrator\PropertyCasters\CastListToType::class),
+                                new Node\Name('\\' . CastListToType::class),
                                 [
                                     new Node\Arg(new Node\Expr\ClassConstFetch(
                                         new Node\Name('Schema\\' . $type->payload->payload->className),
@@ -129,6 +141,7 @@ final class Schema
                             ),
                         );
                     }
+
                     $types[] = 'array';
                     continue;
                 }
@@ -145,23 +158,22 @@ final class Schema
 
             $nullable = '';
             if ($property->nullable) {
-                $nullable = (count($types) > 1 || count(explode('|', implode('|', $types))) > 1) ? 'null|' : '?';
+                $nullable = count($types) > 1 || count(explode('|', implode('|', $types))) > 1 ? 'null|' : '?';
             }
 
             $constructor->addParam($constructorParam->setType($nullable . implode('|', $types)));
         }
 
         if (count($constructDocBlock) > 0) {
-            $constructor->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', str_replace(['/**', '*/'], '', $constructDocBlock)) . PHP_EOL .' */');
+            $constructor->setDocComment('/**' . PHP_EOL . ' * ' . implode(PHP_EOL . ' * ', str_replace(['/**', '*/'], '', $constructDocBlock)) . PHP_EOL . ' */');
         }
 
         $class->addStmt($constructor);
 
-
         yield new File($pathPrefix, 'Schema\\' . $className, $stmt->addStmt($class)->getNode());
 
         foreach ($aliases as $alias) {
-            $aliasTms = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $alias), '\\'));
+            $aliasTms   = $factory->namespace(trim(Utils::dirname($namespace . '\\Schema\\' . $alias), '\\'));
             $aliasClass = $factory->class(trim(Utils::basename($alias), '\\'))->makeFinal()->makeReadonly()->extend('Schema\\' . $className);
 
             yield new File($pathPrefix, 'Schema\\' . $alias, $aliasTms->addStmt($aliasClass)->getNode());

@@ -1,12 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Schema as baseSchema;
-use Jawira\CaseConverter\Convert;
+
+use function array_filter;
+use function count;
+use function current;
+use function in_array;
+use function is_array;
+use function is_string;
+use function str_replace;
 
 final class Type
 {
@@ -25,7 +34,9 @@ final class Type
                 $required,
                 $schemaRegistry,
             );
-        } else if (is_array($property->oneOf) && count($property->oneOf) > 0) {
+        }
+
+        if (is_array($property->oneOf) && count($property->oneOf) > 0) {
             // Check if nullable
             if (
                 count($property->oneOf) === 2 &&
@@ -47,7 +58,9 @@ final class Type
                 $required,
                 $schemaRegistry,
             );
-        } else if (is_array($property->anyOf) && count($property->anyOf) > 0) {
+        }
+
+        if (is_array($property->anyOf) && count($property->anyOf) > 0) {
             // Check if nullable
             if (
                 count($property->anyOf) === 2 &&
@@ -71,19 +84,19 @@ final class Type
             );
         }
 
-        $type = $property->type;
-        $nullable = !$required;
+        $type     = $property->type;
+        $nullable = ! $required;
 
         if (
             is_array($type) &&
             count($type) === 2 &&
             (
                 in_array(null, $type) ||
-                in_array("null", $type)
+                in_array('null', $type)
             )
         ) {
             foreach ($type as $pt) {
-                if ($pt !== null && $pt !== "null") {
+                if ($pt !== null && $pt !== 'null') {
                     $type = $pt;
                     break;
                 }
@@ -96,7 +109,7 @@ final class Type
             return new PropertyType(
                 'array',
                 null,
-                Type::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
+                self::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
                 $nullable
             );
         }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 use cebe\openapi\spec\Schema as baseSchema;
@@ -16,6 +18,6 @@ final class Schema
         public readonly array $properties,
         public readonly baseSchema $schema,
         public readonly bool $isArray,
-    ){
+    ) {
     }
 }

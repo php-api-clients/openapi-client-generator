@@ -1,15 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use cebe\openapi\spec\Operation as OpenAPiOperation;
+use cebe\openapi\Reader;
+use cebe\openapi\spec\Schema;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -18,22 +19,39 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Stmt\Class_;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use React\Http\Browser;
+use React\Stream\ReadableStreamInterface;
 use RingCentral\Psr7\Request;
+use RuntimeException;
 use Rx\Observable;
 use Rx\Scheduler\ImmediateScheduler;
 use Rx\Subject\Subject;
+use Throwable;
+
+use function array_keys;
+use function array_map;
+use function array_unique;
+use function array_values;
+use function count;
+use function implode;
+use function ltrim;
+use function rtrim;
+use function strlen;
+use function strtolower;
+
+use const PHP_EOL;
 
 final class Operation
 {
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         $noHydrator = true;
-        $factory = new BuilderFactory();
-        $stmt = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
+        $factory    = new BuilderFactory();
+        $stmt       = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
 
         $class = $factory->class(Utils::className(ltrim(Utils::basename($operation->className), '\\')))->makeFinal()->addStmt(
             new Node\Stmt\ClassConst(
@@ -89,6 +107,7 @@ final class Operation
                 $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
             );
         }
+
         $constructor = $factory->method('__construct')->makePublic();
 
         if (count($operation->requestBody) > 0) {
@@ -105,25 +124,28 @@ final class Operation
             );
         }
 
-        $requestReplaces = [];
-        $query = [];
+        $requestReplaces   = [];
+        $query             = [];
         $constructorParams = [];
         foreach ($operation->parameters as $parameter) {
             $paramterStmt = $factory->property($parameter->name);
-            $param = new Param($parameter->name);
+            $param        = new Param($parameter->name);
             if (strlen($parameter->description) > 0) {
-                $paramterStmt->setDocComment('/**' . (string)$parameter->description . '**/');
+                $paramterStmt->setDocComment('/**' . (string) $parameter->description . '**/');
             }
+
             if ($parameter->type !== '') {
                 $paramterStmt->setType($parameter->type);
 
                 $param->setType($parameter->type);
             }
+
             $class->addStmt($paramterStmt->makePrivate());
 
             if ($parameter->default !== null) {
                 $param->setDefault($parameter->default);
             }
+
             $constructorParams[] = $param;
             $constructor->addStmt(
                 new Node\Expr\Assign(
@@ -140,10 +162,14 @@ final class Operation
                     $parameter->name
                 );
             }
-            if ($parameter->location === 'query') {
-                $query[] = $parameter->targetName . '={' . $parameter->targetName . '}';
+
+            if ($parameter->location !== 'query') {
+                continue;
             }
+
+            $query[] = $parameter->targetName . '={' . $parameter->targetName . '}';
         }
+
         $requestParameters = [
             new Node\Arg(new Node\Expr\ClassConstFetch(
                 new Node\Name('self'),
@@ -173,9 +199,7 @@ final class Operation
         )->makePublic();
 
         foreach ($operation->requestBody as $requestBody) {
-            $requestParameters[] = new Node\Expr\Array_([
-                new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))
-            ]);
+            $requestParameters[] = new Node\Expr\Array_([new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))]);
             $requestParameters[] = new Node\Expr\FuncCall(new Node\Name('json_encode'), [new Arg(new Node\Expr\Variable('data'))]);
             $createRequestMethod->addStmt(
                 new Node\Stmt\Expression(new Node\Expr\MethodCall(
@@ -186,13 +210,13 @@ final class Operation
                     new Node\Name('validate'),
                     [
                         new Node\Arg(new Node\Expr\Variable('data')),
-                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . \cebe\openapi\Reader::class), new Node\Name('readFromJson'), [
+                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . Reader::class), new Node\Name('readFromJson'), [
                             new Arg(new Node\Expr\ClassConstFetch(
                                 new Node\Name('Schema\\' . $requestBody->schema->className),
                                 new Node\Name('SCHEMA_JSON'),
                             )),
                             new Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name('\\' . \cebe\openapi\spec\Schema::class),
+                                new Node\Name('\\' . Schema::class),
                                 new Node\Name('class'),
                             )),
                         ])),
@@ -213,7 +237,7 @@ final class Operation
             )
         );
 
-        $returnType = [];
+        $returnType    = [];
         $returnTypeRaw = [];
 //            $case = new Node\Stmt\Case_(
 //                new Node\Scalar\LNumber($code),
@@ -239,147 +263,150 @@ final class Operation
             foreach ($contentType::contentType() as $supportedContentType) {
                 $caseCases = [];
                 foreach ($operation->response as $contentTypeSchema) {
-                    if ($supportedContentType === $contentTypeSchema->contentType) {
-                        $returnOrThrow = Node\Stmt\Return_::class;
-                        $isError = $contentTypeSchema->code >= 400;
-                        if ($isError) {
-                            $returnOrThrow = Node\Stmt\Throw_::class;
-                            $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
-                        }
-
-                        $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
-                        if (!$isError) {
-                            $returnType[] = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
-                            $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
-                        }
-                        $hydrate = new Node\Expr\MethodCall(
-                            new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'hydrator'
-                            ),
-                            new Node\Name('hydrateObject'),
-                            [
-                                new Node\Arg(new Node\Expr\ClassConstFetch(
-                                    new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                    new Node\Name('class'),
-                                )),
-                                new Node\Arg(new Node\Expr\Variable('body')),
-                            ],
-                        );
-
-                        if ($isError) {
-                            $hydrate = new Node\Expr\New_(
-                                new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
-                                [
-                                    new Arg(
-                                        new Node\Scalar\LNumber($contentTypeSchema->code),
-                                    ),
-                                    new Arg(
-                                        $hydrate,
-                                    ),
-                                ],
-                            );
-                        }
-
-                        $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                            new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'responseSchemaValidator'
-                            ),
-                            new Node\Name('validate'),
-                            [
-                                new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
-                                new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                                    new Node\Expr\ClassConstFetch(
-                                        new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                        new Node\Name('SCHEMA_JSON'),
-                                    ),
-                                    new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
-                                ])),
-                            ]
-                        ));
-
-                        $case = new Node\Stmt\Case_(
-                            new Node\Scalar\LNumber($contentTypeSchema->code),
-                            [
-                                $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
-                                    new Node\Expr\Variable('body'),
-                                    new Node\Expr\Variable('bodyItem'),
-                                    [
-                                        'stmts' => [
-                                            $validate,
-                                        ],
-                                    ],
-                                ) : $validate,
-                                new $returnOrThrow(
-                                    $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
-                                        new Node\Expr\StaticCall(
-                                            new Node\Name('\\' . Observable::class),
-                                            new Node\Name('fromArray'),
-                                            [
-                                                new Node\Arg(new Node\Expr\Variable('body')),
-                                                new Node\Arg(
-                                                    new Node\Expr\New_(
-                                                        new Node\Name('\\' . ImmediateScheduler::class),
-                                                    ),
-                                                ),
-                                            ]
-                                        ),
-                                        new Node\Name('map'),
-                                        [
-                                            new Arg(new Node\Expr\Closure([
-                                                'stmts' => [
-                                                    new Node\Stmt\Return_(
-                                                        $hydrate,
-                                                    ),
-                                                ],
-                                                'params' => [
-                                                    new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))
-                                                ],
-                                                'returnType' => $object,
-                                            ]))
-                                        ]
-                                    ) : $hydrate,
-                                ),
-                            ],
-                        );
-
-                        if (strlen($contentTypeSchema->description) > 0) {
-                            $case->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $contentTypeSchema->description . PHP_EOL . '**/'));
-                        }
-                        $caseCases[] = $case;
+                    if ($supportedContentType !== $contentTypeSchema->contentType) {
+                        continue;
                     }
-                }
-                if (count($caseCases) > 0) {
-                    $cases[] = new Node\Stmt\Case_(
-                        new Node\Scalar\String_($supportedContentType),
+
+                    $returnOrThrow = Node\Stmt\Return_::class;
+                    $isError       = $contentTypeSchema->code >= 400;
+                    if ($isError) {
+                        $returnOrThrow = Node\Stmt\Throw_::class;
+                        $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
+                    }
+
+                    $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
+                    if (! $isError) {
+                        $returnType[]    = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
+                        $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
+                    }
+
+                    $hydrate = new Node\Expr\MethodCall(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'hydrator'
+                        ),
+                        new Node\Name('hydrateObject'),
                         [
-                            new Node\Stmt\Expression(
-                                new Node\Expr\Assign(
-                                    new Node\Expr\Variable(
-                                        'body',
-                                    ),
-                                    $contentType::parse(
-                                        new Node\Expr\MethodCall(
-                                            new Node\Expr\MethodCall(
-                                                new Node\Expr\Variable(
-                                                    'response',
-                                                ),
-                                                'getBody',
-                                            ),
-                                            'getContents',
-                                        ),
-                                    ),
-                                ),
-                            ),
-                            new Node\Stmt\Switch_(
-                                new Node\Expr\Variable('code'),
-                                $caseCases,
-                            ),
-                            new Node\Stmt\Break_(),
+                            new Node\Arg(new Node\Expr\ClassConstFetch(
+                                new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
+                                new Node\Name('class'),
+                            )),
+                            new Node\Arg(new Node\Expr\Variable('body')),
                         ],
                     );
+
+                    if ($isError) {
+                        $hydrate = new Node\Expr\New_(
+                            new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
+                            [
+                                new Arg(
+                                    new Node\Scalar\LNumber($contentTypeSchema->code),
+                                ),
+                                new Arg(
+                                    $hydrate,
+                                ),
+                            ],
+                        );
+                    }
+
+                    $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'responseSchemaValidator'
+                        ),
+                        new Node\Name('validate'),
+                        [
+                            new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
+                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
+                                    new Node\Name('SCHEMA_JSON'),
+                                ),
+                                new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                            ])),
+                        ]
+                    ));
+
+                    $case = new Node\Stmt\Case_(
+                        new Node\Scalar\LNumber($contentTypeSchema->code),
+                        [
+                            $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
+                                new Node\Expr\Variable('body'),
+                                new Node\Expr\Variable('bodyItem'),
+                                [
+                                    'stmts' => [$validate],
+                                ],
+                            ) : $validate,
+                            new $returnOrThrow(
+                                $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
+                                    new Node\Expr\StaticCall(
+                                        new Node\Name('\\' . Observable::class),
+                                        new Node\Name('fromArray'),
+                                        [
+                                            new Node\Arg(new Node\Expr\Variable('body')),
+                                            new Node\Arg(
+                                                new Node\Expr\New_(
+                                                    new Node\Name('\\' . ImmediateScheduler::class),
+                                                ),
+                                            ),
+                                        ]
+                                    ),
+                                    new Node\Name('map'),
+                                    [
+                                        new Arg(new Node\Expr\Closure([
+                                            'stmts' => [
+                                                new Node\Stmt\Return_(
+                                                    $hydrate,
+                                                ),
+                                            ],
+                                            'params' => [new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))],
+                                            'returnType' => $object,
+                                        ])),
+                                    ]
+                                ) : $hydrate,
+                            ),
+                        ],
+                    );
+
+                    if (strlen($contentTypeSchema->description) > 0) {
+                        $case->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $contentTypeSchema->description . PHP_EOL . '**/'));
+                    }
+
+                    $caseCases[] = $case;
                 }
+
+                if (count($caseCases) <= 0) {
+                    continue;
+                }
+
+                $cases[] = new Node\Stmt\Case_(
+                    new Node\Scalar\String_($supportedContentType),
+                    [
+                        new Node\Stmt\Expression(
+                            new Node\Expr\Assign(
+                                new Node\Expr\Variable(
+                                    'body',
+                                ),
+                                $contentType::parse(
+                                    new Node\Expr\MethodCall(
+                                        new Node\Expr\MethodCall(
+                                            new Node\Expr\Variable(
+                                                'response',
+                                            ),
+                                            'getBody',
+                                        ),
+                                        'getContents',
+                                    ),
+                                ),
+                            ),
+                        ),
+                        new Node\Stmt\Switch_(
+                            new Node\Expr\Variable('code'),
+                            $caseCases,
+                        ),
+                        new Node\Stmt\Break_(),
+                    ],
+                );
             }
         }
 
@@ -436,11 +463,11 @@ final class Operation
                                                 new Node\Expr\BinaryOp\BooleanAnd(
                                                     new Node\Expr\Instanceof_(
                                                         new Node\Expr\Variable('body'),
-                                                        new Node\Name('\\' . \Psr\Http\Message\StreamInterface::class)
+                                                        new Node\Name('\\' . StreamInterface::class)
                                                     ),
                                                     new Node\Expr\Instanceof_(
                                                         new Node\Expr\Variable('body'),
-                                                        new Node\Name('\\' . \React\Stream\ReadableStreamInterface::class)
+                                                        new Node\Name('\\' . ReadableStreamInterface::class)
                                                     ),
                                                 )
                                             ),
@@ -452,7 +479,7 @@ final class Operation
                                                             new Node\Name('onError'),
                                                             [
                                                                 new Arg(new Node\Expr\New_(
-                                                                    new Node\Name('\\' . \RuntimeException::class)
+                                                                    new Node\Name('\\' . RuntimeException::class)
                                                                 )),
                                                             ],
                                                         ),
@@ -543,7 +570,7 @@ final class Operation
                                                                 ),
                                                             ],
                                                             'params' => [
-                                                                $factory->param('error')->setType('\\' . \Throwable::class)->getNode(),
+                                                                $factory->param('error')->setType('\\' . Throwable::class)->getNode(),
                                                             ],
                                                             'uses' => [
                                                                 new Node\Expr\ClosureUse(
@@ -569,16 +596,16 @@ final class Operation
                                     'static' => true,
                                     'returnType' => new Node\Name('void'),
                                 ],
-                            ))
+                            )),
                         ],
                     ),
                 );
                 $redirects[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
 
-                $returnType[] = '\\' . Observable::class . '<string>';
+                $returnType[]    = '\\' . Observable::class . '<string>';
                 $returnTypeRaw[] = '\\' . Observable::class;
             } else {
-                $arrayItems = [];
+                $arrayItems              = [];
                 $arrayItems['code: int'] = new Node\Expr\ArrayItem(
                     new Node\Scalar\LNumber($redirect->code),
                     new Node\Scalar\String_('code'),
@@ -595,10 +622,12 @@ final class Operation
                         new Node\Scalar\String_(strtolower($header->name))
                     );
                 }
-                $returnType[] = 'array{' . implode(',', array_keys($arrayItems)) . '}';
+
+                $returnType[]    = 'array{' . implode(',', array_keys($arrayItems)) . '}';
                 $returnTypeRaw[] = 'array';
-                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
+                $redirects[]     = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
             }
+
             $redirectCase = new Node\Stmt\Case_(
                 new Node\Scalar\LNumber($redirect->code),
                 $redirects,
@@ -606,6 +635,7 @@ final class Operation
             if (strlen($redirect->description) > 0) {
                 $redirectCase->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $redirect->description . PHP_EOL . '**/'));
             }
+
             $redirectCases[] = $redirectCase;
         }
 
@@ -661,7 +691,6 @@ final class Operation
                     $cases,
                 ),
             );
-
         }
 
         if (count($redirectCases) > 0) {
@@ -677,10 +706,8 @@ final class Operation
             $createResponseMethod->addStmt(
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(
-                        new Node\Name('\\' . \RuntimeException::class),
-                        [
-                            new Arg(new Node\Scalar\String_('Unable to find matching response code and content type'))
-                        ]
+                        new Node\Name('\\' . RuntimeException::class),
+                        [new Arg(new Node\Scalar\String_('Unable to find matching response code and content type'))]
                     )
                 )
             );
@@ -688,10 +715,12 @@ final class Operation
             $createResponseMethod->addStmt(new Node\Stmt\Return_(new Node\Expr\Variable('response')));
             $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
         }
+
         $returnTypeRaw = array_unique($returnTypeRaw);
-        if (count($returnTypeRaw) === 0 ) {
+        if (count($returnTypeRaw) === 0) {
             $returnTypeRaw[] = 'mixed';
         }
+
         $createResponseMethod->setReturnType(
             new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), $returnTypeRaw))
         );

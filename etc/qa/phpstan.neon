@@ -1,0 +1,8 @@
+parameters:
+	ignoreErrors:
+		- '#with a nullable type declaration.#'
+	ergebnis:
+		classesAllowedToBeExtended:
+			- ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\AbstractListOperation
+includes:
+	- ../../vendor/wyrihaximus/async-test-utilities/rules.neon

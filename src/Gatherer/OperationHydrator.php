@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
+
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 
 final class OperationHydrator
 {
     public static function gather(
         string $className,
-        \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation ...$operations,
+        Operation ...$operations,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator {
         $schemaClasses = [];
 

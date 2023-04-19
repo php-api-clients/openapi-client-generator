@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Contract\Voter;
 
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
+
+use function array_key_exists;
 
 abstract class AbstractListOperation implements ListOperation
 {
@@ -12,8 +16,9 @@ abstract class AbstractListOperation implements ListOperation
         foreach (static::keys() as $key) {
             $match[$key] = false;
         }
+
         foreach ($operation->parameters as $parameter) {
-            if (!array_key_exists($parameter->name, $match)) {
+            if (! array_key_exists($parameter->name, $match)) {
                 continue;
             }
 

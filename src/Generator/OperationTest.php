@@ -1,51 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
-use ApiClients\Client\Github\Schema\InstallationToken;
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use cebe\openapi\spec\Operation as OpenAPiOperation;
 use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
-use PhpParser\Node\Stmt\Class_;
 use Prophecy\Argument;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Ramsey\Uuid\Uuid;
 use React\Http\Browser;
 use React\Http\Message\Response;
-use RingCentral\Psr7\Request;
-use Rx\Observable;
-use Rx\Scheduler\ImmediateScheduler;
-use Rx\Subject\Subject;
 use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
+
+use function count;
+use function implode;
+use function ltrim;
+use function preg_replace;
+use function str_replace;
+
+use const PHP_EOL;
 
 final class OperationTest
 {
     /**
      * @return iterable<Node>
      */
-    public static function generate(string $pathPrefix, string $namespace, string $sourceNamespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public static function generate(string $pathPrefix, string $namespace, string $sourceNamespace, Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         if (count($operation->response) === 0) {
             return;
         }
 
         $factory = new BuilderFactory();
-        $stmt = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
+        $stmt    = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
 
         $class = $factory->class(
             Utils::className(ltrim(Utils::basename($operation->className), '\\')) . 'Test',
@@ -84,7 +83,7 @@ final class OperationTest
         yield new File($pathPrefix, 'Operation\\' . $operation->className . 'Test', $stmt->addStmt($class)->getNode());
     }
 
-    private static function createMethod(BuilderFactory $factory, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
+    private static function createMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
     {
         $responseSchemaFetch = new Node\Expr\ClassConstFetch(
             new Node\Name(
@@ -102,30 +101,32 @@ final class OperationTest
                 ' */',
             ]))
         )->addStmts([
-            ...($response->code < 400 ? [] : [new Node\Stmt\Expression(
-                new Node\Expr\StaticCall(
-                    new Node\Expr\ConstFetch(
-                        new Node\Name(
-                            'self',
-                        ),
-                    ),
-                    new Node\Name(
-                        'expectException',
-                    ),
-                    [
-                        new Arg(
-                            new Node\Expr\ClassConstFetch(
-                                new Node\Name(
-                                    'ErrorSchemas\\' . $response->schema->className,
-                                ),
-                                new Node\Name(
-                                    'class',
-                                ),
+            ...($response->code < 400 ? [] : [
+                new Node\Stmt\Expression(
+                    new Node\Expr\StaticCall(
+                        new Node\Expr\ConstFetch(
+                            new Node\Name(
+                                'self',
                             ),
                         ),
-                    ],
+                        new Node\Name(
+                            'expectException',
+                        ),
+                        [
+                            new Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        'ErrorSchemas\\' . $response->schema->className,
+                                    ),
+                                    new Node\Name(
+                                        'class',
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
                 ),
-            )]),
+            ]),
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
@@ -190,7 +191,7 @@ final class OperationTest
                                         'class',
                                     )
                                 )
-                            )
+                            ),
                         ],
                     ),
                 ),
@@ -255,7 +256,7 @@ final class OperationTest
                                         'class',
                                     )
                                 )
-                            )
+                            ),
                         ],
                     ),
                 ),
@@ -365,9 +366,11 @@ final class OperationTest
                                         (static function (array $parameters): array {
                                             $items = [];
                                             foreach ($parameters as $parameter) {
-                                                if ($parameter->location === 'path') {
-                                                    $items[] = '{' . $parameter->targetName . '}';
+                                                if ($parameter->location !== 'path') {
+                                                    continue;
                                                 }
+
+                                                $items[] = '{' . $parameter->targetName . '}';
                                             }
 
                                             return $items;
@@ -375,9 +378,11 @@ final class OperationTest
                                         (static function (array $parameters): array {
                                             $items = [];
                                             foreach ($parameters as $parameter) {
-                                                if ($parameter->location === 'path') {
-                                                    $items[] = $parameter->example;
+                                                if ($parameter->location !== 'path') {
+                                                    continue;
                                                 }
+
+                                                $items[] = $parameter->example;
                                             }
 
                                             return $items;
@@ -386,12 +391,14 @@ final class OperationTest
                                     ) . (static function (array $parameters): string {
                                         $items = [];
                                         foreach ($parameters as $parameter) {
-                                            if ($parameter->location === 'query') {
-                                                $items[] = $parameter->targetName . '=' . $parameter->example;
+                                            if ($parameter->location !== 'query') {
+                                                continue;
                                             }
+
+                                            $items[] = $parameter->targetName . '=' . $parameter->example;
                                         }
 
-                                        return count($items) > 0 ? ('?' . implode('&', $items)) : '';
+                                        return count($items) > 0 ? '?' . implode('&', $items) : '';
                                     })($operation->parameters),
                                 )
                             ),
@@ -585,7 +592,7 @@ final class OperationTest
                                             ),
                                         ],
                                     )),
-                                )
+                                ),
                             ],
                         ),
                     ),

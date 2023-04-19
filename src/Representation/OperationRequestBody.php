@@ -1,14 +1,14 @@
 <?php
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
+declare(strict_types=1);
 
-use cebe\openapi\spec\Schema as baseSchema;
+namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class OperationRequestBody
 {
     public function __construct(
         public readonly string $contentType,
         public readonly Schema $schema,
-    ){
+    ) {
     }
 }

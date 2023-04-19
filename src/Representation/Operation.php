@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class Operation
@@ -13,17 +15,18 @@ final class Operation
         public readonly string $matchMethod,
         public readonly string $method,
         public readonly string $path,
-        public readonly array  $metaData,
+        /** @var array<mixed> $metaData */
+        public readonly array $metaData,
         /** @var array<string> $returnType */
-        public readonly array  $returnType,
+        public readonly array $returnType,
         /** @var array<Parameter> $parameters */
-        public readonly array  $parameters,
+        public readonly array $parameters,
         /** @var array<OperationRequestBody> $requestBody */
-        public readonly array  $requestBody,
+        public readonly array $requestBody,
         /** @var array<OperationResponse> $response */
-        public readonly array  $response,
+        public readonly array $response,
         /** @var array<OperationRedirect> $redirect */
-        public readonly array  $redirect,
-    ){
+        public readonly array $redirect,
+    ) {
     }
 }

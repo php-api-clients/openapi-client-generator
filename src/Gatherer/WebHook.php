@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
-use cebe\openapi\spec\Operation as openAPIOperation;
 use cebe\openapi\spec\PathItem;
-use Jawira\CaseConverter\Convert;
-use Psr\Http\Message\ResponseInterface;
+
+use function explode;
+use function iterator_to_array;
+use function preg_replace;
+use function time;
+use function ucfirst;
 
 final class WebHook
 {

@@ -1,8 +1,8 @@
 <?php
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
+declare(strict_types=1);
 
-use cebe\openapi\spec\Schema as baseSchema;
+namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class OperationRedirect
 {
@@ -11,6 +11,6 @@ final class OperationRedirect
         public readonly string $description,
         /** @var array<Header> */
         public readonly array $headers,
-    ){
+    ) {
     }
 }

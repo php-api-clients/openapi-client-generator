@@ -41,7 +41,10 @@
         "wyrihaximus/simple-twig": "^2.1",
         "wyrihaximus/async-test-utilities": "^6.1",
         "api-clients/github": "^0.2@dev",
-        "delight-im/random": "^1.0"
+        "delight-im/random": "^1.0",
+        "wyrihaximus/monolog-factory": "^1.2",
+        "maxime-pasquier/monolog-stdout-handler": "^2.1",
+        "divineomega/php-cli-progress-bar": "^2.1"
     },
     "autoload": {
         "psr-4": {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class WebHook
@@ -14,6 +16,6 @@ final class WebHook
         public readonly array $headers,
         /** @var array<string, Schema> */
         public readonly array $schema,
-    ){
+    ) {
     }
 }

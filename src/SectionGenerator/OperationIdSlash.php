@@ -1,10 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\SectionGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Contract\SectionGenerator;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook;
+
+use function array_pop;
+use function explode;
+use function implode;
 
 final class OperationIdSlash implements SectionGenerator
 {

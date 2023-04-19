@@ -6,7 +6,6 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation;
 
 use ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\AbstractListOperation;
 use ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\ListOperation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 
 final class PageAndPerPageInQuery extends AbstractListOperation implements ListOperation
 {

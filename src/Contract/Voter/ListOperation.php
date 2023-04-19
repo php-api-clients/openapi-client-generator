@@ -1,16 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator\Contract\Voter;
 
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 
 interface ListOperation
 {
-
     public static function incrementorKey(): string;
 
     public static function incrementorInitialValue(): int;
-
 
     /**
      * @return array<string>

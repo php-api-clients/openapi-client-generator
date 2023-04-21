@@ -3,7 +3,6 @@
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\Generator;
-use ApiClients\Tools\OpenApiClientGenerator\Logger;
 use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
 use Symfony\Component\Yaml\Yaml;
 
@@ -21,7 +20,6 @@ use Symfony\Component\Yaml\Yaml;
     exit((function (string $configurationFile): int {
         $configuration = (new ObjectMapperUsingReflection())->hydrateObject(Configuration::class, Yaml::parseFile($configurationFile));
         (new Generator(
-            Logger::create(),
             $configuration,
             dirname($configurationFile) . DIRECTORY_SEPARATOR,
         ))->generate(

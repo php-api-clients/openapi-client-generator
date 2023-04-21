@@ -8,48 +8,36 @@
             "email": "ceesjank@gmail.com"
         }
     ],
-    "bin": [
-        "bin/openapi-client-generator"
-    ],
-    "extra": {
-        "wyrihaximus": {
-            "bin-autoload-path-update": [
-                "bin/openapi-client-generator"
-            ]
-        }
-    },
     "require": {
         "php": "^8.2",
+        "api-clients/contracts": "^0.1",
+        "api-clients/github": "^0.2@dev",
+        "ckr/arraymerger": "^3.0",
+        "delight-im/random": "^1.0",
         "devizzent/cebe-php-openapi": "^1",
+        "eventsauce/object-hydrator": "^1.2",
         "jawira/case-converter": "^3.5",
-        "twig/twig": "^3.5",
-        "nikic/php-parser": "^4.15",
-        "psr/http-message": "^1.0",
-        "ringcentral/psr7": "^1.3",
-        "symfony/yaml": "^5.4",
-        "wyrihaximus/composer-update-bin-autoload-path": "^1 || ^1.0.1",
         "league/openapi-psr7-validator": "^0.21",
+        "nikic/php-parser": "^4.15",
+        "nunomaduro/termwind": "^1.15",
+        "psr/http-message": "^1.0",
+        "ramsey/uuid": "^4.7",
+        "react/async": "^4.0",
         "react/http": "^1.8",
         "reactivex/rxphp": "^2.0",
-        "api-clients/contracts": "^0.1",
-        "eventsauce/object-hydrator": "^1.2",
-        "react/async": "^4.0",
-        "wyrihaximus/react-awaitable-observable": "^1.0",
-        "ckr/arraymerger": "^3.0",
-        "ramsey/uuid": "^4.7",
-        "wyrihaximus/subsplit-tools": "dev-main",
-        "wyrihaximus/simple-twig": "^2.1",
+        "ringcentral/psr7": "^1.3",
+        "symfony/yaml": "^5.4",
+        "twig/twig": "^3.5",
         "wyrihaximus/async-test-utilities": "^6.1",
-        "api-clients/github": "^0.2@dev",
-        "delight-im/random": "^1.0",
-        "wyrihaximus/monolog-factory": "^1.2",
-        "maxime-pasquier/monolog-stdout-handler": "^2.1",
-        "divineomega/php-cli-progress-bar": "^2.1"
+        "wyrihaximus/composer-update-bin-autoload-path": "^1",
+        "wyrihaximus/react-awaitable-observable": "^1.0",
+        "wyrihaximus/simple-twig": "^2.1",
+        "wyrihaximus/subsplit-tools": "dev-main"
     },
     "autoload": {
         "psr-4": {
-            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/",
-            "ApiClients\\Client\\Github\\": "generated/"
+            "ApiClients\\Client\\Github\\": "generated/",
+            "ApiClients\\Tools\\OpenApiClientGenerator\\": "src/"
         },
         "files": [
             "external_files/cebe/JsonReference.php",
@@ -65,15 +53,33 @@
             "ApiClients\\Tests\\Tools\\OpenApiClientGenerator\\": "tests/"
         }
     },
+    "bin": [
+        "bin/openapi-client-generator"
+    ],
     "config": {
-        "platform": {
-            "php": "8.2.13"
-        },
         "allow-plugins": {
             "wyrihaximus/composer-update-bin-autoload-path": true,
             "infection/extension-installer": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
             "ergebnis/composer-normalize": true
+        },
+        "platform": {
+            "php": "8.2.13"
         }
+    },
+    "extra": {
+        "wyrihaximus": {
+            "bin-autoload-path-update": [
+                "bin/openapi-client-generator"
+            ]
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "composer normalize"
+        ],
+        "post-update-cmd": [
+            "composer normalize"
+        ]
     }
 }

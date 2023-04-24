@@ -21,12 +21,13 @@ final class Schema
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema {
         $className = Utils::fixKeyword($className);
         $isArray   = $schema->type === 'array';
+        $properties = [];
+        $example    = [];
+
         if ($isArray) {
             $schema = $schema->items;
         }
 
-        $properties = [];
-        $example    = $schema->example ?? [];
         foreach ($schema->properties as $propertyName => $property) {
             $gatheredProperty = Property::gather(
                 $className,
@@ -37,23 +38,18 @@ final class Schema
             );
             $properties[]     = $gatheredProperty;
 
-            if (array_key_exists($gatheredProperty->sourceName, $example)) {
-                continue;
+            foreach (['examples', 'example'] as $examplePropertyName) {
+                if (array_key_exists($gatheredProperty->sourceName, $example)) {
+                    break;
+                }
+
+                if (property_exists($schema, $examplePropertyName) && is_array($schema->$examplePropertyName) && array_key_exists($gatheredProperty->sourceName, $schema->$examplePropertyName)) {
+                    $example[$gatheredProperty->sourceName] = $schema->$examplePropertyName[$gatheredProperty->sourceName];
+                }
             }
 
             $example[$gatheredProperty->sourceName] = $gatheredProperty->exampleData;
         }
-
-//        if ($className === 'WebhookWorkflowRunCompleted\WorkflowRun') {
-//            var_export([
-//                $className,
-//                $schema->title ?? '',
-//                $schema->description ?? '',
-//                $example,
-////                $properties,
-//                $isArray,
-//            ]);
-//        }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
             $className,

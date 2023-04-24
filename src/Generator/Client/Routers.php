@@ -6,6 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
 
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\Router;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClassMethod;
 use Jawira\CaseConverter\Convert;
 
 final class Routers
@@ -31,10 +32,14 @@ final class Routers
     {
         foreach ($this->operations as $method => $groups) {
             foreach ($groups as $group => $methods) {
+                $classMethods = [];
+                foreach ($methods as $name => $nodes) {
+                    $classMethods[] = new RouterClassMethod($name, $nodes);
+                }
                 yield new RouterClass(
                     $method,
                     $group,
-                    $methods,
+                    $classMethods,
                 );
             }
         }

@@ -6,6 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Methods\ChunkCount;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
@@ -52,16 +53,15 @@ final class Client
     /**
      * @return iterable<File>
      */
-    public static function generate(string $pathPrefix, string $namespace, Representation\Client $client): iterable
+    public static function generate(Configuration $configuration, string $pathPrefix, string $namespace, Representation\Client $client, Routers $routers): iterable
     {
-        $routers    = new Routers();
         $operations = [];
         foreach ($client->paths as $path) {
             $operations = [...$operations, ...$path->operations];
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($namespace, '\\'));
+        $stmt = $factory->namespace(trim($namespace, '\\'));
 
         $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->addStmt(
             $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()
@@ -73,6 +73,8 @@ final class Client
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
+        )->addStmt(
+            $factory->property('operations')->setType('Operations')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate()
         )->addStmt(
@@ -164,6 +166,68 @@ final class Client
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
+                        'operations'
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name('Operations'),
+                        [
+                            new Arg(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'browser'
+                                ),
+                                false,
+                                false,
+                                [],
+                                new Node\Identifier('browser'),
+                            ),
+                            new Arg(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'authentication'
+                                ),
+                                false,
+                                false,
+                                [],
+                                new Node\Identifier('authentication'),
+                            ),
+                            new Arg(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'requestSchemaValidator'
+                                ),
+                                false,
+                                false,
+                                [],
+                                new Node\Identifier('requestSchemaValidator'),
+                            ),
+                            new Arg(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'responseSchemaValidator'
+                                ),
+                                false,
+                                false,
+                                [],
+                                new Node\Identifier('responseSchemaValidator'),
+                            ),
+                            new Arg(
+                                new Node\Expr\PropertyFetch(
+                                    new Node\Expr\Variable('this'),
+                                    'hydrators'
+                                ),
+                                false,
+                                false,
+                                [],
+                                new Node\Identifier('hydrators'),
+                            ),
+                        ],
+                    ),
+                )
+            )->addStmt(
+                new Node\Expr\Assign(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
                         'webHooks'
                     ),
                     new Node\Expr\New_(
@@ -183,83 +247,85 @@ final class Client
             )
         );
 
-        $class->addStmt(
-            $factory->method('call')->makePublic()->setDocComment(
-                new Doc(implode(PHP_EOL, [
-                    '// phpcs:disable',
-                    '/**',
-                    ' * @return ' . (static function (array $operations): string {
-                        $count    = count($operations);
-                        $lastItem = $count - 1;
-                        $left     = '';
-                        $right    = '';
-                        for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', [
-                                ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
-                                ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
-                            ]);
-                            $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
-                            if ($i !== $lastItem) {
-                                $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
-                            } else {
-                                $left .= $returnType;
+        if ($configuration->entryPoints->call) {
+            $class->addStmt(
+                $factory->method('call')->makePublic()->setDocComment(
+                    new Doc(implode(PHP_EOL, [
+                        '// phpcs:disable',
+                        '/**',
+                        ' * @return ' . (static function (array $operations): string {
+                            $count = count($operations);
+                            $lastItem = $count - 1;
+                            $left = '';
+                            $right = '';
+                            for ($i = 0; $i < $count; $i++) {
+                                $returnType = implode('|', [
+                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
+                                    ...array_map(static fn(string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                                ]);
+                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
+                                if ($i !== $lastItem) {
+                                    $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
+                                } else {
+                                    $left .= $returnType;
+                                }
+
+                                $right .= ')';
                             }
 
-                            $right .= ')';
-                        }
-
-                        return $left . $right;
-                    })($operations),
-                    ' */',
-                    '// phpcs:enable',
-                ]))
-            )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmts([
-                new Node\Stmt\Expression(
-                    new Node\Expr\Assign(
-                        new Node\Expr\Variable('result'),
-                        new Node\Expr\FuncCall(
-                            new Node\Name('\React\Async\await'),
-                            [
-                                new Node\Arg(
-                                    new Node\Expr\MethodCall(
-                                        new Node\Expr\Variable('this'),
-                                        new Node\Name('callAsync'),
-                                        [
-                                            new Node\Arg(new Node\Expr\Variable('call')),
-                                            new Node\Arg(new Node\Expr\Variable('params')),
-                                        ]
-                                    )
-                                ),
-                            ],
+                            return $left . $right;
+                        })($operations),
+                        ' */',
+                        '// phpcs:enable',
+                    ]))
+                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmts([
+                    new Node\Stmt\Expression(
+                        new Node\Expr\Assign(
+                            new Node\Expr\Variable('result'),
+                            new Node\Expr\FuncCall(
+                                new Node\Name('\React\Async\await'),
+                                [
+                                    new Node\Arg(
+                                        new Node\Expr\MethodCall(
+                                            new Node\Expr\Variable('this'),
+                                            new Node\Name('callAsync'),
+                                            [
+                                                new Node\Arg(new Node\Expr\Variable('call')),
+                                                new Node\Arg(new Node\Expr\Variable('params')),
+                                            ]
+                                        )
+                                    ),
+                                ],
+                            ),
                         ),
                     ),
-                ),
-                new Node\Stmt\If_(
-                    new Node\Expr\Instanceof_(
-                        new Node\Expr\Variable('result'),
-                        new Node\Name('\\' . Observable::class)
-                    ),
-                    [
-                        'stmts' => [
-                            new Node\Stmt\Expression(
-                                new Node\Expr\Assign(
-                                    new Node\Expr\Variable('result'),
-                                    new Node\Expr\FuncCall(
-                                        new Node\Name('\WyriHaximus\React\awaitObservable'),
-                                        [
-                                            new Arg(new Node\Expr\Variable('result')),
-                                        ],
-                                    )
+                    new Node\Stmt\If_(
+                        new Node\Expr\Instanceof_(
+                            new Node\Expr\Variable('result'),
+                            new Node\Name('\\' . Observable::class)
+                        ),
+                        [
+                            'stmts' => [
+                                new Node\Stmt\Expression(
+                                    new Node\Expr\Assign(
+                                        new Node\Expr\Variable('result'),
+                                        new Node\Expr\FuncCall(
+                                            new Node\Name('\WyriHaximus\React\awaitObservable'),
+                                            [
+                                                new Arg(new Node\Expr\Variable('result')),
+                                            ],
+                                        )
+                                    ),
                                 ),
-                            ),
+                            ],
                         ],
-                    ],
-                ),
-                new Node\Stmt\Return_(
-                    new Node\Expr\Variable('result'),
-                ),
-            ])
-        );
+                    ),
+                    new Node\Stmt\Return_(
+                        new Node\Expr\Variable('result'),
+                    ),
+                ])
+            );
+        }
 
         $sortedOperations = [];
         foreach ($client->paths as $path) {
@@ -272,11 +338,11 @@ final class Client
 
                 $operationPathCount = count($operationPath);
 
-                if (! array_key_exists($operation->matchMethod, $sortedOperations)) {
+                if (!array_key_exists($operation->matchMethod, $sortedOperations)) {
                     $sortedOperations[$operation->matchMethod] = [];
                 }
 
-                if (! array_key_exists($operationPathCount, $sortedOperations[$operation->matchMethod])) {
+                if (!array_key_exists($operationPathCount, $sortedOperations[$operation->matchMethod])) {
                     $sortedOperations[$operation->matchMethod][$operationPathCount] = [
                         'operations' => [],
                         'paths' => [],
@@ -302,252 +368,298 @@ final class Client
 //            })($sortedOperations))
 //        )
 
-        $chunkCountClasses = [];
-        $operationsIfs     = [];
-        foreach ($sortedOperations as $method => $ops) {
-            $opsTmts = [];
-            foreach ($ops as $chunkCount => $moar) {
-                $chunkCountClasses[] = $cc = new ChunkCount(
-                    'ChunkSize\\' . (new Convert($method))->toPascal() . '\\' . (new Convert('cc' . $chunkCount))->toPascal(),
-                    self::traverseOperations($namespace, $moar['operations'], $moar['paths'], 0, $routers),
-                );
 
-                $opsTmts[] = [
-                    new Node\Expr\BinaryOp\Identical(
-                        new Node\Expr\Variable('pathChunksCount'),
-                        new Node\Scalar\LNumber($chunkCount),
-                    ),
-                    [
-                        new Node\Stmt\If_(
-                            new Node\Expr\BinaryOp\Equal(
-                                new Node\Expr\FuncCall(
-                                    new Node\Name('\array_key_exists'),
-                                    [
-                                        new Arg(new Node\Expr\ClassConstFetch(
-                                            new Node\Name($cc->className),
-                                            new Node\Name('class'),
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'router'
-                                        )),
-                                    ],
-                                ),
-                                new Node\Expr\ConstFetch(new Node\Name('false'))
-                            ),
-                            [
-                                'stmts' => [
-                                    new Node\Stmt\Expression(
-                                        new Node\Expr\Assign(
-                                            new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                                new Node\Expr\Variable('this'),
-                                                'router'
-                                            ), new Node\Expr\ClassConstFetch(
+        if ($configuration->entryPoints->call) {
+            $chunkCountClasses = [];
+            $operationsIfs = [];
+            foreach ($sortedOperations as $method => $ops) {
+                $opsTmts = [];
+                foreach ($ops as $chunkCount => $moar) {
+                    $chunkCountClasses[] = $cc = new ChunkCount(
+                        'ChunkSize\\' . (new Convert($method))->toPascal() . '\\' . (new Convert('cc' . $chunkCount))->toPascal(),
+                        self::traverseOperations($namespace, $moar['operations'], $moar['paths'], 0, $routers),
+                    );
+
+                    $opsTmts[] = [
+                        new Node\Expr\BinaryOp\Identical(
+                            new Node\Expr\Variable('pathChunksCount'),
+                            new Node\Scalar\LNumber($chunkCount),
+                        ),
+                        [
+                            new Node\Stmt\If_(
+                                new Node\Expr\BinaryOp\Equal(
+                                    new Node\Expr\FuncCall(
+                                        new Node\Name('\array_key_exists'),
+                                        [
+                                            new Arg(new Node\Expr\ClassConstFetch(
                                                 new Node\Name($cc->className),
                                                 new Node\Name('class'),
                                             )),
-                                            new Node\Expr\New_(
-                                                new Node\Name($cc->className),
-                                                [
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'requestSchemaValidator'
-                                                    )),
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'responseSchemaValidator'
-                                                    )),
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'hydrators'
-                                                    )),
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'browser'
-                                                    )),
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'authentication'
-                                                    )),
-                                                ],
-                                            ),
-                                        ),
+                                            new Arg(new Node\Expr\PropertyFetch(
+                                                new Node\Expr\Variable('this'),
+                                                'router'
+                                            )),
+                                        ],
                                     ),
-                                ],
-                            ],
-                        ),
-                        new Node\Stmt\Return_(
-                            new Expr\MethodCall(
-                                new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'router'
-                                ), new Node\Expr\ClassConstFetch(
-                                    new Node\Name($cc->className),
-                                    new Node\Name('class'),
-                                )),
-                                new Node\Name(
-                                    'call',
+                                    new Node\Expr\ConstFetch(new Node\Name('false'))
                                 ),
                                 [
-                                    ...(static function (array $variables): iterable {
-                                        foreach ($variables as $variable) {
-                                            yield new Arg(
-                                                new Expr\Variable($variable),
-                                            );
-                                        }
-                                    })([
-                                        'call',
-                                        'params',
-                                        'pathChunks',
-                                    ]),
+                                    'stmts' => [
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\Assign(
+                                                new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
+                                                    new Node\Expr\Variable('this'),
+                                                    'router'
+                                                ), new Node\Expr\ClassConstFetch(
+                                                    new Node\Name($cc->className),
+                                                    new Node\Name('class'),
+                                                )),
+                                                new Node\Expr\New_(
+                                                    new Node\Name($cc->className),
+                                                    [
+                                                        new Arg(
+                                                            new Node\Expr\PropertyFetch(
+                                                                new Node\Expr\Variable('this'),
+                                                                'browser'
+                                                            ),
+                                                            false,
+                                                            false,
+                                                            [],
+                                                            new Node\Identifier('browser'),
+                                                        ),
+                                                        new Arg(
+                                                            new Node\Expr\PropertyFetch(
+                                                                new Node\Expr\Variable('this'),
+                                                                'authentication'
+                                                            ),
+                                                            false,
+                                                            false,
+                                                            [],
+                                                            new Node\Identifier('authentication'),
+                                                        ),
+                                                        new Arg(
+                                                            new Node\Expr\PropertyFetch(
+                                                                new Node\Expr\Variable('this'),
+                                                                'requestSchemaValidator'
+                                                            ),
+                                                            false,
+                                                            false,
+                                                            [],
+                                                            new Node\Identifier('requestSchemaValidator'),
+                                                        ),
+                                                        new Arg(
+                                                            new Node\Expr\PropertyFetch(
+                                                                new Node\Expr\Variable('this'),
+                                                                'responseSchemaValidator'
+                                                            ),
+                                                            false,
+                                                            false,
+                                                            [],
+                                                            new Node\Identifier('responseSchemaValidator'),
+                                                        ),
+                                                        new Arg(
+                                                            new Node\Expr\PropertyFetch(
+                                                                new Node\Expr\Variable('this'),
+                                                                'hydrators'
+                                                            ),
+                                                            false,
+                                                            false,
+                                                            [],
+                                                            new Node\Identifier('hydrators'),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ),
+                                        ),
+                                    ],
                                 ],
                             ),
-                        ),
-                    ],
+                            new Node\Stmt\Return_(
+                                new Expr\MethodCall(
+                                    new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'router'
+                                    ), new Node\Expr\ClassConstFetch(
+                                        new Node\Name($cc->className),
+                                        new Node\Name('class'),
+                                    )),
+                                    new Node\Name(
+                                        'call',
+                                    ),
+                                    [
+                                        ...(static function (array $variables): iterable {
+                                            foreach ($variables as $variable) {
+                                                yield new Arg(
+                                                    new Expr\Variable($variable),
+                                                );
+                                            }
+                                        })([
+                                            'call',
+                                            'params',
+                                            'pathChunks',
+                                        ]),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ];
+                }
+
+                $operationsIfs[] = [
+                    new Node\Expr\BinaryOp\Identical(
+                        new Node\Expr\Variable('method'),
+                        new Node\Scalar\String_($method),
+                    ),
+                    (static function (array $opsTmts): array {
+                        $first = array_shift($opsTmts);
+                        $elseIfs = [];
+
+                        foreach ($opsTmts as $opsTmt) {
+                            $elseIfs[] = new Node\Stmt\ElseIf_(...$opsTmt);
+                        }
+
+                        return [
+                            new Node\Stmt\If_(
+                                $first[0],
+                                [
+                                    'stmts' => $first[1],
+                                    'elseifs' => $elseIfs,
+                                ],
+                            ),
+                        ];
+                    })($opsTmts),
                 ];
             }
 
-            $operationsIfs[] = [
-                new Node\Expr\BinaryOp\Identical(
-                    new Node\Expr\Variable('method'),
-                    new Node\Scalar\String_($method),
-                ),
-                (static function (array $opsTmts): array {
-                    $first   = array_shift($opsTmts);
-                    $elseIfs = [];
+            $firstOperationsIfs = array_shift($operationsIfs);
+            $operationsIf = new Node\Stmt\If_(
+                $firstOperationsIfs[0],
+                [
+                    'stmts' => $firstOperationsIfs[1],
+                    'elseifs' => (static function (array $operationsIfs): array {
+                        $elseIfs = [];
 
-                    foreach ($opsTmts as $opsTmt) {
-                        $elseIfs[] = new Node\Stmt\ElseIf_(...$opsTmt);
-                    }
-
-                    return [
-                        new Node\Stmt\If_(
-                            $first[0],
-                            [
-                                'stmts' => $first[1],
-                                'elseifs' => $elseIfs,
-                            ],
-                        ),
-                    ];
-                })($opsTmts),
-            ];
-        }
-
-        $firstOperationsIfs = array_shift($operationsIfs);
-        $operationsIf       = new Node\Stmt\If_(
-            $firstOperationsIfs[0],
-            [
-                'stmts' => $firstOperationsIfs[1],
-                'elseifs' => (static function (array $operationsIfs): array {
-                    $elseIfs = [];
-
-                    foreach ($operationsIfs as $operationsIf) {
-                        $elseIfs[] = new Node\Stmt\ElseIf_(...$operationsIf);
-                    }
-
-                    return $elseIfs;
-                })($operationsIfs),
-            ],
-        );
-
-        $class->addStmt(
-            $factory->method('callAsync')->makePublic()->setDocComment(
-                new Doc(implode(PHP_EOL, [
-                    '// phpcs:disable',
-                    '/**',
-                    ' * @return ' . (static function (array $operations): string {
-                        $count    = count($operations);
-                        $lastItem = $count - 1;
-                        $left     = '';
-                        $right    = '';
-                        for ($i = 0; $i < $count; $i++) {
-                            $returnType = implode('|', [
-                                ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
-                                ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
-                            ]);
-                            $returnType = ($operations[$i]->matchMethod === 'LIST' ? '\\' . Observable::class . '<' . $returnType . '>' : $returnType);
-                            if ($i !== $lastItem) {
-                                $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? \\' . PromiseInterface::class . '<' . $returnType . '> : ';
-                            } else {
-                                $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
-                            }
-
-                            $right .= ')';
+                        foreach ($operationsIfs as $operationsIf) {
+                            $elseIfs[] = new Node\Stmt\ElseIf_(...$operationsIf);
                         }
 
-                        return $left . $right;
-                    })($operations),
-                    ' */',
-                    '// phpcs:enable',
-                ]))
-            )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\Array_([
-                        new Node\Expr\ArrayItem(
-                            new Node\Expr\Variable('method'),
-                        ),
-                        new Node\Expr\ArrayItem(
-                            new Node\Expr\Variable('path'),
-                        ),
-                    ], [
-                        'kind' => Node\Expr\Array_::KIND_SHORT,
-                    ]),
-                    new Node\Expr\FuncCall(
-                        new Node\Name('explode'),
-                        [
-                            new Arg(
-                                new Node\Scalar\String_(' '),
+                        return $elseIfs;
+                    })($operationsIfs),
+                ],
+            );
+
+            $class->addStmt(
+                $factory->method('callAsync')->makePublic()->setDocComment(
+                    new Doc(implode(PHP_EOL, [
+                        '// phpcs:disable',
+                        '/**',
+                        ' * @return ' . (static function (array $operations): string {
+                            $count = count($operations);
+                            $lastItem = $count - 1;
+                            $left = '';
+                            $right = '';
+                            for ($i = 0; $i < $count; $i++) {
+                                $returnType = implode('|', [
+                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
+                                    ...array_map(static fn(string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                                ]);
+                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? '\\' . Observable::class . '<' . $returnType . '>' : $returnType);
+                                if ($i !== $lastItem) {
+                                    $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? \\' . PromiseInterface::class . '<' . $returnType . '> : ';
+                                } else {
+                                    $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
+                                }
+
+                                $right .= ')';
+                            }
+
+                            return $left . $right;
+                        })($operations),
+                        ' */',
+                        '// phpcs:enable',
+                    ]))
+                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Array_([
+                            new Node\Expr\ArrayItem(
+                                new Node\Expr\Variable('method'),
                             ),
-                            new Arg(
-                                new Node\Expr\Variable('call'),
-                            ),
-                        ],
-                    )
-                )
-            )->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\Variable('pathChunks'),
-                    new Node\Expr\FuncCall(
-                        new Node\Name('explode'),
-                        [
-                            new Arg(
-                                new Node\Scalar\String_('/'),
-                            ),
-                            new Arg(
+                            new Node\Expr\ArrayItem(
                                 new Node\Expr\Variable('path'),
                             ),
-                        ],
+                        ], [
+                            'kind' => Node\Expr\Array_::KIND_SHORT,
+                        ]),
+                        new Node\Expr\FuncCall(
+                            new Node\Name('explode'),
+                            [
+                                new Arg(
+                                    new Node\Scalar\String_(' '),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable('call'),
+                                ),
+                            ],
+                        )
+                    )
+                )->addStmt(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('pathChunks'),
+                        new Node\Expr\FuncCall(
+                            new Node\Name('explode'),
+                            [
+                                new Arg(
+                                    new Node\Scalar\String_('/'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable('path'),
+                                ),
+                            ],
+                        )
+                    )
+                )->addStmt(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('pathChunksCount'),
+                        new Node\Expr\FuncCall(
+                            new Node\Name('count'),
+                            [
+                                new Arg(
+                                    new Node\Expr\Variable('pathChunks'),
+                                ),
+                            ],
+                        )
+                    )
+                )->addStmt($operationsIf)->addStmt(
+                    new Node\Stmt\Throw_(
+                        new Node\Expr\New_(
+                            new Node\Name('\InvalidArgumentException')
+                        )
                     )
                 )
-            )->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\Variable('pathChunksCount'),
-                    new Node\Expr\FuncCall(
-                        new Node\Name('count'),
-                        [
-                            new Arg(
-                                new Node\Expr\Variable('pathChunks'),
-                            ),
-                        ],
-                    )
-                )
-            )->addStmt($operationsIf)->addStmt(
-                new Node\Stmt\Throw_(
-                    new Node\Expr\New_(
-                        new Node\Name('\InvalidArgumentException')
-                    )
-                )
-            )
-        );
+            );
+        }
 
-        $class->addStmt(
-            $factory->method('webHooks')->makePublic()->setReturnType('\\' . WebHooksInterface::class)->addStmt(new Node\Stmt\Return_(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'webHooks'
-                ),
-            ))
-        );
+        if ($configuration->entryPoints->operations) {
+            $class->addStmt(
+                $factory->method('operations')->makePublic()->setReturnType('OperationsInterface')->addStmt(new Node\Stmt\Return_(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'operations'
+                    ),
+                ))
+            );
+        }
+
+        if ($configuration->entryPoints->webHooks) {
+            $class->addStmt(
+                $factory->method('webHooks')->makePublic()->setReturnType('\\' . WebHooksInterface::class)->addStmt(new Node\Stmt\Return_(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'webHooks'
+                    ),
+                ))
+            );
+        }
 
         yield new File($pathPrefix, 'Client', $stmt->addStmt($class)->getNode());
 
@@ -729,7 +841,7 @@ final class Client
      */
     private static function callOperation(Routers $routers, string $namespace, Representation\Operation $operation, Representation\Path $path): array
     {
-        $operationClassname = 'Operation\\' . Utils::className(str_replace('/', '\\', $operation->className));
+        $operationClassname = 'Operator\\' . Utils::className(str_replace('/', '\\', $operation->className));
 
         $router =  $routers->add(
             $operation->method,
@@ -1083,10 +1195,18 @@ final class Client
     {
         return [
             new Node\Stmt\Expression(new Node\Expr\Assign(
-                new Node\Expr\Variable('operation'),
+                new Node\Expr\Variable('operator'),
                 new Node\Expr\New_(
                     new Node\Name($operationClassname),
                     [
+                        new Arg(new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'browser'
+                        )),
+                        new Arg(new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'authentication'
+                        )),
                         ...(count($operation->requestBody) > 0 ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
@@ -1106,89 +1226,25 @@ final class Client
                                 new Node\Name('class'),
                             ))),
                         ] : []),
-                        ...($operation->matchMethod === 'STREAM' ? [
-                            new Arg(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'browser'
-                            )),
-                        ] : []),
+                    ],
+                )
+            )),
+            $calWrap(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\Variable('operator'),
+                    'call',
+                    [
                         ...(static function (array $params): iterable {
                             foreach ($params as $param) {
                                 yield new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('arguments')), new Node\Scalar\String_($param->targetName)));
                             }
                         })($operation->parameters),
+                        ...(count($operation->requestBody) > 0 ? [
+                            new Arg(new Node\Expr\Variable(new Node\Name('params')))
+                        ] : []),
                     ],
                 )
-            )),
-            new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', [new Arg(new Node\Expr\Variable(new Node\Name('params')))]))),
-            $calWrap(new Node\Expr\MethodCall(
-                new Node\Expr\MethodCall(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'browser'
-                    ),
-                    'request',
-                    [
-                        new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getMethod'),),
-                        new Node\Arg(new Expr\Cast\String_(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getUri'))),
-                        new Node\Arg(
-                            new Node\Expr\MethodCall(
-                                new Node\Expr\MethodCall(
-                                    new Node\Expr\Variable('request'),
-                                    'withHeader',
-                                    [
-                                        new Node\Arg(new Node\Scalar\String_('Authorization')),
-                                        new Node\Arg(
-                                            new Node\Expr\MethodCall(
-                                                new Node\Expr\PropertyFetch(
-                                                    new Node\Expr\Variable('this'),
-                                                    'authentication'
-                                                ),
-                                                'authHeader',
-                                            ),
-                                        ),
-                                    ]
-                                ),
-                                'getHeaders'
-                            ),
-                        ),
-                        new Node\Arg(new Expr\Cast\String_(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getBody'))),
-                    ]
-                ),
-                'then',
-                [
-                    new Arg(new Node\Expr\Closure([
-                        'stmts' => [
-                            new Node\Stmt\Return_(new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createResponse', [
-                                new Arg(new Node\Expr\Variable('response')),
-                            ])),
-                        ],
-                        'params' => [new Node\Param(new Node\Expr\Variable('response'), null, new Node\Name('\\' . ResponseInterface::class))],
-                        'uses' => [
-                            new Node\Expr\Variable('operation'),
-                        ],
-                        'returnType' => (static function (Representation\Operation $operation, string $namespace, string $operationClassname): null|Node\UnionType|Node\Name {
-                            $returnType = (new ReflectionClass($namespace . $operationClassname))->getMethod('createResponse')->getReturnType();
-                            if ($returnType === null) {
-                                return null;
-                            }
-
-                            if ((string) $returnType === 'mixed') {
-                                return new Node\Name(
-                                    (string) $returnType,
-                                );
-                            }
-
-                            return new Node\UnionType(
-                                array_map(
-                                    static fn (string $object): Node\Name => new Node\Name('\\' . $object),
-                                    explode('|', (string) $returnType),
-                                )
-                            );
-                        })($operation, $namespace, $operationClassname),
-                    ])),
-                ],
-            )),
+            ),
         ];
     }
 
@@ -1212,11 +1268,11 @@ final class Client
             $constructor,
         );
 
-        foreach ($router->methods as $method => $nodes) {
+        foreach ($router->methods as $method) {
             $class->addStmt(
-                $factory->method($method)->makePublic()->addParam(
+                $factory->method($method->name)->makePublic()->addParam(
                     (new Param('params'))->setType('array'),
-                )->addStmts($nodes)
+                )->addStmts($method->nodes)
             );
         }
 

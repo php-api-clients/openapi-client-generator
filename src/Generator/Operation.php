@@ -194,9 +194,13 @@ final class Operation
             )),
         ];
 
-        $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->addParam(
-            $factory->param('data')->setType('array')->setDefault([])
-        )->makePublic();
+        $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class);
+        if (count($operation->requestBody) > 0) {
+            $createRequestMethod->addParam(
+                $factory->param('data')->setType('array')
+            );
+        }
+        $createRequestMethod->makePublic();
 
         foreach ($operation->requestBody as $requestBody) {
             $requestParameters[] = new Node\Expr\Array_([new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))]);

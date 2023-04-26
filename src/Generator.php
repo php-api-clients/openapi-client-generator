@@ -25,11 +25,9 @@ use ApiClients\Tools\OpenApiClientGenerator\State\Files;
 use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Step;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
-use DivineOmega\CliProgressBar\ProgressBar;
 use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
 use PhpParser\Node;
 use PhpParser\PrettyPrinter\Standard;
-use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 use function array_filter;
@@ -129,7 +127,7 @@ final readonly class Generator
             $this->state->specHash === $this->currentSpecHash &&
             (static function (string $root, Files $files, string ...$additionalFiles): bool {
                 foreach ($additionalFiles as $additionalFile) {
-                    if ($files->has($additionalFile) && (!file_exists($root . $additionalFile) || $files->get($additionalFile)->hash !== md5(file_get_contents($root . $additionalFile)))) {
+                    if ($files->has($additionalFile) && (! file_exists($root . $additionalFile) || $files->get($additionalFile)->hash !== md5(file_get_contents($root . $additionalFile)))) {
                         echo $additionalFile, PHP_EOL;
 
                         return false;
@@ -255,6 +253,7 @@ final readonly class Generator
                 $this->statusOutput->advanceStep('gathering_schemas');
             }
         }
+
         $this->statusOutput->markStepDone('gathering_schemas');
 
         $webHooks = [];
@@ -266,9 +265,11 @@ final readonly class Generator
                     $webHooks[$webHookje->event] = [];
                 }
 
-                $webHooks[$webHookje->event][] = $webHookje;$this->statusOutput->advanceStep('gathering_webhooks');
+                $webHooks[$webHookje->event][] = $webHookje;
+                $this->statusOutput->advanceStep('gathering_webhooks');
             }
         }
+
         $this->statusOutput->markStepDone('gathering_webhooks');
 
         $paths = [];
@@ -285,10 +286,11 @@ final readonly class Generator
                     continue;
                 }
 
-                $paths[] = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry, $this->configuration->voter);
+                $paths[]                       = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Path::gather($pathClassName, $path, $pathItem, $schemaRegistry, $this->configuration->voter);
                 $webHooks[$webHookje->event][] = $webHookje;
                 $this->statusOutput->advanceStep('gathering_paths');
             }
+
             $this->statusOutput->markStepDone('gathering_paths');
         }
 
@@ -316,8 +318,8 @@ final readonly class Generator
 
     private function oneClient(string $namespace, string $namespaceTest, string $configurationLocation, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
     {
-        $hydrators   = [];
-        $operations  = [];
+        $hydrators  = [];
+        $operations = [];
         $this->statusOutput->itemForStep('generating_operations', count($paths));
         foreach ($paths as $path) {
             $hydrators[] = $path->hydrator;
@@ -345,6 +347,7 @@ final readonly class Generator
 
             $this->statusOutput->advanceStep('generating_operations');
         }
+
         $this->statusOutput->markStepDone('generating_operations');
 
         $unknownSchemaCount = 0;
@@ -357,6 +360,7 @@ final readonly class Generator
                 $this->statusOutput->advanceStep('gathering_unknown_schemas');
             }
         }
+
         $this->statusOutput->markStepDone('gathering_unknown_schemas');
 
         $this->statusOutput->itemForStep('generating_schemas', count($schemas));
@@ -375,13 +379,16 @@ final readonly class Generator
                     $schema,
                 );
             }
+
             $this->statusOutput->advanceStep('generating_schemas');
         }
+
         $this->statusOutput->markStepDone('generating_schemas');
 
         $client = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Client::gather($this->spec, ...$paths);
 
         $this->statusOutput->markStepDone('generating_clientinterface');
+
         yield from ClientInterface::generate(
             $this->configuration->destination->source . DIRECTORY_SEPARATOR,
             $namespace,
@@ -389,6 +396,7 @@ final readonly class Generator
         );
 
         $this->statusOutput->markStepDone('generating_client');
+
         yield from Client::generate(
             $this->configuration->destination->source . DIRECTORY_SEPARATOR,
             $namespace,
@@ -410,11 +418,14 @@ final readonly class Generator
                 $schemaRegistry,
                 ...$webHook,
             );
+
             $this->statusOutput->advanceStep('generating_webhooks');
         }
+
         $this->statusOutput->markStepDone('generating_webhooks');
 
         $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+
         yield from WebHooks::generate($this->configuration->destination->source . DIRECTORY_SEPARATOR, $namespace, $webHooksHydrators, $webHooks);
 
         $this->statusOutput->itemForStep('generating_hydrators', count($hydrators));
@@ -423,9 +434,11 @@ final readonly class Generator
 
             $this->statusOutput->advanceStep('generating_hydrators');
         }
+
         $this->statusOutput->markStepDone('generating_hydrators');
 
         $this->statusOutput->markStepDone('generating_hydrators_entry_point');
+
         yield from Hydrators::generate($this->configuration->destination->source . DIRECTORY_SEPARATOR, $namespace, ...$hydrators);
 
         $this->statusOutput->markStepDone('generating_templated_files');
@@ -447,9 +460,9 @@ final readonly class Generator
      */
     private function subSplitClient(string $namespace, string $namespaceTest, string $configurationLocation, SchemaRegistry $schemaRegistry, ThrowableSchema $throwableSchemaRegistry, array $schemas, array $paths, array $webHooks)
     {
-        $splits      = [];
-        $hydrators   = [];
-        $operations  = [];
+        $splits     = [];
+        $hydrators  = [];
+        $operations = [];
         $this->statusOutput->itemForStep('generating_operations', count($paths));
         foreach ($paths as $path) {
             foreach ($this->configuration->subSplit->sectionGenerator as $generator) {
@@ -482,8 +495,10 @@ final readonly class Generator
                     $this->configuration,
                 );
             }
+
             $this->statusOutput->advanceStep('generating_operations');
         }
+
         $this->statusOutput->markStepDone('generating_operations');
 
         $webHooksHydrators = [];
@@ -512,6 +527,7 @@ final readonly class Generator
                 $this->statusOutput->advanceStep('gathering_unknown_schemas');
             }
         }
+
         $this->statusOutput->markStepDone('gathering_unknown_schemas');
 
         $sortedSchemas = [];
@@ -575,13 +591,16 @@ final readonly class Generator
                     $aliases,
                 );
             }
+
             $this->statusOutput->advanceStep('generating_schemas');
         }
+
         $this->statusOutput->markStepDone('generating_schemas');
 
         $client = \ApiClients\Tools\OpenApiClientGenerator\Gatherer\Client::gather($this->spec, ...$paths);
 
         $this->statusOutput->markStepDone('generating_clientinterface');
+
         yield from ClientInterface::generate(
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
             $namespace,
@@ -589,6 +608,7 @@ final readonly class Generator
         );
 
         $this->statusOutput->markStepDone('generating_client');
+
         yield from Client::generate(
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
             $namespace,
@@ -613,11 +633,14 @@ final readonly class Generator
                 $schemaRegistry,
                 ...$webHook,
             );
+
             $this->statusOutput->advanceStep('generating_webhooks');
         }
+
         $this->statusOutput->markStepDone('generating_webhooks');
 
         $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+
         yield from WebHooks::generate(
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
             $namespace,
@@ -634,11 +657,14 @@ final readonly class Generator
                     $hydrator
                 );
             }
+
             $this->statusOutput->advanceStep('generating_hydrators');
         }
+
         $this->statusOutput->markStepDone('generating_hydrators');
 
         $this->statusOutput->markStepDone('generating_hydrators_entry_point');
+
         yield from Hydrators::generate(
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
             $namespace,
@@ -739,6 +765,7 @@ final readonly class Generator
             );
             $this->statusOutput->advanceStep('generating_templates_files_subsplit_package');
         }
+
         $this->statusOutput->markStepDone('generating_templates_files_subsplit_package');
 
         $this->statusOutput->markStepDone('generating_subsplit_configuration');

@@ -11,6 +11,7 @@ use cebe\openapi\spec\Schema as baseSchema;
 use function array_key_exists;
 use function in_array;
 use function is_array;
+use function property_exists;
 
 final class Schema
 {
@@ -19,8 +20,8 @@ final class Schema
         baseSchema $schema,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema {
-        $className = Utils::fixKeyword($className);
-        $isArray   = $schema->type === 'array';
+        $className  = Utils::fixKeyword($className);
+        $isArray    = $schema->type === 'array';
         $properties = [];
         $example    = [];
 
@@ -43,9 +44,11 @@ final class Schema
                     break;
                 }
 
-                if (property_exists($schema, $examplePropertyName) && is_array($schema->$examplePropertyName) && array_key_exists($gatheredProperty->sourceName, $schema->$examplePropertyName)) {
-                    $example[$gatheredProperty->sourceName] = $schema->$examplePropertyName[$gatheredProperty->sourceName];
+                if (! property_exists($schema, $examplePropertyName) || ! is_array($schema->$examplePropertyName) || ! array_key_exists($gatheredProperty->sourceName, $schema->$examplePropertyName)) {
+                    continue;
                 }
+
+                $example[$gatheredProperty->sourceName] = $schema->$examplePropertyName[$gatheredProperty->sourceName];
             }
 
             $example[$gatheredProperty->sourceName] = $gatheredProperty->exampleData;

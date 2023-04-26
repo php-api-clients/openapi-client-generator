@@ -8,9 +8,7 @@ use function in_array;
 
 final class ThrowableSchema
 {
-    /**
-     * @var array<string>
-     */
+    /** @var array<string> */
     private array $throwables = [];
 
     public function add(string $class): void

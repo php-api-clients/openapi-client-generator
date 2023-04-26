@@ -1,54 +1,52 @@
 <?php
 
+declare(strict_types=1);
+
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
+use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\OverWritingOutPut;
 use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Step;
-use Termwind\Terminal;
+use Symfony\Component\Console\Output\ConsoleOutput;
 
-use function Termwind\terminal;
 use function Termwind\render;
+use function Termwind\renderUsing;
+use function time;
 
 final class StatusOutput
 {
-    /**
-     * @var array<Step>
-     */
+    /** @var array<Step> */
     private readonly array $steps;
 
-    /**
-     * @var array<bool>
-     */
+    /** @var array<bool> */
     private array $stepsStatus = [];
 
-    /**
-     * @var array<int>
-     */
+    /** @var array<int> */
     private array $itemsCountForStep = [];
 
-    /**
-     * @var array<int>
-     */
+    /** @var array<int> */
     private array $stepProgress = [];
 
-    private readonly Terminal $terminal;
-
     private int $lastPaint = 0;
+
     public function __construct(Step ...$steps)
     {
         $this->steps = $steps;
         foreach ($this->steps as $step) {
             $this->stepsStatus[$step->key] = '🌀';
-            if ($step->progressBer) {
-                $this->itemsCountForStep[$step->key] = 0;
-                $this->stepProgress[$step->key] = 0;
+            if (! $step->progressBer) {
+                continue;
             }
+
+            $this->itemsCountForStep[$step->key] = 0;
+            $this->stepProgress[$step->key]      = 0;
         }
-        $this->terminal = terminal();
+
+        renderUsing(new OverWritingOutPut(new ConsoleOutput()));
     }
 
     public function render(): void
     {
-        $html = '<table>';
+        $html  = '<table>';
         $html .= '<thead>';
         $html .= '<tr>';
         $html .= '<th>Status</th>';
@@ -61,15 +59,16 @@ final class StatusOutput
             if ($step->progressBer && $this->itemsCountForStep[$step->key] > 0) {
                 $progress = $this->stepProgress[$step->key] . '/' . $this->itemsCountForStep[$step->key];
             }
+
             $html .= '<tr>';
             $html .= '<td>' . $this->stepsStatus[$step->key] . '</td>';
             $html .= '<td>' . $step->name . '</td>';
             $html .= '<td>' . $progress . '</td>';
             $html .= '</tr>';
         }
+
         $html .= '</table>';
 
-        $this->terminal->clear();
         render($html);
         $this->lastPaint = time();
     }
@@ -94,6 +93,7 @@ final class StatusOutput
         foreach ($keys as $key) {
             $this->stepsStatus[$key] = '🚫';
         }
+
         $this->render();
     }
 
@@ -106,7 +106,7 @@ final class StatusOutput
     public function advanceStep(string $key): void
     {
         $this->stepProgress[$key]++;
-        $percentage = (100 / $this->itemsCountForStep[$key]) * $this->stepProgress[$key];
+        $percentage = 100 / $this->itemsCountForStep[$key] * $this->stepProgress[$key];
         switch (true) {
             case $percentage <= 12.5:
                 $this->stepsStatus[$key] = '🌑';

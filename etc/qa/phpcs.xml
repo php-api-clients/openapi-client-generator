@@ -6,9 +6,8 @@
     <arg name="cache" value=".phpcs.cache" /> <!-- cache the results and don't commit them -->
     <arg value="np" /> <!-- n = ignore warnings, p = show progress -->
 
-    <file>../../src/Generator/Client.php</file>
-<!--    <file>../../src</file>-->
-<!--    <file>../../tests</file>-->
+    <file>../../src</file>
+    <file>../../tests</file>
 
     <rule ref="WyriHaximus-OSS" />
 </ruleset>

@@ -6,15 +6,14 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 
 use PhpParser\Node;
 
-final readonly class RouterClass
+final readonly class RouterClassMethod
 {
     /**
-     * @param array<RouterClassMethod> $methods
+     * @param array<Node> $nodes
      */
     public function __construct(
-        public string $method,
-        public string $group,
-        public array $methods,
+        public string $name,
+        public array $nodes,
     ) {
     }
 }

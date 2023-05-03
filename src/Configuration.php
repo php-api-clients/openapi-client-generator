@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Destination;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\EntryPoints;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Schemas;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\State;
@@ -22,6 +23,8 @@ final readonly class Configuration
     public function __construct(
         public State $state,
         public string $spec,
+        #[MapFrom('entryPoints')]
+        public EntryPoints $entryPoints,
         public Templates $templates,
         public Namespace_ $namespace,
         public Destination $destination,

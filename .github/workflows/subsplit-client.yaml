@@ -1,0 +1,21 @@
+name: Continuous Integration (SubSplit Client)
+on:
+  push:
+    branches:
+      - 'main'
+      - 'master'
+      - 'refs/heads/v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+jobs:
+  generate-and-test-client:
+    runs-on: ubuntu-latest
+    name: Generate and test client
+    container:
+      image: ghcr.io/wyrihaximusnet/php:8.2-nts-alpine-dev-root
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          persist-credentials: 'false'
+      - uses: "ramsey/composer-install@v2"
+      - run: make generate-example-client-subsplit

@@ -1157,7 +1157,7 @@ final class Client
                         ),
                     ),
                     new Node\Name(
-                        $router->method,
+                        Utils::fixKeyword($router->method),
                     ),
                     [
                         new Arg(
@@ -1240,7 +1240,7 @@ final class Client
      */
     private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers, Method $constructor, array $properties): iterable
     {
-        $className = $routers->createClassName($router->method, $router->group, '')->class;
+        $className = $routers->createClassName(Utils::fixKeyword($router->method), $router->group, '')->class;
         $factory   = new BuilderFactory();
         $stmt      = $factory->namespace(trim(Utils::dirname($namespace . $className), '\\'));
         $class     = $factory->class(trim(Utils::basename($className), '\\'))->makeFinal()->addStmt(

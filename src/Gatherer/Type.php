@@ -109,6 +109,7 @@ final class Type
             return new PropertyType(
                 'array',
                 null,
+                null,
                 self::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
                 $nullable
             );
@@ -136,6 +137,7 @@ final class Type
             return new PropertyType(
                 'scalar',
                 null,
+                null,
                 'mixed',
                 false,
             );
@@ -144,6 +146,7 @@ final class Type
         if ($type === 'object') {
             return new PropertyType(
                 'object',
+                null,
                 null,
                 Schema::gather(
                     $schemaRegistry->get($property, $className . '\\' . Utils::className($propertyName)),
@@ -157,6 +160,7 @@ final class Type
         return new PropertyType(
             'scalar',
             $property->format ?? null,
+            $property->pattern ?? null,
             $type,
             $nullable,
         );

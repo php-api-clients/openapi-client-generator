@@ -13,6 +13,10 @@ use DateTimeInterface;
 use Jawira\CaseConverter\Convert;
 use Ramsey\Uuid\Uuid;
 
+use ReverseRegex\Generator\Scope;
+use ReverseRegex\Lexer;
+use ReverseRegex\Parser;
+use ReverseRegex\Random\SimpleRandom;
 use function count;
 use function date;
 use function is_array;
@@ -58,11 +62,11 @@ final class Property
         );
         if ($type->payload instanceof Schema) {
             if (count($type->payload->properties) === 0) {
-                $type = new PropertyType('scalar', null, 'mixed', false);
+                $type = new PropertyType('scalar', null, null, 'mixed', false);
             }
         } elseif ($type->payload instanceof PropertyType && $type->payload->payload instanceof Schema) {
             if (count($type->payload->payload->properties) === 0) {
-                $type = new PropertyType('scalar', null, 'mixed', false);
+                $type = new PropertyType('scalar', null, null, 'mixed', false);
             }
         }
 
@@ -108,6 +112,17 @@ final class Property
             }
 
             if ($type->payload === 'string' || $type->payload === '?string') {
+                if ($type->pattern !== null) {
+                    $result = '';
+
+                    @(@new Parser(new Lexer($type->pattern), new Scope(),new Scope()))->parse()->getResult()->generate(
+                        $result,
+                        new IntegerReturnerPretendingToBeARandomNumberGenerator(strlen($type->pattern)),
+                    );
+
+                    return $result;
+                }
+
                 if ($type->format === 'uri') {
                     return 'https://example.com/';
                 }

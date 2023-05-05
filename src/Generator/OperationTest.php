@@ -13,6 +13,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
+use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -56,26 +57,52 @@ final class OperationTest
 
         foreach ($operation->response as $contentTypeSchema) {
             if (count($operation->requestBody) === 0) {
-                $class->addStmt(
-                    self::createMethod(
-                        $factory,
-                        $operation,
-                        null,
-                        $contentTypeSchema,
-                        $sourceNamespace,
-                    ),
-                );
-            } else {
-                foreach ($operation->requestBody as $request) {
+                if ($configuration->entryPoints->call) {
                     $class->addStmt(
-                        self::createMethod(
+                        self::createCallMethod(
                             $factory,
                             $operation,
-                            $request,
+                            null,
                             $contentTypeSchema,
                             $sourceNamespace,
                         ),
                     );
+                }
+                if ($configuration->entryPoints->operations) {
+                    $class->addStmt(
+                        self::createOperationsMethod(
+                            $factory,
+                            $operation,
+                            null,
+                            $contentTypeSchema,
+                            $sourceNamespace,
+                        ),
+                    );
+                }
+            } else {
+                foreach ($operation->requestBody as $request) {
+                    if ($configuration->entryPoints->call) {
+                        $class->addStmt(
+                            self::createCallMethod(
+                                $factory,
+                                $operation,
+                                $request,
+                                $contentTypeSchema,
+                                $sourceNamespace,
+                            ),
+                        );
+                    }
+                    if ($configuration->entryPoints->operations) {
+                        $class->addStmt(
+                            self::createOperationsMethod(
+                                $factory,
+                                $operation,
+                                $request,
+                                $contentTypeSchema,
+                                $sourceNamespace,
+                            ),
+                        );
+                    }
                 }
             }
         }
@@ -83,7 +110,7 @@ final class OperationTest
         yield new File($pathPrefix, 'Operation\\' . $operation->className . 'Test', $stmt->addStmt($class)->getNode());
     }
 
-    private static function createMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
+    private static function createCallMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
     {
         $responseSchemaFetch = new Node\Expr\ClassConstFetch(
             new Node\Name(
@@ -94,13 +121,210 @@ final class OperationTest
             ),
         );
 
-        return $factory->method('httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
+        return $factory->method('call_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
             new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @test',
                 ' */',
             ]))
         )->addStmts([
+            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $sourceNamespace),
+            new Node\Expr\MethodCall(
+                new Node\Expr\Variable(
+                    new Node\Name(
+                        'client',
+                    ),
+                ),
+                new Node\Name(
+                    'call',
+                ),
+                [
+                    new Arg(
+                        new Node\Expr\ClassConstFetch(
+                            new Node\Name(
+                                $sourceNamespace . 'Operation\\' . $operation->className,
+                            ),
+                            new Node\Name(
+                                'OPERATION_MATCH',
+                            ),
+                        )
+                    ),
+                    new Arg(
+                        new Node\Expr\FuncCall(
+                            new Node\Expr\Closure(
+                                [
+                                    'static' => true,
+                                    'returnType' => new Node\Name(
+                                        'array',
+                                    ),
+                                    'params' => [
+                                        (new Param(
+                                            'data',
+                                        ))->setType(
+                                            new Node\Name(
+                                                'array',
+                                            ),
+                                        )->getNode(),
+                                    ],
+                                    'stmts' => [
+                                        ...((static function (array $parameters): iterable {
+                                            foreach ($parameters as $parameter) {
+                                                yield new Node\Stmt\Expression(
+                                                    new Node\Expr\Assign(
+                                                        new Node\Expr\ArrayDimFetch(
+                                                            new Node\Expr\Variable(
+                                                                new Node\Name(
+                                                                    'data',
+                                                                ),
+                                                            ),
+                                                            new Node\Scalar\String_($parameter->targetName),
+                                                        ),
+                                                        $parameter->exampleNode
+                                                    ),
+                                                );
+                                            }
+                                        })($operation->parameters)),
+                                        new Node\Stmt\Return_(
+                                            new Node\Expr\Variable(
+                                                new Node\Name(
+                                                    'data',
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ],
+                            ),
+                            [
+                                new Arg(
+                                    ($request === null ? new Node\Expr\Array_() : new Node\Expr\FuncCall(
+                                        new Node\Name(
+                                            'json_decode',
+                                        ),
+                                        [
+                                            new Arg(
+                                                new Node\Expr\ClassConstFetch(
+                                                    new Node\Name(
+                                                        'Schema\\' . $request->schema->className,
+                                                    ),
+                                                    new Node\Name(
+                                                        'SCHEMA_EXAMPLE_DATA',
+                                                    ),
+                                                ),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\ConstFetch(
+                                                    new Node\Name(
+                                                        'true',
+                                                    ),
+                                                ),
+                                            ),
+                                        ],
+                                    )),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        ]);
+    }
+
+
+    private static function createOperationsMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
+    {
+        $responseSchemaFetch = new Node\Expr\ClassConstFetch(
+            new Node\Name(
+                'Schema\\' . $response->schema->className,
+            ),
+            new Node\Name(
+                'SCHEMA_EXAMPLE_DATA',
+            ),
+        );
+
+        return $factory->method('operations_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @test',
+                ' */',
+            ]))
+        )->addStmts([
+            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $sourceNamespace),
+            new Node\Expr\FuncCall(
+                new Node\Name(
+                    '\React\Async\await',
+                ),
+                [
+                    new Arg(
+                        new Node\Expr\MethodCall(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\Variable(
+                                        new Node\Name(
+                                            'client',
+                                        ),
+                                    ),
+                                    new Node\Name(
+                                        'operations',
+                                    ),
+                                ),
+                                new Node\Name(
+                                    (new Convert($operation->group))->toCamel(),
+                                ),
+                            ),
+                            new Node\Name(
+                                (new Convert($operation->name))->toCamel(),
+                            ),
+                            [
+                                ...((static function (array $parameters): iterable {
+                                    foreach ($parameters as $parameter) {
+                                        yield new Arg($parameter->exampleNode);
+                                    }
+                                })($operation->parameters)),
+                                ...($request === null ? [] : [new Arg(new Node\Expr\FuncCall(
+                                    new Node\Name(
+                                        'json_decode',
+                                    ),
+                                    [
+                                        new Arg(
+                                            new Node\Expr\ClassConstFetch(
+                                                new Node\Name(
+                                                    'Schema\\' . $request->schema->className,
+                                                ),
+                                                new Node\Name(
+                                                    'SCHEMA_EXAMPLE_DATA',
+                                                ),
+                                            ),
+                                        ),
+                                        new Arg(
+                                            new Node\Expr\ConstFetch(
+                                                new Node\Name(
+                                                    'true',
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ))]),
+                            ],
+                        ),
+                    ),
+                ],
+            ),
+        ]);
+    }
+
+    private static function wrapShouldBeCalled(Node\Expr\MethodCall $methodCall): Node\Expr\MethodCall
+    {
+        return new Node\Expr\MethodCall(
+            $methodCall,
+            new Node\Name(
+                'shouldBeCalled',
+            ),
+        );
+    }
+
+    private static function testSetUp(Node\Expr\ClassConstFetch $responseSchemaFetch, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): array
+    {
+        return [
             ...($response->code < 400 ? [] : [
                 new Node\Stmt\Expression(
                     new Node\Expr\StaticCall(
@@ -501,113 +725,6 @@ final class OperationTest
                     ),
                 ),
             ),
-            new Node\Expr\MethodCall(
-                new Node\Expr\Variable(
-                    new Node\Name(
-                        'client',
-                    ),
-                ),
-                new Node\Name(
-                    'call',
-                ),
-                [
-                    new Arg(
-                        new Node\Expr\ClassConstFetch(
-                            new Node\Name(
-                                $sourceNamespace . 'Operation\\' . $operation->className,
-                            ),
-                            new Node\Name(
-                                'OPERATION_MATCH',
-                            ),
-                        )
-                    ),
-                    new Arg(
-                        new Node\Expr\FuncCall(
-                            new Node\Expr\Closure(
-                                [
-                                    'static' => true,
-                                    'returnType' => new Node\Name(
-                                        'array',
-                                    ),
-                                    'params' => [
-                                        (new Param(
-                                            'data',
-                                        ))->setType(
-                                            new Node\Name(
-                                                'array',
-                                            ),
-                                        )->getNode(),
-                                    ],
-                                    'stmts' => [
-                                        ...((static function (array $parameters): iterable {
-                                            foreach ($parameters as $parameter) {
-                                                yield new Node\Stmt\Expression(
-                                                    new Node\Expr\Assign(
-                                                        new Node\Expr\ArrayDimFetch(
-                                                            new Node\Expr\Variable(
-                                                                new Node\Name(
-                                                                    'data',
-                                                                ),
-                                                            ),
-                                                            new Node\Scalar\String_($parameter->targetName),
-                                                        ),
-                                                        $parameter->exampleNode
-                                                    ),
-                                                );
-                                            }
-                                        })($operation->parameters)),
-                                        new Node\Stmt\Return_(
-                                            new Node\Expr\Variable(
-                                                new Node\Name(
-                                                    'data',
-                                                ),
-                                            ),
-                                        ),
-                                    ],
-                                ],
-                            ),
-                            [
-                                new Arg(
-                                    ($request === null ? new Node\Expr\Array_() : new Node\Expr\FuncCall(
-                                        new Node\Name(
-                                            'json_decode',
-                                        ),
-                                        [
-                                            new Arg(
-                                                new Node\Expr\ClassConstFetch(
-                                                    new Node\Name(
-                                                        'Schema\\' . $request->schema->className,
-                                                    ),
-                                                    new Node\Name(
-                                                        'SCHEMA_EXAMPLE_DATA',
-                                                    ),
-                                                ),
-                                            ),
-                                            new Arg(
-                                                new Node\Expr\ConstFetch(
-                                                    new Node\Name(
-                                                        'true',
-                                                    ),
-                                                ),
-                                            ),
-                                        ],
-                                    )),
-                                ),
-                            ],
-                        ),
-                    ),
-                ],
-            ),
-        ]);
-    }
-
-    private static function wrapShouldBeCalled(Node\Expr\MethodCall $methodCall): Node\Expr\MethodCall
-    {
-        return new Node\Expr\MethodCall(
-            $methodCall,
-            new Node\Name(
-                'shouldBeCalled',
-            ),
-        );
+        ];
     }
 }

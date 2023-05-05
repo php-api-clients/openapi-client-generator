@@ -17,6 +17,7 @@
         "devizzent/cebe-php-openapi": "^1",
         "eventsauce/object-hydrator": "^1.2",
         "jawira/case-converter": "^3.5",
+        "kwn/number-to-words": "^2.6",
         "league/openapi-psr7-validator": "^0.21",
         "nikic/php-parser": "^4.15",
         "nunomaduro/termwind": "^1.15",

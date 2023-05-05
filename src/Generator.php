@@ -183,7 +183,6 @@ final readonly class Generator
                     'Schema' => null,
                     'WebHook' => null,
                     'Router' => null,
-                    'ChunkSize' => null,
                 ]));
             }
 
@@ -425,8 +424,8 @@ final readonly class Generator
             $this->configuration,
             $this->configuration->destination->source . DIRECTORY_SEPARATOR,
             $namespace,
+            $paths,
             $operations,
-            $routers,
         );
 
         $webHooksHydrators = [];
@@ -658,8 +657,8 @@ final readonly class Generator
             $this->configuration,
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
             $namespace,
+            $paths,
             $operations,
-            $routers,
         );
 
         $this->statusOutput->itemForStep('generating_webhooks', count($webHooks));

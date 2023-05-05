@@ -15,6 +15,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use EventSauce\ObjectHydrator\ObjectMapper;
 use Jawira\CaseConverter\Convert;
+use NumberToWords\NumberToWords;
 use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -353,22 +354,6 @@ final class Client
             }
         }
 
-//        new Node\Stmt\Switch_(
-//            new Node\Expr\Variable('method'),
-//            iterator_to_array((function (array $sortedOperations) use ($factory): iterable {
-//                foreach ($sortedOperations as $method => $operation) {
-//                    yield new Node\Stmt\Case_(
-//                        new Node\Scalar\String_($method),
-//                        [
-//                            ...self::traverseOperations($operation['operations'], $operation['paths'], 0),
-//                            new Node\Stmt\Break_(),
-//                        ],
-//                    );
-//                }
-//            })($sortedOperations))
-//        )
-
-
         if ($configuration->entryPoints->call) {
             $chunkCountClasses = [];
             $operationsIfs = [];
@@ -376,7 +361,7 @@ final class Client
                 $opsTmts = [];
                 foreach ($ops as $chunkCount => $moar) {
                     $chunkCountClasses[] = $cc = new ChunkCount(
-                        'ChunkSize\\' . (new Convert($method))->toPascal() . '\\' . (new Convert('cc' . $chunkCount))->toPascal(),
+                        'Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert(NumberToWords::transformNumber('en', $chunkCount)))->toPascal(),
                         self::traverseOperations($namespace, $moar['operations'], $moar['paths'], 0, $routers),
                     );
 
@@ -734,7 +719,7 @@ final class Client
         }
 
         foreach ($chunkCountClasses as $chunkCountClass) {
-            yield from self::createChunkCount(
+            yield from self::createRouterChunkSize(
                 $pathPrefix,
                 $namespace,
                 $chunkCountClass,
@@ -1284,7 +1269,7 @@ final class Client
      *
      * @return iterable<File>
      */
-    private static function createChunkCount(string $pathPrefix, string $namespace, ChunkCount $chunkCount, Method $constructor, array $properties): iterable
+    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount, Method $constructor, array $properties): iterable
     {
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(trim(Utils::dirname($namespace . $chunkCount->className), '\\'));

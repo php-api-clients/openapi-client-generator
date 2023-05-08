@@ -3,24 +3,20 @@ state:
   additionalFiles:
     - composer.json
     - composer.lock
-spec: https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
-#spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/example/api.github.com.yaml
+spec: https://www.miele.com/developer/swagger-ui/m3rdapi.yaml
+namespace:
+  source: ApiClients\Client\Miele
+  test: ApiClients\Tests\Client\Miele
 entryPoints:
   call: true
   operations: true
   webHooks: true
-namespace:
-  source: ApiClients\Client\Github
-  test: ApiClients\Tests\Client\Github
 destination:
-  root: generated-github
+  root: generated-miele
   source: src
   test: tests
 templates:
-  dir: templates
-  variables:
-    fullname: GitHub
-    packageName: github
+  dir: ../templates
 schemas:
   allowDuplication: true
   useAliasesForDuplication: true
@@ -32,3 +28,4 @@ voter:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
   streamOperation:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId
+

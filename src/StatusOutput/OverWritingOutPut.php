@@ -24,15 +24,25 @@ final class OverWritingOutPut implements OutputInterface
     ) {
     }
 
+    /**
+     * @param iterable<string>|string $messages
+     *
+     * @phpstan-ignore-next-line
+     */
     public function write(iterable|string $messages, bool $newline = false, int $options = 0): void
     {
         $this->output->write($messages, $newline, $options);
     }
 
+    /**
+     * @param iterable<string>|string $messages
+     *
+     * @phpstan-ignore-next-line
+     */
     public function writeln(iterable|string $messages, int $options = 0): void
     {
         if (! is_string($messages)) {
-            $messages = implode(PHP_EOL, $messages);
+            $messages = implode(PHP_EOL, [...$messages]);
         }
 
         if ($this->previousLinecount > 0) {

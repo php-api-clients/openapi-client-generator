@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Voter;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\PathItem;
 
@@ -15,10 +18,12 @@ use function strlen;
 final class Path
 {
     public static function gather(
+        Namespace_ $baseNamespace,
         string $className,
         string $path,
         PathItem $pathItem,
         SchemaRegistry $schemaRegistry,
+        ThrowableSchema $throwableSchemaRegistry,
         ?Voter $voters,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Path {
         $className  = Utils::fixKeyword($className);
@@ -31,17 +36,21 @@ final class Path
             }
 
             $operations[] = $opp = Operation::gather(
+                $baseNamespace,
                 $operationClassName,
                 $method,
                 $method,
                 $path,
                 [],
                 $operation,
+                $throwableSchemaRegistry,
                 $schemaRegistry,
             );
 
             if ($voters !== null && is_array($voters->listOperation)) {
                 $shouldStream = false;
+                $voter        = null;
+                /** @phpstan-ignore-next-line */
                 foreach ($voters->listOperation as $voter) {
                     if ($voter::list($opp)) {
                         $shouldStream = true;
@@ -49,8 +58,9 @@ final class Path
                     }
                 }
 
-                if ($shouldStream) {
+                if ($voter !== null && $shouldStream) {
                     $operations[] = Operation::gather(
+                        $baseNamespace,
                         $operationClassName . 'Listing',
                         'LIST',
                         $method,
@@ -63,6 +73,7 @@ final class Path
                             ],
                         ],
                         $operation,
+                        $throwableSchemaRegistry,
                         $schemaRegistry,
                     );
                 }
@@ -85,19 +96,22 @@ final class Path
             }
 
             $operations[] = Operation::gather(
+                $baseNamespace,
                 $operationClassName . 'Streaming',
                 'STREAM',
                 $method,
                 $path,
                 [],
                 $operation,
+                $throwableSchemaRegistry,
                 $schemaRegistry,
             );
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Path(
-            $className,
+            ClassString::factory($baseNamespace, $className),
             OperationHydrator::gather(
+                $baseNamespace,
                 $className,
                 ...$operations,
             ),

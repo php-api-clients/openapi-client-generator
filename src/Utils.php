@@ -13,18 +13,43 @@ use function explode;
 use function in_array;
 use function str_replace;
 use function strtolower;
+use function trim;
 
 final class Utils
 {
     public static function className(string $className): string
     {
-        return self::fixKeyword(str_replace(['{', '}', '-', '$', '_', '+', '*', '.'], ['Cb', 'Rcb', 'Dash', '_', '\\', 'Plus', 'Obelix', 'Dot'], (new Convert($className))->toPascal()));
+        $className = str_replace(
+            ['{', '}', '-', '$', '+', '*', '.', ';', '='],
+            ['', '', '_', '_', '_', '_', '_', '_', '_'],
+            $className,
+        );
+
+        $className = implode(
+            '\\',
+            array_map(
+                static fn (string $chunk): string => self::fixKeyword(
+                    (new Convert($chunk))->toPascal(),
+                ),
+                explode(
+                    '\\',
+                    $className,
+                ),
+            ),
+        );
+
+        return trim(self::cleanUpNamespace(self::fixKeyword($className)), '\\');
     }
 
     public static function cleanUpNamespace(string $namespace): string
     {
-        $namespace = str_replace('/', '\\', $namespace);
-        $namespace = str_replace('\\\\', '\\', $namespace);
+        do {
+            $previousNamespace = $namespace;
+            $namespace         = str_replace('/', '\\', $namespace);
+            $namespace         = str_replace('\\\\', '\\', $namespace);
+        } while ($previousNamespace !== $namespace);
+
+        $namespace = trim($namespace, '\\');
 
         return '\\' . $namespace;
     }
@@ -38,14 +63,17 @@ final class Utils
     {
         $fqcn = str_replace('\\', '/', $fqcn);
 
-        return self::cleanUpNamespace(dirname($fqcn));
+        return trim(self::cleanUpNamespace(dirname($fqcn)), '\\');
     }
 
     public static function basename(string $fqcn): string
     {
         $fqcn = str_replace('\\', '/', $fqcn);
 
-        return self::cleanUpNamespace(basename($fqcn));
+        /**
+         * @var class-string
+         */
+        return trim(self::cleanUpNamespace(basename($fqcn)), '\\');
     }
 
     public static function fixKeyword(string $name): string

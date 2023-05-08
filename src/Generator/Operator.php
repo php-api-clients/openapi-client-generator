@@ -5,63 +5,48 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
-use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use cebe\openapi\Reader;
-use cebe\openapi\spec\Schema;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
-use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Stmt\Class_;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
-use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request;
-use RuntimeException;
-use Rx\Observable;
-use Rx\Scheduler\ImmediateScheduler;
-use Rx\Subject\Subject;
-use Throwable;
-
-use function array_keys;
-use function array_map;
-use function array_unique;
-use function array_values;
-use function count;
-use function implode;
-use function ltrim;
-use function rtrim;
-use function strlen;
-use function strtolower;
-
-use const PHP_EOL;
 use ReflectionClass;
 use ReflectionParameter;
+
+use function array_filter;
+use function array_map;
+use function count;
+use function explode;
 
 final class Operator
 {
     /**
-     * @return iterable<Node>
+     * @return iterable<File>
      */
-    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public static function generate(string $pathPrefix, Operation $operation, Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
-        $operationClassname = 'Operation\\' . Utils::className(str_replace('/', '\\', $operation->className));
-        $bringHydratorAndResponseValidator = count(array_filter((new ReflectionClass($namespace . $operationClassname))->getConstructor()->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0;
-        $factory    = new BuilderFactory();
-        $stmt       = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operator\\' . $operation->className), '\\'));
+        $bringHydratorAndResponseValidator = count(
+            array_filter(
+                /** @phpstan-ignore-next-line */
+                (new ReflectionClass($operation->className->fullyQualified->source))->getConstructor()->getParameters(),
+                static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator',
+            )
+        ) > 0;
+        $factory = new BuilderFactory();
+        $stmt    = $factory->namespace($operation->operatorClassName->namespace->source);
 
-        $class = $factory->class(Utils::className(ltrim(Utils::basename($operation->className), '\\')))->makeFinal()->makeReadonly()->addStmt(
+        $class = $factory->class($operation->operatorClassName->className)->makeFinal()->makeReadonly()->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
@@ -129,7 +114,7 @@ final class Operator
             $constructor->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrator'))->setType('Hydrator\\' . $hydrator->className),
+                (new PrivatePromotedPropertyAsParam('hydrator'))->setType($hydrator->className->relative),
             );
         }
 
@@ -137,7 +122,7 @@ final class Operator
 
         $callParams = [];
         foreach ($operation->parameters as $parameter) {
-            $param        = new Param($parameter->name);
+            $param = new Param($parameter->name);
 
             if ($parameter->type !== '') {
                 $param->setType($parameter->type);
@@ -153,12 +138,13 @@ final class Operator
         if (count($operation->requestBody) > 0) {
             $callParams[] = $factory->param('params')->setType('array');
         }
+
         $class->addStmt(
             $factory->method('call')->makePublic()->setReturnType('\\' . PromiseInterface::class)->addParams($callParams)->addStmts([
                 new Node\Stmt\Expression(new Node\Expr\Assign(
                     new Node\Expr\Variable('operation'),
                     new Node\Expr\New_(
-                        new Node\Name($operationClassname),
+                        new Node\Name($operation->className->fullyQualified->source),
                         [
                             ...(count($operation->requestBody) > 0 ? [
                                 new Arg(new Node\Expr\PropertyFetch(
@@ -190,7 +176,7 @@ final class Operator
                         ],
                     )
                 )),
-                new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable(new Node\Name('params')))] : []))),
+                new Node\Stmt\Expression(new Node\Expr\Assign(new Node\Expr\Variable('request'), new Node\Expr\MethodCall(new Node\Expr\Variable('operation'), 'createRequest', count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []))),
                 new Node\Stmt\Return_(
                     new Node\Expr\MethodCall(
                         new Node\Expr\MethodCall(
@@ -200,7 +186,7 @@ final class Operator
                             ),
                             'request',
                             [
-                                new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getMethod'),),
+                                new Node\Arg(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getMethod')),
                                 new Node\Arg(new Expr\Cast\String_(new Node\Expr\MethodCall(new Node\Expr\Variable('request'), 'getUri'))),
                                 new Node\Arg(
                                     new Node\Expr\MethodCall(
@@ -238,10 +224,11 @@ final class Operator
                                 'uses' => [
                                     new Node\Expr\Variable('operation'),
                                 ],
-                                'returnType' => (static function (Representation\Operation $operation, string $namespace, string $operationClassname): null|Node\UnionType|Node\Name {
-                                    $returnType = (new ReflectionClass($namespace . $operationClassname))->getMethod('createResponse')->getReturnType();
+                                'returnType' => (static function (Representation\Operation $operation, ClassString $classString): Node\UnionType|Node\Name {
+                                    /** @phpstan-ignore-next-line */
+                                    $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
                                     if ($returnType === null) {
-                                        return null;
+                                        return new Node\Name('void');
                                     }
 
                                     if ((string) $returnType === 'mixed') {
@@ -256,7 +243,7 @@ final class Operator
                                             explode('|', (string) $returnType),
                                         )
                                     );
-                                })($operation, $namespace, $operationClassname),
+                                })($operation, $operation->className),
                             ])),
                         ],
                     ),
@@ -264,6 +251,6 @@ final class Operator
             ]),
         );
 
-        yield new File($pathPrefix, 'Operator\\' . $operation->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $operation->operatorClassName->relative, $stmt->addStmt($class)->getNode());
     }
 }

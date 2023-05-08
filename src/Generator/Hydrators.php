@@ -18,13 +18,14 @@ use function array_filter;
 use function array_key_exists;
 use function array_map;
 use function count;
-use function ltrim;
-use function str_replace;
 use function trim;
 use function ucfirst;
 
 final class Hydrators
 {
+    /**
+     * @return iterable<File>
+     */
     public static function generate(string $pathPrefix, string $namespace, Hydrator ...$hydrators): iterable
     {
         $knownScehmas = [];
@@ -35,21 +36,21 @@ final class Hydrators
 
         $usefullHydrators = [];
         foreach ($hydrators as $hydrator) {
-            $usefullHydrators[$hydrator->className] = array_filter($hydrator->schemas, static function (Schema $schema) use (&$knownScehmas): bool {
-                if (array_key_exists($schema->className, $knownScehmas)) {
+            $usefullHydrators[$hydrator->className->relative] = array_filter($hydrator->schemas, static function (Schema $schema) use (&$knownScehmas): bool {
+                if (array_key_exists($schema->className->relative, $knownScehmas)) {
                     return false;
                 }
 
-                $knownScehmas[$schema->className] = $schema->className;
+                $knownScehmas[$schema->className->relative] = $schema->className;
 
                 return true;
             });
         }
 
-        $matchHydrators = array_filter($hydrators, static fn (Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className]) > 0);
+        $matchHydrators = array_filter($hydrators, static fn (Hydrator $hydrator): bool => count($usefullHydrators[$hydrator->className->relative]) > 0);
 
         foreach ($hydrators as $hydrator) {
-            $class->addStmt($factory->property($hydrator->methodName)->setType('?' . 'Hydrator\\' . str_replace('/', '\\', $hydrator->className))->setDefault(null)->makePrivate());
+            $class->addStmt($factory->property($hydrator->methodName)->setType('?' . $hydrator->className->relative)->setDefault(null)->makePrivate());
         }
 
         $class->addStmt(
@@ -62,8 +63,8 @@ final class Hydrators
                         new Node\Expr\Variable('className'),
                         array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
                             array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
-                                ltrim($namespace, '\\') . 'Schema\\' . $schema->className
-                            ), $usefullHydrators[$hydrator->className]),
+                                $schema->className->fullyQualified->source
+                            ), $usefullHydrators[$hydrator->className->relative]),
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
                                     new Node\Expr\Variable('this'),
@@ -155,7 +156,7 @@ final class Hydrators
                 new Node\Stmt\Return_(
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable('this'),
-                        new Node\Name('serializeObjectOfType'),
+                        'serializeObjectOfType',
                         [
                             new Node\Arg(
                                 new Node\Expr\Variable('object'),
@@ -182,8 +183,8 @@ final class Hydrators
                         new Node\Expr\Variable('className'),
                         array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
                             array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
-                                ltrim($namespace, '\\') . 'Schema\\' . $schema->className
-                            ), $usefullHydrators[$hydrator->className]),
+                                $schema->className->fullyQualified->source
+                            ), $usefullHydrators[$hydrator->className->relative]),
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
                                     new Node\Expr\Variable('this'),
@@ -259,7 +260,7 @@ final class Hydrators
 
         foreach ($hydrators as $hydrator) {
             $class->addStmt(
-                $factory->method('getObjectMapper' . ucfirst($hydrator->methodName))->makePublic()->setReturnType('Hydrator\\' . str_replace('/', '\\', $hydrator->className))->addStmts([
+                $factory->method('getObjectMapper' . ucfirst($hydrator->methodName))->makePublic()->setReturnType($hydrator->className->relative)->addStmts([
                     new Node\Stmt\If_(
                         new Node\Expr\BinaryOp\Identical(
                             new Node\Expr\Instanceof_(
@@ -267,7 +268,7 @@ final class Hydrators
                                     new Node\Expr\Variable('this'),
                                     $hydrator->methodName
                                 ),
-                                new Node\Expr\ConstFetch(new Node\Name('Hydrator\\' . str_replace('/', '\\', $hydrator->className))),
+                                new Node\Expr\ConstFetch(new Node\Name($hydrator->className->relative)),
                             ),
                             new Node\Expr\ConstFetch(new Node\Name('false')),
                         ),
@@ -280,7 +281,7 @@ final class Hydrators
                                             $hydrator->methodName
                                         ),
                                         new Node\Expr\New_(
-                                            new Node\Name('Hydrator\\' . str_replace('/', '\\', $hydrator->className))
+                                            new Node\Name($hydrator->className->relative)
                                         ),
                                     ),
                                 ),

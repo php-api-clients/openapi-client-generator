@@ -30,7 +30,7 @@ all: ## Runs everything ###
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -v "###" | awk 'BEGIN {FS = ":.*?## "}; {printf "%s\n", $$1}' | xargs --open-tty $(MAKE)
 
 syntax-php: ## Lint PHP syntax
-	$(DOCKER_RUN) vendor/bin/parallel-lint --exclude vendor .
+	$(DOCKER_RUN) vendor/bin/parallel-lint --exclude vendor ./src ./tests
 
 cs-fix: ## Fix any automatically fixable code style issues
 	$(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml || $(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml || $(DOCKER_RUN) vendor/bin/phpcbf --parallel=$(shell nproc) --standard=./etc/qa/phpcs.xml -vvv
@@ -64,10 +64,13 @@ help: ## Show this help ###
 	@printf "\033[33mUsage:\033[0m\n  make [target]\n\n\033[33mTargets:\033[0m\n"
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[32m%-32s\033[0m %s\n", $$1, $$2}' | tr -d '#'
 
-generate-example-clients: generate-example-client-one generate-example-client-subsplit
+generate-example-clients: generate-example-client-one generate-example-client-subsplit generate-example-client-miele
 
 generate-example-client-one:
 	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client-one.yaml
 
 generate-example-client-subsplit:
 	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client-subsplit.yaml
+
+generate-example-client-miele:
+	$(DOCKER_RUN) php ./bin/openapi-client-generator ./example/openapi-client-miele.yaml

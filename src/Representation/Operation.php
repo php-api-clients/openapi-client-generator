@@ -4,11 +4,22 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+
 final class Operation
 {
+    /**
+     * @param array<mixed>                $metaData
+     * @param array<string>               $returnType
+     * @param array<Parameter>            $parameters
+     * @param array<OperationRequestBody> $requestBody
+     * @param array<OperationResponse>    $response
+     * @param array<OperationRedirect>    $redirect
+     */
     public function __construct(
-        public readonly string $className,
-        public readonly string $classNameSanitized,
+        public readonly ClassString $className,
+        public readonly ClassString $classNameSanitized,
+        public readonly ClassString $operatorClassName,
         public readonly string $name,
         public readonly string $group,
         public readonly string $operationId,

@@ -11,5 +11,5 @@ interface SectionGenerator
 {
     public static function path(Path $path): string|false;
 
-    public static function webhook(WebHook ...$webHooks): string|false;
+    public static function webHook(WebHook ...$webHooks): string|false;
 }

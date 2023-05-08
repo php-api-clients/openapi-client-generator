@@ -22,7 +22,7 @@ final class OperationIdSlash implements SectionGenerator
         return implode('-', $chunks);
     }
 
-    public static function webhook(WebHook ...$webHooks): string|false
+    public static function webHook(WebHook ...$webHooks): string|false
     {
         return false;
     }

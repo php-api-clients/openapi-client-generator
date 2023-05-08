@@ -6,12 +6,12 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use PhpParser\Node;
 
-final class File
+final readonly class File
 {
     public function __construct(
-        public readonly string $pathPrefix,
-        public readonly string $fqcn,
-        public readonly Node|string $contents,
+        public string $pathPrefix,
+        public string $fqcn,
+        public Node|string $contents,
     ) {
     }
 }

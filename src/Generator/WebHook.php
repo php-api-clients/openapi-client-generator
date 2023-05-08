@@ -27,25 +27,35 @@ use const PHP_EOL;
 
 final class WebHook
 {
-    public static function generate(string $pathPrefix, string $namespace, string $event, SchemaRegistry $schemaRegistry, \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks): iterable
-    {
+    /**
+     * @param class-string $event
+     *
+     * @return iterable<File>
+     */
+    public static function generate(
+        string $pathPrefix,
+        string $namespace,
+        string $event,
+        SchemaRegistry $schemaRegistry,
+        \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks,
+    ): iterable {
         $className = Utils::className($event);
 
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(ltrim($namespace . 'WebHook', '\\'));
 
-        $class = $factory->class($className)->makeFinal()->implement('\\' . WebHookInterface::class)->setDocComment(new Doc(implode(PHP_EOL, [
+        $class = $factory->class(ltrim($className, '\\'))->makeFinal()->implement('\\' . WebHookInterface::class)->setDocComment(new Doc(implode(PHP_EOL, [
             '/**',
             ' * @internal',
             ' */',
         ])));
         $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
-        $class->addStmt($factory->property('hydrator')->setType('Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('hydrator')->setType('Hydrator\\WebHook' . $className)->makeReadonly()->makePrivate());
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
             (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class)
         )->addParam(
-            (new Param('hydrator'))->setType('Hydrator\\WebHook\\' . $className)
+            (new Param('hydrator'))->setType('Hydrator\\WebHook' . $className)
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
@@ -91,28 +101,28 @@ final class WebHook
                         new Node\Expr\Variable('this'),
                         'requestSchemaValidator'
                     ),
-                    new Node\Name('validate'),
+                    'validate',
                     [
                         new Node\Arg(new Node\Expr\ArrayDimFetch(
                             new Node\Expr\Variable('headers'),
                             new Node\Scalar\String_(strtolower($header->name)),
                         )),
-                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                            new Node\Expr\ClassConstFetch(
-                                new Node\Name('Schema\\' . $header->schema->className),
-                                new Node\Name('SCHEMA_JSON'),
-                            ),
-                            new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
+                            new Node\Arg(new Node\Expr\ClassConstFetch(
+                                new Node\Name($header->schema->className->relative),
+                                'SCHEMA_JSON',
+                            )),
+                            new Node\Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
                         ])),
                     ]
                 ));
             }
 
             foreach ($webHook->schema as $contentTYpe => $schema) {
-                $resolveReturnTypes[] = 'Schema\\' . $schema->className;
+                $resolveReturnTypes[] = $schema->className->relative;
                 $tmts[]               = new Node\Stmt\If_(
                     new Node\Expr\BinaryOp\Equal(
-                        new Node\Expr\ArrayDimFetch(new Node\Expr\Variable(new Node\Name('headers')), new Node\Scalar\String_('content-type')),
+                        new Node\Expr\ArrayDimFetch(new Node\Expr\Variable('headers'), new Node\Scalar\String_('content-type')),
                         new Node\Scalar\String_($contentTYpe),
                     ),
                     [
@@ -124,15 +134,15 @@ final class WebHook
                                         new Node\Expr\Variable('this'),
                                         'requestSchemaValidator'
                                     ),
-                                    new Node\Name('validate'),
+                                    'validate',
                                     [
                                         new Node\Arg(new Node\Expr\Variable('data')),
-                                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                                            new Node\Expr\ClassConstFetch(
-                                                new Node\Name('Schema\\' . $schema->className),
-                                                new Node\Name('SCHEMA_JSON'),
-                                            ),
-                                            new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
+                                            new Arg(new Node\Expr\ClassConstFetch(
+                                                new Node\Name($schema->className->relative),
+                                                'SCHEMA_JSON',
+                                            )),
+                                            new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
                                         ])),
                                     ]
                                 )),
@@ -141,11 +151,11 @@ final class WebHook
                                         new Node\Expr\Variable('this'),
                                         'hydrator'
                                     ),
-                                    new Node\Name('hydrateObject'),
+                                    'hydrateObject',
                                     [
                                         new Node\Arg(new Node\Expr\ClassConstFetch(
-                                            new Node\Name('Schema\\' . $schema->className),
-                                            new Node\Name('class'),
+                                            new Node\Name($schema->className->relative),
+                                            'class',
                                         )),
                                         new Node\Arg(new Node\Expr\Variable('data')),
                                     ]

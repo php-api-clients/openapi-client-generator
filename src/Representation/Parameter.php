@@ -17,7 +17,7 @@ final class Parameter
         public readonly string $location,
         public readonly mixed $default,
         public readonly mixed $example,
-        public readonly Node $exampleNode,
+        public readonly Node\Expr $exampleNode,
     ) {
     }
 }

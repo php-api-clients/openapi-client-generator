@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
@@ -12,19 +13,21 @@ use Ckr\Util\ArrayMerger;
 use DateTimeInterface;
 use Jawira\CaseConverter\Convert;
 use Ramsey\Uuid\Uuid;
-
 use ReverseRegex\Generator\Scope;
 use ReverseRegex\Lexer;
 use ReverseRegex\Parser;
-use ReverseRegex\Random\SimpleRandom;
+
 use function count;
-use function date;
 use function is_array;
+use function property_exists;
+use function Safe\date;
 use function str_replace;
+use function strlen;
 
 final class Property
 {
     public static function gather(
+        Namespace_ $baseNamespace,
         string $className,
         string $propertyName,
         bool $required,
@@ -33,11 +36,11 @@ final class Property
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Property {
         $exampleData = null;
 
-        if (count($property->examples ?? []) > 0) {
+        if (property_exists($property, 'examples') && count($property->examples ?? []) > 0) {
             $exampleData = $property->examples[0];
-        } elseif ($property->example !== null) {
+        } elseif (property_exists($property, 'example') && $property->example !== null) {
             $exampleData = $property->example;
-        } elseif (count($property->enum ?? []) > 0) {
+        } elseif (property_exists($property, 'enum') && count($property->enum ?? []) > 0) {
             $exampleData = $property->enum[0];
         }
 
@@ -54,6 +57,7 @@ final class Property
         ], $propertyName);
 
         $type = Type::gather(
+            $baseNamespace,
             $className,
             $propertyName,
             $property,
@@ -86,7 +90,11 @@ final class Property
     {
         if ($type->type === 'array') {
             if ($type->payload instanceof Schema) {
-                $exampleData = ArrayMerger::doMerge($type->payload->example, $exampleData ?? [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION);
+                $exampleData = ArrayMerger::doMerge(
+                    $type->payload->example,
+                    is_array($exampleData) ? $exampleData : [],
+                    ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION,
+                );
             } elseif ($type->payload instanceof PropertyType) {
                 $exampleData = self::generateExampleData($exampleData, $type->payload, $propertyName);
             }
@@ -115,7 +123,8 @@ final class Property
                 if ($type->pattern !== null) {
                     $result = '';
 
-                    @(@new Parser(new Lexer($type->pattern), new Scope(),new Scope()))->parse()->getResult()->generate(
+                    /** @phpstan-ignore-next-line */
+                    @(new Parser(new Lexer($type->pattern), new Scope(), new Scope()))->parse()->getResult()->generate(
                         $result,
                         new IntegerReturnerPretendingToBeARandomNumberGenerator(strlen($type->pattern)),
                     );

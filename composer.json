@@ -13,6 +13,7 @@
         "api-clients/contracts": "^0.1",
         "api-clients/github": "^0.2@dev",
         "ckr/arraymerger": "^3.0",
+        "codeinc/http-reason-phrase-lookup": "^1.0",
         "delight-im/random": "^1.0",
         "devizzent/cebe-php-openapi": "^1",
         "eventsauce/object-hydrator": "^1.2",

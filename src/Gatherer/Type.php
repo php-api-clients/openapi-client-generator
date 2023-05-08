@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -20,6 +21,7 @@ use function str_replace;
 final class Type
 {
     public static function gather(
+        Namespace_ $baseNamespace,
         string $className,
         string $propertyName,
         baseSchema $property,
@@ -28,6 +30,7 @@ final class Type
     ): PropertyType {
         if (is_array($property->allOf) && count($property->allOf) > 0) {
             return self::gather(
+                $baseNamespace,
                 $className,
                 $propertyName,
                 $property->allOf[0],
@@ -43,6 +46,7 @@ final class Type
                 count(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
             ) {
                 return self::gather(
+                    $baseNamespace,
                     $className,
                     $propertyName,
                     current(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
@@ -52,6 +56,7 @@ final class Type
             }
 
             return self::gather(
+                $baseNamespace,
                 $className,
                 $propertyName,
                 $property->oneOf[0],
@@ -67,6 +72,7 @@ final class Type
                 count(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
             ) {
                 return self::gather(
+                    $baseNamespace,
                     $className,
                     $propertyName,
                     current(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
@@ -76,6 +82,7 @@ final class Type
             }
 
             return self::gather(
+                $baseNamespace,
                 $className,
                 $propertyName,
                 $property->anyOf[0],
@@ -91,11 +98,12 @@ final class Type
             is_array($type) &&
             count($type) === 2 &&
             (
-                in_array(null, $type) ||
-                in_array('null', $type)
+                in_array(null, $type, false) ||
+                in_array('null', $type, false)
             )
         ) {
             foreach ($type as $pt) {
+                /** @phpstan-ignore-next-line */
                 if ($pt !== null && $pt !== 'null') {
                     $type = $pt;
                     break;
@@ -110,7 +118,14 @@ final class Type
                 'array',
                 null,
                 null,
-                self::gather($className, $propertyName, $property->items, $required, $schemaRegistry),
+                self::gather(
+                    $baseNamespace,
+                    $className,
+                    $propertyName,
+                    $property->items,
+                    $required,
+                    $schemaRegistry,
+                ),
                 $nullable
             );
         }
@@ -144,12 +159,17 @@ final class Type
         }
 
         if ($type === 'object') {
+//            echo Utils::className($className . '\\' . $propertyName), PHP_EOL;
             return new PropertyType(
                 'object',
                 null,
                 null,
                 Schema::gather(
-                    $schemaRegistry->get($property, $className . '\\' . Utils::className($propertyName)),
+                    $baseNamespace,
+                    $schemaRegistry->get(
+                        $property,
+                        Utils::className($className . '\\' . $propertyName),
+                    ),
                     $property,
                     $schemaRegistry,
                 ),

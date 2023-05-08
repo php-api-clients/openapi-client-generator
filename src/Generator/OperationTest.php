@@ -12,7 +12,6 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
@@ -27,8 +26,7 @@ use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
 
 use function count;
 use function implode;
-use function ltrim;
-use function preg_replace;
+use function Safe\preg_replace;
 use function str_replace;
 
 use const PHP_EOL;
@@ -36,20 +34,18 @@ use const PHP_EOL;
 final class OperationTest
 {
     /**
-     * @return iterable<Node>
+     * @return iterable<File>
      */
-    public static function generate(string $pathPrefix, string $namespace, string $sourceNamespace, Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public static function generate(string $pathPrefix, Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         if (count($operation->response) === 0) {
             return;
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
+        $stmt    = $factory->namespace($operation->className->namespace->test);
 
-        $class = $factory->class(
-            Utils::className(ltrim(Utils::basename($operation->className), '\\')) . 'Test',
-        )->extend(
+        $class = $factory->class($operation->className->className . 'Test')->extend(
             new Node\Name(
                 '\\' . AsyncTestCase::class,
             )
@@ -64,10 +60,11 @@ final class OperationTest
                             $operation,
                             null,
                             $contentTypeSchema,
-                            $sourceNamespace,
+                            $configuration,
                         ),
                     );
                 }
+
                 if ($configuration->entryPoints->operations) {
                     $class->addStmt(
                         self::createOperationsMethod(
@@ -75,7 +72,7 @@ final class OperationTest
                             $operation,
                             null,
                             $contentTypeSchema,
-                            $sourceNamespace,
+                            $configuration,
                         ),
                     );
                 }
@@ -88,37 +85,38 @@ final class OperationTest
                                 $operation,
                                 $request,
                                 $contentTypeSchema,
-                                $sourceNamespace,
+                                $configuration,
                             ),
                         );
                     }
-                    if ($configuration->entryPoints->operations) {
-                        $class->addStmt(
-                            self::createOperationsMethod(
-                                $factory,
-                                $operation,
-                                $request,
-                                $contentTypeSchema,
-                                $sourceNamespace,
-                            ),
-                        );
+
+                    if (! $configuration->entryPoints->operations) {
+                        continue;
                     }
+
+                    $class->addStmt(
+                        self::createOperationsMethod(
+                            $factory,
+                            $operation,
+                            $request,
+                            $contentTypeSchema,
+                            $configuration,
+                        ),
+                    );
                 }
             }
         }
 
-        yield new File($pathPrefix, 'Operation\\' . $operation->className . 'Test', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $operation->className->relative . 'Test', $stmt->addStmt($class)->getNode());
     }
 
-    private static function createCallMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
+    private static function createCallMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, Configuration $configuration): Method
     {
         $responseSchemaFetch = new Node\Expr\ClassConstFetch(
             new Node\Name(
-                'Schema\\' . $response->schema->className,
+                $response->schema->className->relative,
             ),
-            new Node\Name(
-                'SCHEMA_EXAMPLE_DATA',
-            ),
+            'SCHEMA_EXAMPLE_DATA',
         );
 
         return $factory->method('call_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
@@ -128,25 +126,19 @@ final class OperationTest
                 ' */',
             ]))
         )->addStmts([
-            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $sourceNamespace),
+            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration),
             new Node\Expr\MethodCall(
                 new Node\Expr\Variable(
-                    new Node\Name(
-                        'client',
-                    ),
+                    'client',
                 ),
-                new Node\Name(
-                    'call',
-                ),
+                'call',
                 [
                     new Arg(
                         new Node\Expr\ClassConstFetch(
                             new Node\Name(
-                                $sourceNamespace . 'Operation\\' . $operation->className,
+                                $operation->className->relative,
                             ),
-                            new Node\Name(
-                                'OPERATION_MATCH',
-                            ),
+                            'OPERATION_MATCH',
                         )
                     ),
                     new Arg(
@@ -173,9 +165,7 @@ final class OperationTest
                                                     new Node\Expr\Assign(
                                                         new Node\Expr\ArrayDimFetch(
                                                             new Node\Expr\Variable(
-                                                                new Node\Name(
-                                                                    'data',
-                                                                ),
+                                                                'data',
                                                             ),
                                                             new Node\Scalar\String_($parameter->targetName),
                                                         ),
@@ -186,9 +176,7 @@ final class OperationTest
                                         })($operation->parameters)),
                                         new Node\Stmt\Return_(
                                             new Node\Expr\Variable(
-                                                new Node\Name(
-                                                    'data',
-                                                ),
+                                                'data',
                                             ),
                                         ),
                                     ],
@@ -204,11 +192,9 @@ final class OperationTest
                                             new Arg(
                                                 new Node\Expr\ClassConstFetch(
                                                     new Node\Name(
-                                                        'Schema\\' . $request->schema->className,
+                                                        $request->schema->className->relative,
                                                     ),
-                                                    new Node\Name(
-                                                        'SCHEMA_EXAMPLE_DATA',
-                                                    ),
+                                                    'SCHEMA_EXAMPLE_DATA',
                                                 ),
                                             ),
                                             new Arg(
@@ -229,16 +215,13 @@ final class OperationTest
         ]);
     }
 
-
-    private static function createOperationsMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): Method
+    private static function createOperationsMethod(BuilderFactory $factory, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, Configuration $configuration): Method
     {
         $responseSchemaFetch = new Node\Expr\ClassConstFetch(
             new Node\Name(
-                'Schema\\' . $response->schema->className,
+                $response->schema->className->relative,
             ),
-            new Node\Name(
-                'SCHEMA_EXAMPLE_DATA',
-            ),
+            'SCHEMA_EXAMPLE_DATA',
         );
 
         return $factory->method('operations_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType))->makePublic()->setDocComment(
@@ -248,7 +231,7 @@ final class OperationTest
                 ' */',
             ]))
         )->addStmts([
-            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $sourceNamespace),
+            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration),
             new Node\Expr\FuncCall(
                 new Node\Name(
                     '\React\Async\await',
@@ -259,51 +242,43 @@ final class OperationTest
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
                                     new Node\Expr\Variable(
-                                        new Node\Name(
-                                            'client',
-                                        ),
+                                        'client',
                                     ),
-                                    new Node\Name(
-                                        'operations',
-                                    ),
+                                    'operations',
                                 ),
-                                new Node\Name(
-                                    (new Convert($operation->group))->toCamel(),
-                                ),
+                                (new Convert($operation->group))->toCamel(),
                             ),
-                            new Node\Name(
-                                (new Convert($operation->name))->toCamel(),
-                            ),
+                            (new Convert($operation->name))->toCamel(),
                             [
                                 ...((static function (array $parameters): iterable {
                                     foreach ($parameters as $parameter) {
                                         yield new Arg($parameter->exampleNode);
                                     }
                                 })($operation->parameters)),
-                                ...($request === null ? [] : [new Arg(new Node\Expr\FuncCall(
-                                    new Node\Name(
-                                        'json_decode',
-                                    ),
-                                    [
-                                        new Arg(
-                                            new Node\Expr\ClassConstFetch(
-                                                new Node\Name(
-                                                    'Schema\\' . $request->schema->className,
-                                                ),
-                                                new Node\Name(
+                                ...($request === null ? [] : [
+                                    new Arg(new Node\Expr\FuncCall(
+                                        new Node\Name(
+                                            'json_decode',
+                                        ),
+                                        [
+                                            new Arg(
+                                                new Node\Expr\ClassConstFetch(
+                                                    new Node\Name(
+                                                        $request->schema->className->relative,
+                                                    ),
                                                     'SCHEMA_EXAMPLE_DATA',
                                                 ),
                                             ),
-                                        ),
-                                        new Arg(
-                                            new Node\Expr\ConstFetch(
-                                                new Node\Name(
-                                                    'true',
+                                            new Arg(
+                                                new Node\Expr\ConstFetch(
+                                                    new Node\Name(
+                                                        'true',
+                                                    ),
                                                 ),
                                             ),
-                                        ),
-                                    ],
-                                ))]),
+                                        ],
+                                    )),
+                                ]),
                             ],
                         ),
                     ),
@@ -316,13 +291,14 @@ final class OperationTest
     {
         return new Node\Expr\MethodCall(
             $methodCall,
-            new Node\Name(
-                'shouldBeCalled',
-            ),
+            'shouldBeCalled',
         );
     }
 
-    private static function testSetUp(Node\Expr\ClassConstFetch $responseSchemaFetch, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, string $sourceNamespace): array
+    /**
+     * @return array<Node>
+     */
+    private static function testSetUp(Node\Expr\ClassConstFetch $responseSchemaFetch, Operation $operation, OperationRequestBody|null $request, OperationResponse $response, Configuration $configuration): array
     {
         return [
             ...($response->code < 400 ? [] : [
@@ -333,18 +309,14 @@ final class OperationTest
                                 'self',
                             ),
                         ),
-                        new Node\Name(
-                            'expectException',
-                        ),
+                        'expectException',
                         [
                             new Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Name(
-                                        'ErrorSchemas\\' . $response->schema->className,
+                                        $response->schema->errorClassNameAliased->relative,
                                     ),
-                                    new Node\Name(
-                                        'class',
-                                    ),
+                                    'class',
                                 ),
                             ),
                         ],
@@ -354,9 +326,7 @@ final class OperationTest
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'response',
-                        ),
+                        'response',
                     ),
                     new Node\Expr\New_(
                         new Node\Name(
@@ -392,28 +362,20 @@ final class OperationTest
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'auth',
-                        ),
+                        'auth',
                     ),
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
-                            new Node\Name(
-                                'this',
-                            ),
+                            'this',
                         ),
-                        new Node\Name(
-                            'prophesize',
-                        ),
+                        'prophesize',
                         [
                             new Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Name(
                                         '\\' . AuthenticationInterface::class,
                                     ),
-                                    new Node\Name(
-                                        'class',
-                                    )
+                                    'class',
                                 )
                             ),
                         ],
@@ -424,29 +386,21 @@ final class OperationTest
                 new Node\Expr\MethodCall(
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
-                            new Node\Name(
-                                'auth'
-                            ),
+                            'auth',
                         ),
-                        new Node\Name(
-                            'authHeader'
-                        ),
+                        'authHeader',
                         [
                             new Arg(
                                 new Node\Expr\StaticCall(
                                     new Node\Name(
                                         '\\' . Argument::class,
                                     ),
-                                    new Node\Name(
-                                        'any',
-                                    ),
+                                    'any',
                                 ),
                             ),
                         ],
                     ),
-                    new Node\Name(
-                        'willReturn',
-                    ),
+                    'willReturn',
                     [
                         new Arg(
                             new Node\Scalar\String_('Bearer beer'),
@@ -457,28 +411,20 @@ final class OperationTest
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'browser',
-                        ),
+                        'browser',
                     ),
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
-                            new Node\Name(
-                                'this',
-                            ),
+                            'this',
                         ),
-                        new Node\Name(
-                            'prophesize',
-                        ),
+                        'prophesize',
                         [
                             new Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Name(
                                         '\\' . Browser::class,
                                     ),
-                                    new Node\Name(
-                                        'class',
-                                    )
+                                    'class',
                                 )
                             ),
                         ],
@@ -488,40 +434,28 @@ final class OperationTest
             new Node\Expr\MethodCall(
                 new Node\Expr\MethodCall(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'browser'
-                        ),
+                        'browser',
                     ),
-                    new Node\Name(
-                        'withBase'
-                    ),
+                    'withBase',
                     [
                         new Arg(
                             new Node\Expr\StaticCall(
                                 new Node\Name(
                                     '\\' . Argument::class,
                                 ),
-                                new Node\Name(
-                                    'any',
-                                ),
+                                'any',
                             ),
                         ),
                     ],
                 ),
-                new Node\Name(
-                    'willReturn',
-                ),
+                'willReturn',
                 [
                     new Arg(
                         new Node\Expr\MethodCall(
                             new Node\Expr\Variable(
-                                new Node\Name(
-                                    'browser',
-                                ),
+                                'browser',
                             ),
-                            new Node\Name(
-                                'reveal',
-                            ),
+                            'reveal',
                         ),
                     ),
                 ],
@@ -529,40 +463,28 @@ final class OperationTest
             new Node\Expr\MethodCall(
                 new Node\Expr\MethodCall(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'browser'
-                        ),
+                        'browser'
                     ),
-                    new Node\Name(
-                        'withFollowRedirects'
-                    ),
+                    'withFollowRedirects',
                     [
                         new Arg(
                             new Node\Expr\StaticCall(
                                 new Node\Name(
                                     '\\' . Argument::class,
                                 ),
-                                new Node\Name(
-                                    'any',
-                                ),
+                                'any',
                             ),
                         ),
                     ],
                 ),
-                new Node\Name(
-                    'willReturn',
-                ),
+                'willReturn',
                 [
                     new Arg(
                         new Node\Expr\MethodCall(
                             new Node\Expr\Variable(
-                                new Node\Name(
-                                    'browser',
-                                ),
+                                'browser',
                             ),
-                            new Node\Name(
-                                'reveal',
-                            ),
+                            'reveal',
                         ),
                     ),
                 ],
@@ -571,13 +493,9 @@ final class OperationTest
                 new Node\Expr\MethodCall(
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
-                            new Node\Name(
-                                'browser'
-                            ),
+                            'browser',
                         ),
-                        new Node\Name(
-                            'request'
-                        ),
+                        'request',
                         [
                             new Arg(
                                 new Node\Scalar\String_(
@@ -631,9 +549,7 @@ final class OperationTest
                                     new Node\Name(
                                         '\\' . Argument::class,
                                     ),
-                                    new Node\Name(
-                                        'type',
-                                    ),
+                                    'type',
                                     [
                                         new Arg(
                                             new Node\Scalar\String_(
@@ -648,23 +564,17 @@ final class OperationTest
                                     new Node\Name(
                                         '\\' . Argument::class,
                                     ),
-                                    new Node\Name(
-                                        'any',
-                                    ),
+                                    'any',
                                 ) : new Node\Expr\ClassConstFetch(
                                     new Node\Name(
-                                        'Schema\\' . $request->schema->className,
+                                        $request->schema->className->relative,
                                     ),
-                                    new Node\Name(
-                                        'SCHEMA_EXAMPLE_DATA',
-                                    ),
+                                    'SCHEMA_EXAMPLE_DATA',
                                 ),
                             ),
                         ],
                     ),
-                    new Node\Name(
-                        'willReturn',
-                    ),
+                    'willReturn',
                     [
                         new Arg(
                             new Node\Expr\FuncCall(
@@ -674,9 +584,7 @@ final class OperationTest
                                 [
                                     new Arg(
                                         new Node\Expr\Variable(
-                                            new Node\Name(
-                                                'response',
-                                            ),
+                                            'response',
                                         ),
                                     ),
                                 ],
@@ -688,37 +596,27 @@ final class OperationTest
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
-                        new Node\Name(
-                            'client',
-                        ),
+                        'client',
                     ),
                     new Node\Expr\New_(
                         new Node\Name(
-                            $sourceNamespace . 'Client',
+                            '\\' . $configuration->namespace->source . '\Client',
                         ),
                         [
                             new Arg(
                                 new Node\Expr\MethodCall(
                                     new Node\Expr\Variable(
-                                        new Node\Name(
-                                            'auth',
-                                        ),
+                                        'auth',
                                     ),
-                                    new Node\Name(
-                                        'reveal',
-                                    ),
+                                    'reveal',
                                 ),
                             ),
                             new Arg(
                                 new Node\Expr\MethodCall(
                                     new Node\Expr\Variable(
-                                        new Node\Name(
-                                            'browser',
-                                        ),
+                                        'browser',
                                     ),
-                                    new Node\Name(
-                                        'reveal',
-                                    ),
+                                    'reveal',
                                 ),
                             ),
                         ],

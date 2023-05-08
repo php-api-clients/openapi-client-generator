@@ -15,7 +15,7 @@ final class WebHooks implements SectionGenerator
         return false;
     }
 
-    public static function webhook(WebHook ...$webHooks): string|false
+    public static function webHook(WebHook ...$webHooks): string|false
     {
         return 'webhook';
     }

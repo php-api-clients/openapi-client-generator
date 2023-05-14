@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
@@ -12,6 +15,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Operation as openAPIOperation;
+use CodeInc\HttpReasonPhraseLookup\HttpReasonPhraseLookup;
 use DateTimeInterface;
 use Jawira\CaseConverter\Convert;
 use PhpParser\Node;
@@ -20,11 +24,11 @@ use Psr\Http\Message\ResponseInterface;
 use function array_filter;
 use function array_unique;
 use function count;
-use function date;
 use function implode;
 use function is_array;
 use function lcfirst;
-use function preg_replace;
+use function Safe\date;
+use function Safe\preg_replace;
 use function str_replace;
 use function strtoupper;
 use function trim;
@@ -32,13 +36,18 @@ use function ucfirst;
 
 final class Operation
 {
+    /**
+     * @param array<string, mixed> $metaData
+     */
     public static function gather(
+        Namespace_ $baseNamespace,
         string $className,
         string $matchMethod,
         string $method,
         string $path,
         array $metaData,
         openAPIOperation $operation,
+        ThrowableSchema $throwableSchemaRegistry,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
@@ -60,8 +69,8 @@ final class Operation
                     return [13, new Node\Scalar\LNumber(13)];
                 }
 
-                if ($type === 'float' || $type === '?float' || $type === 'int|float' || $type === 'null|int}float') {
-                    return [13.13, new Node\Scalar\LNumber(13.13)];
+                if ($type === 'float' || $type === '?float' || $type === 'int|float' || $type === 'null|int|float') {
+                    return [13.13, new Node\Scalar\DNumber(13.13)];
                 }
 
                 if ($type === 'bool' || $type === '?bool') {
@@ -96,7 +105,7 @@ final class Operation
                         return ['::1', new Node\Scalar\String_('::1')];
                     }
 
-                    return ['generated_' . ($parameter->format ?? 'null'), new Node\Scalar\String_('generated_' . ($parameter->format ?? 'null'))];
+                    return ['generated', new Node\Scalar\String_('generated')];
                 }
 
                 return [
@@ -112,7 +121,7 @@ final class Operation
             $parameters[] = new Parameter(
                 (new Convert($parameter->name))->toCamel(),
                 $parameter->name,
-                (string) $parameter->description,
+                $parameter->description ?? '',
                 $parameterType,
                 $parameter->schema->format,
                 $parameter->in,
@@ -126,30 +135,44 @@ final class Operation
         $requestBody        = [];
         if ($operation->requestBody !== null) {
             foreach ($operation->requestBody->content as $contentType => $requestBodyDetails) {
-                $requestBodyClassname = $schemaRegistry->get($requestBodyDetails->schema, $classNameSanitized . '\\Request\\' . Utils::className(str_replace('/', '', $contentType)));
+                $requestBodyClassname = $schemaRegistry->get(
+                    $requestBodyDetails->schema,
+                    $classNameSanitized . '\\Request\\' . Utils::className(str_replace('/', '_', $contentType)),
+                );
                 $requestBody[]        = new OperationRequestBody(
                     $contentType,
-                    Schema::gather($requestBodyClassname, $requestBodyDetails->schema, $schemaRegistry),
+                    Schema::gather($baseNamespace, $requestBodyClassname, $requestBodyDetails->schema, $schemaRegistry),
                 );
             }
         }
 
         $response = [];
-        foreach ($operation->responses as $code => $spec) {
+        foreach ($operation->responses ?? [] as $code => $spec) {
             $isError = $code >= 400;
             foreach ($spec->content as $contentType => $contentTypeMediaType) {
-                $responseClassname = $schemaRegistry->get($contentTypeMediaType->schema, 'Operation\\' . $classNameSanitized . '\\Response\\' . Utils::className(str_replace('/', '', $contentType) . '\\H' . $code));
+                $responseClassname = $schemaRegistry->get(
+                    $contentTypeMediaType->schema,
+                    'Operations\\' . $classNameSanitized . '\\Response\\' . Utils::className(
+                        str_replace(
+                            '/',
+                            '_',
+                            $contentType,
+                        ) . '\\' .  HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown'
+                    ),
+                );
                 $response[]        = new OperationResponse(
                     $code,
                     $contentType,
                     $spec->description,
                     Schema::gather(
+                        $baseNamespace,
                         $responseClassname,
                         $contentTypeMediaType->schema,
                         $schemaRegistry,
                     ),
                 );
                 if ($isError) {
+                    $throwableSchemaRegistry->add('Schema\\' . $responseClassname);
                     continue;
                 }
 
@@ -163,6 +186,7 @@ final class Operation
             $headers = [];
             foreach ($spec->headers as $headerName => $headerSpec) {
                 $headers[$headerName] = new Header($headerName, Schema::gather(
+                    $baseNamespace,
                     $schemaRegistry->get(
                         $headerSpec->schema,
                         'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
@@ -184,8 +208,9 @@ final class Operation
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(
-            Utils::fixKeyword($className),
-            $classNameSanitized,
+            ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),
+            ClassString::factory($baseNamespace, $classNameSanitized),
+            ClassString::factory($baseNamespace, 'Operator\\' . Utils::fixKeyword($className)),
             lcfirst(trim(Utils::basename($className), '\\')),
             trim(Utils::dirname($className), '\\'),
             $operation->operationId,

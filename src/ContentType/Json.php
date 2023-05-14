@@ -11,6 +11,9 @@ use PhpParser\Node\Expr;
 
 final class Json implements ContentType
 {
+    /**
+     * @return iterable<string>
+     */
     public static function contentType(): iterable
     {
         yield 'application/json';
@@ -24,8 +27,10 @@ final class Json implements ContentType
                 new Arg(
                     $expr,
                 ),
-                new Node\Expr\ConstFetch(
-                    new Node\Name('true'),
+                new Arg(
+                    new Node\Expr\ConstFetch(
+                        new Node\Name('true'),
+                    ),
                 ),
             ],
         );

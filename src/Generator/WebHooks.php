@@ -30,10 +30,10 @@ use const PHP_EOL;
 final class WebHooks
 {
     /**
-     * @param array<string, Hydrator>                                                              $webHooksHydrators
-     * @param array<string, array<\ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook> $webHooks
+     * @param array<string, Hydrator>             $webHooksHydrators
+     * @param array<class-string, array<WebHook>> $webHooks
      *
-     * @return iterable
+     * @return iterable<File>
      */
     public static function generate(string $pathPrefix, string $namespace, array $webHooksHydrators, array $webHooks): iterable
     {
@@ -84,7 +84,7 @@ final class WebHooks
                         new Node\Expr\Variable('this'),
                         'hydrator'
                     ),
-                    new Node\Name('hydrateObject'),
+                    'hydrateObject',
                     [
                         new Node\Arg(new Node\Expr\Variable('className')),
                         new Node\Arg(new Node\Expr\Variable('data')),
@@ -117,7 +117,7 @@ final class WebHooks
                                 new Node\Expr\Variable('this'),
                                 'hydrator'
                             ),
-                            new Node\Name('serializeObject'),
+                            'serializeObject',
                             [
                                 new Node\Arg(new Node\Expr\Variable('object')),
                             ]
@@ -135,7 +135,7 @@ final class WebHooks
                     $schemas = [];
                     foreach ($webHooks as $webHook) {
                         foreach ($webHook->schema as $schema) {
-                            $schemas[] = 'Schema\\' . $schema->className;
+                            $schemas[] = $schema->className->relative;
                         }
                     }
 
@@ -225,7 +225,7 @@ final class WebHooks
         );
 
         foreach ($webHooks as $event => $hooks) {
-            $eventClassname = 'WebHook\\' . Utils::className($event);
+            $eventClassname = 'WebHook' . Utils::className($event);
             $eventSanitized = lcfirst((new Convert($event))->toPascal());
 
             $class->addStmt($factory->property($eventSanitized)->setType('?' . $eventClassname)->setDefault(null)->makePrivate());
@@ -276,7 +276,7 @@ final class WebHooks
                         new Node\Expr\Variable('this'),
                         $eventSanitized
                     ),
-                    new Node\Name('resolve'),
+                    'resolve',
                     [
                         new Node\Arg(new Node\Expr\Variable('headers')),
                         new Node\Arg(new Node\Expr\Variable('data')),

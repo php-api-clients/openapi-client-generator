@@ -6,6 +6,10 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class WebHook
 {
+    /**
+     * @param array<Header>         $headers
+     * @param array<string, Schema> $schema
+     */
     public function __construct(
         public readonly string $event,
         public readonly string $summary,

@@ -8,7 +8,6 @@ use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\Schema;
 use PhpParser\Builder\Param;
@@ -35,7 +34,6 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
-use function ltrim;
 use function rtrim;
 use function strlen;
 use function strtolower;
@@ -45,15 +43,15 @@ use const PHP_EOL;
 final class Operation
 {
     /**
-     * @return iterable<Node>
+     * @return iterable<File>
      */
-    public static function generate(string $pathPrefix, string $namespace, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public static function generate(string $pathPrefix, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         $noHydrator = true;
         $factory    = new BuilderFactory();
-        $stmt       = $factory->namespace(ltrim(Utils::dirname($namespace . '\\Operation\\' . $operation->className), '\\'));
+        $stmt       = $factory->namespace($operation->className->namespace->source);
 
-        $class = $factory->class(Utils::className(ltrim(Utils::basename($operation->className), '\\')))->makeFinal()->addStmt(
+        $class = $factory->class($operation->className->className)->makeFinal()->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
@@ -131,7 +129,7 @@ final class Operation
             $paramterStmt = $factory->property($parameter->name);
             $param        = new Param($parameter->name);
             if (strlen($parameter->description) > 0) {
-                $paramterStmt->setDocComment('/**' . (string) $parameter->description . '**/');
+                $paramterStmt->setDocComment('/**' . $parameter->description . '**/');
             }
 
             if ($parameter->type !== '') {
@@ -173,23 +171,23 @@ final class Operation
         $requestParameters = [
             new Node\Arg(new Node\Expr\ClassConstFetch(
                 new Node\Name('self'),
-                new Node\Name('METHOD'),
+                'METHOD',
             )),
             new Node\Arg(new Node\Expr\FuncCall(
                 new Node\Name('\str_replace'),
                 [
-                    new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces))),
-                    new Node\Expr\Array_(array_values($requestReplaces)),
-                    count($query) > 0 ? new Node\Expr\BinaryOp\Concat(
+                    new Node\Arg(new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces)))),
+                    new Node\Arg(new Node\Expr\Array_(array_map(static fn (Node\Expr\PropertyFetch $pf): Node\Expr\ArrayItem => new Node\Expr\ArrayItem($pf), array_values($requestReplaces)))),
+                    new Node\Arg(count($query) > 0 ? new Node\Expr\BinaryOp\Concat(
                         new Node\Expr\ClassConstFetch(
                             new Node\Name('self'),
-                            new Node\Name('PATH'),
+                            'PATH',
                         ),
                         new Node\Scalar\String_(rtrim('?' . implode('&', $query), '?')),
                     ) : new Node\Expr\ClassConstFetch(
                         new Node\Name('self'),
-                        new Node\Name('PATH'),
-                    ),
+                        'PATH',
+                    )),
                 ]
             )),
         ];
@@ -200,28 +198,29 @@ final class Operation
                 $factory->param('data')->setType('array')
             );
         }
+
         $createRequestMethod->makePublic();
 
         foreach ($operation->requestBody as $requestBody) {
-            $requestParameters[] = new Node\Expr\Array_([new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))]);
-            $requestParameters[] = new Node\Expr\FuncCall(new Node\Name('json_encode'), [new Arg(new Node\Expr\Variable('data'))]);
+            $requestParameters[] = new Node\Arg(new Node\Expr\Array_([new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))]));
+            $requestParameters[] = new Node\Arg(new Node\Expr\FuncCall(new Node\Name('json_encode'), [new Arg(new Node\Expr\Variable('data'))]));
             $createRequestMethod->addStmt(
                 new Node\Stmt\Expression(new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
                         'requestSchemaValidator'
                     ),
-                    new Node\Name('validate'),
+                    'validate',
                     [
                         new Node\Arg(new Node\Expr\Variable('data')),
-                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . Reader::class), new Node\Name('readFromJson'), [
+                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . Reader::class), 'readFromJson', [
                             new Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name('Schema\\' . $requestBody->schema->className),
-                                new Node\Name('SCHEMA_JSON'),
+                                new Node\Name($requestBody->schema->className->relative),
+                                'SCHEMA_JSON',
                             )),
                             new Arg(new Node\Expr\ClassConstFetch(
                                 new Node\Name('\\' . Schema::class),
-                                new Node\Name('class'),
+                                'class',
                             )),
                         ])),
                     ]
@@ -243,27 +242,9 @@ final class Operation
 
         $returnType    = [];
         $returnTypeRaw = [];
-//            $case = new Node\Stmt\Case_(
-//                new Node\Scalar\LNumber($code),
-//                [
-//                    ...(count($contentTypeCases) > 0 ? [new Node\Stmt\Switch_(
-//                        new Node\Expr\Variable('contentType'),
-//                        $contentTypeCases
-//                    )] : (count($redirects) > 0 ? $redirects : new Node\Stmt\Return_(new Node\Expr\Variable('response')))),
-//                    new Node\Stmt\Break_()
-//                ]
-//            );
-//            if (strlen($description) > 0) {
-//                $case->setDocComment(new Doc('/**' . $description . '**/'));
-//            }
-//            if (count($contentTypeCases) === 0 && count($redirects) === 0) {
-//                $returnType[] = $returnTypeRaw[] = '\\' . ResponseInterface::class;
-//            }
+        $cases         = [];
 
-
-        $cases = [];
-
-        foreach ($configuration->contentType as $contentType) {
+        foreach ($configuration->contentType ?? [] as $contentType) {
             foreach ($contentType::contentType() as $supportedContentType) {
                 $caseCases = [];
                 foreach ($operation->response as $contentTypeSchema) {
@@ -275,10 +256,10 @@ final class Operation
                     $isError       = $contentTypeSchema->code >= 400;
                     if ($isError) {
                         $returnOrThrow = Node\Stmt\Throw_::class;
-                        $throwableSchemaRegistry->add($contentTypeSchema->schema->className);
+                        $throwableSchemaRegistry->add($contentTypeSchema->schema->className->relative);
                     }
 
-                    $object = ($isError ? 'ErrorSchemas' : 'Schema') . '\\' . $contentTypeSchema->schema->className;
+                    $object = $isError ? $contentTypeSchema->schema->errorClassNameAliased->relative : $contentTypeSchema->schema->className->relative;
                     if (! $isError) {
                         $returnType[]    = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
                         $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
@@ -289,11 +270,11 @@ final class Operation
                             new Node\Expr\Variable('this'),
                             'hydrator'
                         ),
-                        new Node\Name('hydrateObject'),
+                        'hydrateObject',
                         [
                             new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                new Node\Name('class'),
+                                new Node\Name($contentTypeSchema->schema->className->relative),
+                                'class',
                             )),
                             new Node\Arg(new Node\Expr\Variable('body')),
                         ],
@@ -301,7 +282,7 @@ final class Operation
 
                     if ($isError) {
                         $hydrate = new Node\Expr\New_(
-                            new Node\Name('ErrorSchemas\\' . $contentTypeSchema->schema->className),
+                            new Node\Name($contentTypeSchema->schema->errorClassNameAliased->relative),
                             [
                                 new Arg(
                                     new Node\Scalar\LNumber($contentTypeSchema->code),
@@ -318,15 +299,15 @@ final class Operation
                             new Node\Expr\Variable('this'),
                             'responseSchemaValidator'
                         ),
-                        new Node\Name('validate'),
+                        'validate',
                         [
                             new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
-                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), new Node\Name('readFromJson'), [
-                                new Node\Expr\ClassConstFetch(
-                                    new Node\Name('Schema\\' . $contentTypeSchema->schema->className),
-                                    new Node\Name('SCHEMA_JSON'),
-                                ),
-                                new Node\Scalar\String_('\cebe\openapi\spec\Schema'),
+                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
+                                new Arg(new Node\Expr\ClassConstFetch(
+                                    new Node\Name($contentTypeSchema->schema->className->relative),
+                                    'SCHEMA_JSON',
+                                )),
+                                new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
                             ])),
                         ]
                     ));
@@ -345,7 +326,7 @@ final class Operation
                                 $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
                                     new Node\Expr\StaticCall(
                                         new Node\Name('\\' . Observable::class),
-                                        new Node\Name('fromArray'),
+                                        'fromArray',
                                         [
                                             new Node\Arg(new Node\Expr\Variable('body')),
                                             new Node\Arg(
@@ -355,7 +336,7 @@ final class Operation
                                             ),
                                         ]
                                     ),
-                                    new Node\Name('map'),
+                                    'map',
                                     [
                                         new Arg(new Node\Expr\Closure([
                                             'stmts' => [
@@ -434,13 +415,13 @@ final class Operation
                                 new Node\Expr\Variable('this'),
                                 'browser'
                             ),
-                            new Node\Name('requestStreaming'),
+                            'requestStreaming',
                             [
                                 new Arg(new Node\Scalar\String_('GET')),
                                 new Arg(
                                     new Node\Expr\MethodCall(
                                         new Node\Expr\Variable('response'),
-                                        new Node\Name('getHeaderLine'),
+                                        'getHeaderLine',
                                         [
                                             new Arg(new Node\Scalar\String_('location')),
                                         ],
@@ -448,7 +429,7 @@ final class Operation
                                 ),
                             ],
                         ),
-                        new Node\Name('then'),
+                        'then',
                         [
                             new Arg(new Node\Expr\Closure(
                                 [
@@ -458,7 +439,7 @@ final class Operation
                                                 new Node\Expr\Variable('body'),
                                                 new Node\Expr\MethodCall(
                                                     new Node\Expr\Variable('response'),
-                                                    new Node\Name('getBody'),
+                                                    'getBody',
                                                 ),
                                             ),
                                         ),
@@ -480,7 +461,7 @@ final class Operation
                                                     new Node\Stmt\Expression(
                                                         new Node\Expr\MethodCall(
                                                             new Node\Expr\Variable('stream'),
-                                                            new Node\Name('onError'),
+                                                            'onError',
                                                             [
                                                                 new Arg(new Node\Expr\New_(
                                                                     new Node\Name('\\' . RuntimeException::class)
@@ -495,7 +476,7 @@ final class Operation
                                         new Node\Stmt\Expression(
                                             new Node\Expr\MethodCall(
                                                 new Node\Expr\Variable('body'),
-                                                new Node\Name('on'),
+                                                'on',
                                                 [
                                                     new Arg(new Node\Scalar\String_('data')),
                                                     new Arg(new Node\Expr\Closure(
@@ -504,7 +485,7 @@ final class Operation
                                                                 new Node\Stmt\Expression(
                                                                     new Node\Expr\MethodCall(
                                                                         new Node\Expr\Variable('stream'),
-                                                                        new Node\Name('onNext'),
+                                                                        'onNext',
                                                                         [
                                                                             new Arg(new Node\Expr\Variable('data')),
                                                                         ],
@@ -529,7 +510,7 @@ final class Operation
                                         new Node\Stmt\Expression(
                                             new Node\Expr\MethodCall(
                                                 new Node\Expr\Variable('body'),
-                                                new Node\Name('on'),
+                                                'on',
                                                 [
                                                     new Arg(new Node\Scalar\String_('close')),
                                                     new Arg(new Node\Expr\Closure(
@@ -538,7 +519,7 @@ final class Operation
                                                                 new Node\Stmt\Expression(
                                                                     new Node\Expr\MethodCall(
                                                                         new Node\Expr\Variable('stream'),
-                                                                        new Node\Name('onCompleted'),
+                                                                        'onCompleted',
                                                                     ),
                                                                 ),
                                                             ],
@@ -557,7 +538,7 @@ final class Operation
                                         new Node\Stmt\Expression(
                                             new Node\Expr\MethodCall(
                                                 new Node\Expr\Variable('body'),
-                                                new Node\Name('on'),
+                                                'on',
                                                 [
                                                     new Arg(new Node\Scalar\String_('error')),
                                                     new Arg(new Node\Expr\Closure(
@@ -566,7 +547,7 @@ final class Operation
                                                                 new Node\Stmt\Expression(
                                                                     new Node\Expr\MethodCall(
                                                                         new Node\Expr\Variable('stream'),
-                                                                        new Node\Name('onError'),
+                                                                        'onError',
                                                                         [
                                                                             new Arg(new Node\Expr\Variable('error')),
                                                                         ],
@@ -618,7 +599,7 @@ final class Operation
                     $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
                         new Node\Expr\MethodCall(
                             new Node\Expr\Variable('response'),
-                            new Node\Name('getHeaderLine'),
+                            'getHeaderLine',
                             [
                                 new Arg(new Node\Scalar\String_($header->name)),
                             ],
@@ -747,7 +728,7 @@ final class Operation
             $class->addStmt(
                 $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
             )->addStmt(
-                $factory->property('hydrator')->setType('Hydrator\\' . $hydrator->className)->makeReadonly()->makePrivate()
+                $factory->property('hydrator')->setType($hydrator->className->relative)->makeReadonly()->makePrivate()
             );
 
             $constructor->addParam(
@@ -761,7 +742,7 @@ final class Operation
                     new Node\Expr\Variable('responseSchemaValidator'),
                 )
             )->addParam(
-                (new Param('hydrator'))->setType('Hydrator\\' . $hydrator->className)
+                (new Param('hydrator'))->setType($hydrator->className->relative)
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -796,6 +777,6 @@ final class Operation
         $class->addStmt($createRequestMethod);
         $class->addStmt($createResponseMethod);
 
-        yield new File($pathPrefix, 'Operation\\' . $operation->className, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $operation->className->relative, $stmt->addStmt($class)->getNode());
     }
 }

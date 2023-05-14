@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Schema as baseSchema;
@@ -16,11 +18,12 @@ use function property_exists;
 final class Schema
 {
     public static function gather(
+        Namespace_ $baseNamespace,
         string $className,
         baseSchema $schema,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema {
-        $className  = Utils::fixKeyword($className);
+        $className  = Utils::className($className);
         $isArray    = $schema->type === 'array';
         $properties = [];
         $example    = [];
@@ -31,9 +34,14 @@ final class Schema
 
         foreach ($schema->properties as $propertyName => $property) {
             $gatheredProperty = Property::gather(
+                $baseNamespace,
                 $className,
                 (string) $propertyName,
-                is_array($schema->required) && in_array($propertyName, $schema->required, false),
+                in_array(
+                    $propertyName,
+                    $schema->required ?? [],
+                    false,
+                ),
                 $property,
                 $schemaRegistry
             );
@@ -55,7 +63,9 @@ final class Schema
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
-            $className,
+            ClassString::factory($baseNamespace, 'Schema\\' . $className),
+            ClassString::factory($baseNamespace, 'Error\\' . $className),
+            ClassString::factory($baseNamespace, 'ErrorSchemas\\' . $className),
             $schema->title ?? '',
             $schema->description ?? '',
             $example,

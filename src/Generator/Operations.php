@@ -7,9 +7,8 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
-use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -17,22 +16,24 @@ use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
-use function trim;
+
+use function count;
+use function ucfirst;
 
 final class Operations
 {
     /**
-     * @param array<Path> $paths
+     * @param array<Path>      $paths
      * @param array<Operation> $operations
      *
      * @return iterable<File>
      */
-    public static function generate(Configuration $configuration, string $pathPrefix, string $namespace, array $paths, array $operations): iterable
+    public static function generate(Configuration $configuration, string $pathPrefix, array $paths, array $operations): iterable
     {
         $operationHydratorMap = [];
         foreach ($paths as $path) {
@@ -42,7 +43,7 @@ final class Operations
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($namespace, '\\'));
+        $stmt    = $factory->namespace($configuration->namespace->source);
 
         $class = $factory->class('Operations')->makeFinal()->implement(new Name('OperationsInterface'))->makeReadonly();
 
@@ -56,7 +57,7 @@ final class Operations
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType($namespace . 'Hydrators'),
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $configuration->namespace->source . '\Hydrators'),
             ),
         );
 
@@ -68,7 +69,7 @@ final class Operations
         foreach ($groups as $group => $groupsOperations) {
             $class->addStmt(
                 $factory->method((new Convert($group))->toCamel())->makePublic()->setReturnType('Operation\\' . $group)->addStmts([
-                     new Node\Stmt\Return_(
+                    new Node\Stmt\Return_(
                         new Expr\New_(
                             new Name(
                                 'Operation\\' . $group
@@ -77,31 +78,31 @@ final class Operations
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        new Name('browser')
+                                        'browser',
                                     ),
                                 ),
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        new Name('authentication')
+                                        'authentication',
                                     ),
                                 ),
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        new Name('requestSchemaValidator')
+                                        'requestSchemaValidator',
                                     ),
                                 ),
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        new Name('responseSchemaValidator')
+                                        'responseSchemaValidator',
                                     ),
                                 ),
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        new Name('hydrators')
+                                        'hydrators',
                                     ),
                                 ),
                             ],
@@ -112,7 +113,7 @@ final class Operations
 
             yield from self::generateOperationsGroup(
                 $pathPrefix,
-                $namespace,
+                $configuration->namespace,
                 'Operation\\' . $group,
                 $groupsOperations,
                 $operationHydratorMap,
@@ -124,17 +125,17 @@ final class Operations
     }
 
     /**
-     * @param array<string, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator> $operationHydratorMap
-     * @param array<Operation> $operations
+     * @param array<string, Hydrator> $operationHydratorMap
+     * @param array<Operation>        $operations
      *
      * @return iterable<File>
      */
-    private static function generateOperationsGroup(string $pathPrefix, string $namespace, string $className, array $operations, array $operationHydratorMap, string $group): iterable
+    private static function generateOperationsGroup(string $pathPrefix, Configuration\Namespace_ $namespace, string $className, array $operations, array $operationHydratorMap, string $group): iterable
     {
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim(Utils::dirname($namespace . $className), '\\'));
+        $stmt    = $factory->namespace(Utils::dirname($namespace->source . '\\' . $className));
 
-        $class = $factory->class(trim(Utils::basename($className), '\\'))->makeFinal()->addStmt(
+        $class = $factory->class(Utils::basename($className))->makeFinal()->addStmt(
             $factory->property('operator')->setType('array')->setDefault([])->makePrivate(),
         );
 
@@ -148,7 +149,7 @@ final class Operations
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType($namespace . 'Hydrators'),
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $namespace->source . '\Hydrators'),
             ),
         );
 
@@ -174,8 +175,8 @@ final class Operations
                                 new Node\Name('\array_key_exists'),
                                 [
                                     new Arg(new Node\Expr\ClassConstFetch(
-                                        new Node\Name('Operator\\' . $operation->className),
-                                        new Node\Name('class'),
+                                        new Node\Name($operation->operatorClassName->relative),
+                                        'class',
                                     )),
                                     new Arg(new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
@@ -193,11 +194,11 @@ final class Operations
                                             new Node\Expr\Variable('this'),
                                             'operator'
                                         ), new Node\Expr\ClassConstFetch(
-                                            new Node\Name('Operator\\' . $operation->className),
-                                            new Node\Name('class'),
+                                            new Node\Name($operation->operatorClassName->relative),
+                                            'class',
                                         )),
                                         new Node\Expr\New_(
-                                            new Node\Name('Operator\\' . $operation->className),
+                                            new Node\Name($operation->operatorClassName->relative),
                                             [
                                                 new Arg(new Node\Expr\PropertyFetch(
                                                     new Node\Expr\Variable('this'),
@@ -223,9 +224,7 @@ final class Operations
                                                             new Node\Expr\Variable('this'),
                                                             'hydrators'
                                                         ),
-                                                        new Name(
-                                                            'getObjectMapper' . ucfirst($operationHydratorMap[$operation->operationId]->methodName),
-                                                        ),
+                                                        'getObjectMapper' . ucfirst($operationHydratorMap[$operation->operationId]->methodName),
                                                     ),
                                                 ),
                                             ],
@@ -241,21 +240,17 @@ final class Operations
                                 new Node\Expr\Variable('this'),
                                 'operator'
                             ), new Node\Expr\ClassConstFetch(
-                                new Node\Name('Operator\\' . $operation->className),
-                                new Node\Name('class'),
+                                new Node\Name($operation->operatorClassName->relative),
+                                'class',
                             )),
-                            new Node\Name(
-                                'call',
-                            ),
+                            'call',
                             [
                                 ...(static function (array $params): iterable {
                                     foreach ($params as $param) {
                                         yield new Arg(new Node\Expr\Variable($param->targetName));
                                     }
                                 })($operation->parameters),
-                                ...(count($operation->requestBody) > 0 ? [
-                                    new Arg(new Node\Expr\Variable(new Node\Name('params')))
-                                ] : []),
+                                ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),
                             ],
                         ),
                     ),

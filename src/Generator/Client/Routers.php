@@ -8,12 +8,16 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\Router;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClassMethod;
 use Jawira\CaseConverter\Convert;
+use PhpParser\Node;
 
 final class Routers
 {
-    /** @var array<string, array<string, array<string, array<>>> */
+    /** @var array<string, array<string, array<string, array<Node>>>> $operations */
     private array $operations = [];
 
+    /**
+     * @param array<Node> $nodes
+     */
     public function add(
         string $method,
         string $group,
@@ -36,6 +40,7 @@ final class Routers
                 foreach ($methods as $name => $nodes) {
                     $classMethods[] = new RouterClassMethod($name, $nodes);
                 }
+
                 yield new RouterClass(
                     $method,
                     $group,

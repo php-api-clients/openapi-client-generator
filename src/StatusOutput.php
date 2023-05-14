@@ -17,7 +17,7 @@ final class StatusOutput
     /** @var array<Step> */
     private readonly array $steps;
 
-    /** @var array<bool> */
+    /** @var array<string> */
     private array $stepsStatus = [];
 
     /** @var array<int> */
@@ -82,6 +82,12 @@ final class StatusOutput
         $this->render();
     }
 
+    public function markStepBusy(string $key): void
+    {
+        $this->stepsStatus[$key] = '🌻';
+        $this->render();
+    }
+
     public function markStepDone(string $key): void
     {
         $this->stepsStatus[$key] = '✅';
@@ -100,6 +106,10 @@ final class StatusOutput
     public function itemForStep(string $key, int $count): void
     {
         $this->itemsCountForStep[$key] = $count;
+        if ($this->stepProgress[$key] === 0) {
+            $this->stepsStatus[$key] = '🌑';
+        }
+
         $this->render();
     }
 
@@ -107,6 +117,7 @@ final class StatusOutput
     {
         $this->stepProgress[$key]++;
         $percentage = 100 / $this->itemsCountForStep[$key] * $this->stepProgress[$key];
+        /** @phpstan-ignore-next-line */
         switch (true) {
             case $percentage <= 12.5:
                 $this->stepsStatus[$key] = '🌑';

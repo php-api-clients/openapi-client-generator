@@ -23,7 +23,10 @@ final class HydratorUtils
         }
     }
 
-    private static function listSchemasFromPropertyType(PropertyType $propertyType)
+    /**
+     * @return iterable<Schema>
+     */
+    private static function listSchemasFromPropertyType(PropertyType $propertyType): iterable
     {
         if ($propertyType->payload instanceof Schema) {
             yield from self::listSchemas($propertyType->payload);

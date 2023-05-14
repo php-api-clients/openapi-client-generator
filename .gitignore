@@ -1,6 +1,7 @@
 etc/qa/.phpcs.cache
 bin/openapi-client-generator
 example/etc
-example/generated
-example/generated-subsplit
+example/generated-github
+example/generated-github-subsplit
+example/generated-miele
 vendor

@@ -8,7 +8,6 @@ use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
-use Jawira\CaseConverter\Convert;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -27,14 +26,14 @@ use const PHP_EOL;
 final class ClientInterface
 {
     /**
-     * @param array<Operation> $paths
+     * @param array<Operation> $operations
      *
-     * @return iterable
+     * @return iterable<File>
      */
-    public static function generate(Configuration $configuration, string $pathPrefix, string $namespace, array $operations): iterable
+    public static function generate(Configuration $configuration, string $pathPrefix, array $operations): iterable
     {
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($namespace, '\\'));
+        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
 
         $class = $factory->interface('ClientInterface');
 
@@ -45,18 +44,18 @@ final class ClientInterface
                         '// phpcs:disable',
                         '/**',
                         ' * @return ' . (static function (array $operations): string {
-                            $count = count($operations);
+                            $count    = count($operations);
                             $lastItem = $count - 1;
-                            $left = '';
-                            $right = '';
+                            $left     = '';
+                            $right    = '';
                             for ($i = 0; $i < $count; $i++) {
                                 $returnType = implode('|', [
                                     ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
-                                    ...array_map(static fn(string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                                    ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
                                 ]);
                                 $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
                                 if ($i !== $lastItem) {
-                                    $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . $returnType . ' : ';
+                                    $left .= '($call is ' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                                 } else {
                                     $left .= $returnType;
                                 }
@@ -78,18 +77,18 @@ final class ClientInterface
                         '// phpcs:disable',
                         '/**',
                         ' * @return ' . (static function (array $operations): string {
-                            $count = count($operations);
+                            $count    = count($operations);
                             $lastItem = $count - 1;
-                            $left = '';
-                            $right = '';
+                            $left     = '';
+                            $right    = '';
                             for ($i = 0; $i < $count; $i++) {
                                 $returnType = implode('|', [
                                     ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
-                                    ...array_map(static fn(string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                                    ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
                                 ]);
                                 $returnType = ($operations[$i]->matchMethod === 'LIST' ? '\\' . Observable::class . '<' . $returnType . '>' : $returnType);
                                 if ($i !== $lastItem) {
-                                    $left .= '($call is ' . 'Operation\\' . $operations[$i]->classNameSanitized . '::OPERATION_MATCH ? ' . '\\' . PromiseInterface::class . '<' . $returnType . '>' . ' : ';
+                                    $left .= '($call is ' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? \\' . PromiseInterface::class . '<' . $returnType . '> : ';
                                 } else {
                                     $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
                                 }
@@ -105,6 +104,7 @@ final class ClientInterface
                 )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))
             );
         }
+
 //        $class->addStmt(
 //            $factory->method('hydrateObject')->makePublic()->setDocComment(
 //                new Doc(implode(PHP_EOL, [

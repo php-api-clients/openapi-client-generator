@@ -4,32 +4,37 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Registry;
 
+use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Schema as openAPISchema;
+use RuntimeException;
+use Safe\Exceptions\JsonException;
 
 use function array_key_exists;
 use function array_unique;
 use function count;
-use function json_encode;
+use function Safe\json_encode;
 use function spl_object_hash;
 use function strtoupper;
 
 final class Schema
 {
-    /** @var array<string, class-string> */
+    /** @var array<string, string> */
     private array $splHash = [];
-    /** @var array<string, class-string> */
+    /** @var array<string, string> */
     private array $json = [];
 
-    /** @var array<string,array<{name: string, className: string, schema: Schema}>> */
+    /** @var array<string, UnknownSchema> */
     private array $unknownSchemas = [];
 
-    /** @var array<string, class-string> */
+    /** @var array<string, string> */
     private array $unknownSchemasJson = [];
-    /** @var array<class-string, array<class-string>> */
+    /** @var array<string, array<ClassString>> */
     private array $aliasses = [];
 
     public function __construct(
+        private readonly Namespace_ $baseNamespaces,
         private readonly bool $allowDuplicatedSchemas,
         private readonly bool $useAliasesForDuplication,
     ) {
@@ -41,15 +46,26 @@ final class Schema
             $schema = $schema->items;
         }
 
+        if (! $schema instanceof openAPISchema) {
+            throw new RuntimeException('Schemas has to be instance of: ' . openAPISchema::class);
+        }
+
         $className                                               = Utils::className($className);
         $this->splHash[spl_object_hash($schema)]                 = $className;
         $this->json[json_encode($schema->getSerializableData())] = $className;
     }
 
+    /**
+     * @throws JsonException
+     */
     public function get(openAPISchema $schema, string $fallbackName): string
     {
         if ($schema->type === 'array') {
             $schema = $schema->items;
+        }
+
+        if (! $schema instanceof openAPISchema) {
+            throw new RuntimeException('Schemas has to be instance of: ' . openAPISchema::class);
         }
 
         $hash = spl_object_hash($schema);
@@ -69,13 +85,13 @@ final class Schema
         $className = Utils::fixKeyword($fallbackName);
 
         if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->json)) {
-            $this->aliasses[$this->json[$json]][] = $className;
+            $this->aliasses[$this->json[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
 
             return $className;
         }
 
         if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->unknownSchemasJson)) {
-            $this->aliasses[$this->unknownSchemasJson[$json]][] = $className;
+            $this->aliasses[$this->unknownSchemasJson[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
 
             return $className;
         }
@@ -87,11 +103,7 @@ final class Schema
 
         $this->splHash[spl_object_hash($schema)] = $className;
         $this->unknownSchemasJson[$json]         = $className;
-        $this->unknownSchemas[$className]        = [
-            'name' => $fallbackName,
-            'className' => $className,
-            'schema' => $schema,
-        ];
+        $this->unknownSchemas[$className]        = new UnknownSchema($fallbackName, $className, $schema);
 
         return $className;
     }
@@ -101,6 +113,9 @@ final class Schema
         return count($this->unknownSchemas) > 0;
     }
 
+    /**
+     * @return iterable<UnknownSchema>
+     */
     public function unknownSchemas(): iterable
     {
         $unknownSchemas       = $this->unknownSchemas;
@@ -109,6 +124,9 @@ final class Schema
         yield from $unknownSchemas;
     }
 
+    /**
+     * @return iterable<ClassString>
+     */
     public function aliasesForClassName(string $classname): iterable
     {
         if (! array_key_exists($classname, $this->aliasses)) {

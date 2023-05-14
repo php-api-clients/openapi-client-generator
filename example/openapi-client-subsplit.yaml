@@ -13,7 +13,7 @@ namespace:
   source: ApiClients\Client\Github
   test: ApiClients\Tests\Client\Github
 destination:
-  root: generated-subsplit
+  root: generated-github-subsplit
   source: src
   test: tests
 templates:

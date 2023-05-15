@@ -59,7 +59,7 @@ final class Schema
                 $example[$gatheredProperty->sourceName] = $schema->$examplePropertyName[$gatheredProperty->sourceName];
             }
 
-            $example[$gatheredProperty->sourceName] = $gatheredProperty->exampleData;
+            $example[$gatheredProperty->sourceName] = $gatheredProperty->example->raw;
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(

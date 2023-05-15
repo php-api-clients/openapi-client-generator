@@ -16,9 +16,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Operation as openAPIOperation;
 use CodeInc\HttpReasonPhraseLookup\HttpReasonPhraseLookup;
-use DateTimeInterface;
 use Jawira\CaseConverter\Convert;
-use PhpParser\Node;
 use Psr\Http\Message\ResponseInterface;
 
 use function array_filter;
@@ -27,7 +25,6 @@ use function count;
 use function implode;
 use function is_array;
 use function lcfirst;
-use function Safe\date;
 use function Safe\preg_replace;
 use function str_replace;
 use function strtoupper;
@@ -64,60 +61,6 @@ final class Operation
                 'bool',
             ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]));
 
-            [$example, $exampleNode] = (static function (string $type, ?string $format): array {
-                if ($type === 'int' || $type === '?int') {
-                    return [13, new Node\Scalar\LNumber(13)];
-                }
-
-                if ($type === 'float' || $type === '?float' || $type === 'int|float' || $type === 'null|int|float') {
-                    return [13.13, new Node\Scalar\DNumber(13.13)];
-                }
-
-                if ($type === 'bool' || $type === '?bool') {
-                    return [
-                        false,
-                        new Node\Expr\ConstFetch(
-                            new Node\Name(
-                                'false',
-                            ),
-                        ),
-                    ];
-                }
-
-                if ($type === 'string' || $type === '?string') {
-                    if ($format === 'uri') {
-                        return ['https://example.com/', new Node\Scalar\String_('https://example.com/')];
-                    }
-
-                    if ($format === 'date-time') {
-                        return [date(DateTimeInterface::RFC3339, 0), new Node\Scalar\String_(date(DateTimeInterface::RFC3339, 0))];
-                    }
-
-                    if ($format === 'uuid') {
-                        return ['4ccda740-74c3-4cfa-8571-ebf83c8f300a', new Node\Scalar\String_('4ccda740-74c3-4cfa-8571-ebf83c8f300a')];
-                    }
-
-                    if ($format === 'ipv4') {
-                        return ['127.0.0.1', new Node\Scalar\String_('127.0.0.1')];
-                    }
-
-                    if ($format === 'ipv6') {
-                        return ['::1', new Node\Scalar\String_('::1')];
-                    }
-
-                    return ['generated', new Node\Scalar\String_('generated')];
-                }
-
-                return [
-                    null,
-                    new Node\Expr\ConstFetch(
-                        new Node\Name(
-                            'null',
-                        ),
-                    ),
-                ];
-            })($parameterType, $parameter->schema->format);
-
             $parameters[] = new Parameter(
                 (new Convert($parameter->name))->toCamel(),
                 $parameter->name,
@@ -126,8 +69,7 @@ final class Operation
                 $parameter->schema->format,
                 $parameter->in,
                 $parameter->schema->default,
-                $example,
-                $exampleNode,
+                ExampleData::scalarData($parameterType, $parameter->schema->format),
             );
         }
 
@@ -157,7 +99,7 @@ final class Operation
                             '/',
                             '_',
                             $contentType,
-                        ) . '\\' .  HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown'
+                        ) . '\\' . (HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown')
                     ),
                 );
                 $response[]        = new OperationResponse(

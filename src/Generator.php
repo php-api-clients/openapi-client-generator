@@ -49,7 +49,6 @@ use function getenv;
 use function is_string;
 use function ltrim;
 use function md5;
-use function property_exists;
 use function Safe\file_get_contents;
 use function Safe\file_put_contents;
 use function Safe\json_decode;
@@ -262,17 +261,19 @@ final readonly class Generator
      */
     private function all(string $configurationLocation): iterable
     {
-        $schemaRegistry          = new SchemaRegistry(
+        $schemaRegistry = new SchemaRegistry(
             $this->configuration->namespace,
-false,
-false,
-//            $this->configuration->schemas->allowDuplication ?? false,
-//            $this->configuration->schemas->useAliasesForDuplication ?? false,
+            false,
+            false,
+            //            $this->configuration->schemas->allowDuplication ?? false,
+            //            $this->configuration->schemas->useAliasesForDuplication ?? false,
         );
         $schemas                 = [];
         $throwableSchemaRegistry = new ThrowableSchema();
-        if (/*$this->spec->components !== null && property_exists($this->spec->components, 'schemas') && */count($this->spec->components->schemas ?? []) > 0) {
+        if (count($this->spec->components->schemas ?? []) > 0) {
+            /** @phpstan-ignore-next-line */
             $this->statusOutput->itemForStep('gathering_schemas', count($this->spec->components->schemas));
+            /** @phpstan-ignore-next-line */
             foreach ($this->spec->components->schemas as $name => $schema) {
                 assert($schema instanceof \cebe\openapi\spec\Schema);
                 $schemaRegistry->addClassName(Utils::className($name), $schema);
@@ -297,6 +298,7 @@ false,
                     }
 
                     $webHooks[$webHookje->event][] = $webHookje;
+                    /** @phpstan-ignore-next-line */
                 } catch (RuntimeException) {
                     // @ignoreException
                 }

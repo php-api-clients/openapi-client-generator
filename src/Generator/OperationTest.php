@@ -169,7 +169,7 @@ final class OperationTest
                                                             ),
                                                             new Node\Scalar\String_($parameter->targetName),
                                                         ),
-                                                        $parameter->exampleNode
+                                                        $parameter->example->node
                                                     ),
                                                 );
                                             }
@@ -252,7 +252,7 @@ final class OperationTest
                             [
                                 ...((static function (array $parameters): iterable {
                                     foreach ($parameters as $parameter) {
-                                        yield new Arg($parameter->exampleNode);
+                                        yield new Arg($parameter->example->node);
                                     }
                                 })($operation->parameters)),
                                 ...($request === null ? [] : [
@@ -524,7 +524,7 @@ final class OperationTest
                                                     continue;
                                                 }
 
-                                                $items[] = $parameter->example;
+                                                $items[] = $parameter->example->raw;
                                             }
 
                                             return $items;
@@ -537,7 +537,7 @@ final class OperationTest
                                                 continue;
                                             }
 
-                                            $items[] = $parameter->targetName . '=' . $parameter->example;
+                                            $items[] = $parameter->targetName . '=' . $parameter->example->raw;
                                         }
 
                                         return count($items) > 0 ? '?' . implode('&', $items) : '';

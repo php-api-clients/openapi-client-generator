@@ -9,18 +9,9 @@ use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use cebe\openapi\spec\Schema as baseSchema;
-use Ckr\Util\ArrayMerger;
-use DateTimeInterface;
 use Jawira\CaseConverter\Convert;
-use Ramsey\Uuid\Uuid;
-use ReverseRegex\Generator\Scope;
-use ReverseRegex\Lexer;
-use ReverseRegex\Parser;
 
 use function count;
-use function is_array;
-use function property_exists;
-use function Safe\date;
 use function str_replace;
 use function strlen;
 
@@ -36,12 +27,21 @@ final class Property
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Property {
         $exampleData = null;
 
-        if (property_exists($property, 'examples') && count($property->examples ?? []) > 0) {
-            $exampleData = $property->examples[0];
-        } elseif (property_exists($property, 'example') && $property->example !== null) {
+        /** @phpstan-ignore-next-line */
+        if (count($property->examples ?? []) > 0) {
+            // Main reason we're doing this is so we cause more variety in the example data when a list of examples is provided, but also consistently pick the same item so we do don't cause code churn
+            /** @phpstan-ignore-next-line */
+            $exampleData = $property->examples[strlen($propertyName) % 2 ? 0 : count($property->examples) - 1];
+        }
+
+        if ($exampleData === null && $property->example !== null) {
             $exampleData = $property->example;
-        } elseif (property_exists($property, 'enum') && count($property->enum ?? []) > 0) {
-            $exampleData = $property->enum[0];
+        }
+
+        if ($exampleData === null && count($property->enum ?? []) > 0) {
+            // Main reason we're doing this is so we cause more variety in the enum based example data, but also consistently pick the same item so we do don't cause code churn
+            /** @phpstan-ignore-next-line */
+            $exampleData = $property->enum[strlen($propertyName) % 2 ? 0 : count($property->enum) - 1];
         }
 
         $propertyName = str_replace([
@@ -74,7 +74,7 @@ final class Property
             }
         }
 
-        $exampleData = self::generateExampleData($exampleData, $type, $propertyName);
+        $exampleData = ExampleData::gather($exampleData, $type, $propertyName);
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Property(
             (new Convert($propertyName))->toCamel(),
@@ -84,78 +84,5 @@ final class Property
             [$type],
             $type->nullable
         );
-    }
-
-    private static function generateExampleData(mixed $exampleData, PropertyType $type, string $propertyName): mixed
-    {
-        if ($type->type === 'array') {
-            if ($type->payload instanceof Schema) {
-                $exampleData = ArrayMerger::doMerge(
-                    $type->payload->example,
-                    is_array($exampleData) ? $exampleData : [],
-                    ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION,
-                );
-            } elseif ($type->payload instanceof PropertyType) {
-                $exampleData = self::generateExampleData($exampleData, $type->payload, $propertyName);
-            }
-
-            return [$exampleData];
-        }
-
-        if ($type->payload instanceof Schema) {
-            return ArrayMerger::doMerge($type->payload->example, is_array($exampleData) ? $exampleData : [], ArrayMerger::FLAG_OVERWRITE_NUMERIC_KEY | ArrayMerger::FLAG_ALLOW_SCALAR_TO_ARRAY_CONVERSION);
-        }
-
-        if ($exampleData === null && $type->type === 'scalar') {
-            if ($type->payload === 'int' || $type->payload === '?int') {
-                return 13;
-            }
-
-            if ($type->payload === 'float' || $type->payload === '?float' || $type->payload === 'int|float' || $type->payload === 'null|int|float') {
-                return 13.13;
-            }
-
-            if ($type->payload === 'bool' || $type->payload === '?bool') {
-                return false;
-            }
-
-            if ($type->payload === 'string' || $type->payload === '?string') {
-                if ($type->pattern !== null) {
-                    $result = '';
-
-                    /** @phpstan-ignore-next-line */
-                    @(new Parser(new Lexer($type->pattern), new Scope(), new Scope()))->parse()->getResult()->generate(
-                        $result,
-                        new IntegerReturnerPretendingToBeARandomNumberGenerator(strlen($type->pattern)),
-                    );
-
-                    return $result;
-                }
-
-                if ($type->format === 'uri') {
-                    return 'https://example.com/';
-                }
-
-                if ($type->format === 'date-time') {
-                    return date(DateTimeInterface::RFC3339, 0);
-                }
-
-                if ($type->format === 'uuid') {
-                    return Uuid::getFactory()->uuid6()->toString();
-                }
-
-                if ($type->format === 'ipv4') {
-                    return '127.0.0.1';
-                }
-
-                if ($type->format === 'ipv6') {
-                    return '::1';
-                }
-
-                return 'generated_' . $propertyName . '_' . ($type->format ?? 'null');
-            }
-        }
-
-        return $exampleData;
     }
 }

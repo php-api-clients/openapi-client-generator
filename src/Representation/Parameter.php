@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
-use PhpParser\Node;
-
 final class Parameter
 {
     public function __construct(
@@ -16,8 +14,7 @@ final class Parameter
         public readonly ?string $format,
         public readonly string $location,
         public readonly mixed $default,
-        public readonly mixed $example,
-        public readonly Node\Expr $exampleNode,
+        public readonly ExampleData $example,
     ) {
     }
 }

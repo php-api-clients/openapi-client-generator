@@ -159,7 +159,6 @@ final class Type
         }
 
         if ($type === 'object') {
-//            echo Utils::className($className . '\\' . $propertyName), PHP_EOL;
             return new PropertyType(
                 'object',
                 null,

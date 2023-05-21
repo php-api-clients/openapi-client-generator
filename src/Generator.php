@@ -29,6 +29,7 @@ use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Step;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
+use OndraM\CiDetector\CiDetector;
 use PhpParser\Node;
 use PhpParser\PrettyPrinter\Standard;
 use RuntimeException;
@@ -49,6 +50,7 @@ use function getenv;
 use function is_string;
 use function ltrim;
 use function md5;
+use function realpath;
 use function Safe\file_get_contents;
 use function Safe\file_put_contents;
 use function Safe\json_decode;
@@ -57,6 +59,7 @@ use function Safe\mkdir;
 use function Safe\unlink;
 use function str_replace;
 use function strlen;
+use function strpos;
 use function trim;
 use function usleep;
 use function WyriHaximus\Twig\render;
@@ -81,6 +84,7 @@ final readonly class Generator
         $this->forceGeneration = is_string(getenv('FORCE_GENERATION')) && strlen(getenv('FORCE_GENERATION')) > 0;
 
         $this->statusOutput = new StatusOutput(
+            ! (new CiDetector())->isCiDetected(),
             new Step('hash_current_spec', 'Hashing current spec', false),
             new Step('loading_state', 'Loading state', false),
             new Step('loading_spec', 'Loading spec', false),
@@ -106,14 +110,13 @@ final readonly class Generator
             new Step('generating_templates_files_subsplit_package', 'Generating: Templates Files: SubSplit Packages', true),
             new Step('generating_subsplit_configuration', 'Generating: SubSplit Configuration', false),
         );
-        $this->statusOutput->render();
 
-        if (!$this->configuration->entryPoints->operations){
+        if (! $this->configuration->entryPoints->operations) {
             $this->statusOutput->markStepWontDo('generating_operationsinterface_entry_point');
             $this->statusOutput->markStepWontDo('generating_operations_entry_point');
         }
 
-        if (!$this->configuration->entryPoints->webHooks){
+        if (! $this->configuration->entryPoints->webHooks) {
             $this->statusOutput->markStepWontDo('generating_webhooks');
             $this->statusOutput->markStepWontDo('generating_webhooks_entry_point');
         }
@@ -366,8 +369,10 @@ final readonly class Generator
             );
 
             $this->statusOutput->markStepBusy('client_single');
+
             /** @phpstan-ignore-next-line */
             yield from $this->oneClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+
             $this->statusOutput->markStepDone('client_single');
         } else {
             $this->statusOutput->markStepWontDo(
@@ -376,8 +381,10 @@ final readonly class Generator
             );
 
             $this->statusOutput->markStepBusy('client_subsplit');
+
             /** @phpstan-ignore-next-line */
             yield from $this->subSplitClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+
             $this->statusOutput->markStepDone('client_subsplit');
         }
     }
@@ -803,7 +810,7 @@ final readonly class Generator
                     }
                 }
 
-                if (!is_string($split)) {
+                if (! is_string($split)) {
                     continue;
                 }
 

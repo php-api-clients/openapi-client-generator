@@ -17,6 +17,7 @@ use function current;
 use function in_array;
 use function is_array;
 use function is_string;
+use function range;
 use function str_replace;
 
 final class Type
@@ -169,7 +170,7 @@ final class Type
         if ($type === 'array') {
             $arrayItems = [];
 
-            foreach (range(0, ($property->maxItems ?? $property->minItems ?? 2) -1) as $index) {
+            foreach (range(0, ($property->maxItems ?? $property->minItems ?? 2) - 1) as $index) {
                 $arrayItems[] = self::gather(
                     $baseNamespace,
                     $className,

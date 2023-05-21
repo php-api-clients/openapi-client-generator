@@ -50,7 +50,7 @@ final class Operation
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
         $parameters = [];
-        $empties  = [];
+        $empties    = [];
         foreach ($operation->parameters as $parameter) {
             $parameterType = str_replace([
                 'integer',
@@ -70,7 +70,7 @@ final class Operation
                 $parameter->schema->format,
                 $parameter->in,
                 $parameter->schema->default,
-                ExampleData::scalarData(strlen($parameter->name),$parameterType, $parameter->schema->format),
+                ExampleData::scalarData(strlen($parameter->name), $parameterType, $parameter->schema->format),
             );
         }
 
@@ -91,7 +91,7 @@ final class Operation
 
         $response = [];
         foreach ($operation->responses ?? [] as $code => $spec) {
-            $isError = $code >= 400;
+            $isError      = $code >= 400;
             $contentCount = 0;
             foreach ($spec->content as $contentType => $contentTypeMediaType) {
                 $contentCount++;
@@ -126,22 +126,24 @@ final class Operation
                 $returnType[] = $responseClassname;
             }
 
-            if ($contentCount === 0) {
-                $headers = [];
-                foreach ($spec->headers as $headerName => $headerSpec) {
-                    $headers[$headerName] = new Header($headerName, Schema::gather(
-                        $baseNamespace,
-                        $schemaRegistry->get(
-                            $headerSpec->schema,
-                            'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
-                        ),
-                        $headerSpec->schema,
-                        $schemaRegistry
-                    ), ExampleData::determiteType($headerSpec->example));
-                }
-
-                $empties[] = new OperationEmptyResponse($code, $spec->description, $headers);
+            if ($contentCount !== 0) {
+                continue;
             }
+
+            $headers = [];
+            foreach ($spec->headers as $headerName => $headerSpec) {
+                $headers[$headerName] = new Header($headerName, Schema::gather(
+                    $baseNamespace,
+                    $schemaRegistry->get(
+                        $headerSpec->schema,
+                        'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
+                    ),
+                    $headerSpec->schema,
+                    $schemaRegistry
+                ), ExampleData::determiteType($headerSpec->example));
+            }
+
+            $empties[] = new OperationEmptyResponse($code, $spec->description, $headers);
         }
 
         if (count($returnType) === 0) {

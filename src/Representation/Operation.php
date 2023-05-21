@@ -9,12 +9,12 @@ use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 final readonly class Operation
 {
     /**
-     * @param array<mixed>                $metaData
-     * @param array<string>               $returnType
-     * @param array<Parameter>            $parameters
-     * @param array<OperationRequestBody> $requestBody
-     * @param array<OperationResponse>    $response
-     * @param array<OperationEmptyResponse>    $empty
+     * @param array<mixed>                  $metaData
+     * @param array<string>                 $returnType
+     * @param array<Parameter>              $parameters
+     * @param array<OperationRequestBody>   $requestBody
+     * @param array<OperationResponse>      $response
+     * @param array<OperationEmptyResponse> $empty
      */
     public function __construct(
         public ClassString $className,

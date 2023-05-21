@@ -84,7 +84,7 @@ final class Client
             );
         }
 
-        if ($configuration->entryPoints->webHooks){
+        if ($configuration->entryPoints->webHooks) {
             $class->addStmt(
                 $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate()
             );
@@ -260,7 +260,7 @@ final class Client
                             ]
                         ),
                     ),
-                ] : [])
+                ] : []),
             ])
         );
 

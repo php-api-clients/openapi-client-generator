@@ -12,7 +12,7 @@ final class Schema
     /**
      * @param array<mixed>    $example
      * @param array<Property> $properties
-     * @param array<string> $type
+     * @param array<string>   $type
      */
     public function __construct(
         public readonly ClassString $className,

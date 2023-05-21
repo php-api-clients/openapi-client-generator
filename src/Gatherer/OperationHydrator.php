@@ -18,8 +18,10 @@ final class OperationHydrator
 
         foreach ($operations as $operation) {
             foreach ($operation->response as $response) {
-                foreach (HydratorUtils::listSchemas($response->schema) as $schema) {
-                    $schemaClasses[] = $schema;
+                if ($response->content->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                    foreach (HydratorUtils::listSchemas($response->content->payload) as $schema) {
+                        $schemaClasses[] = $schema;
+                    }
                 }
             }
         }

@@ -140,7 +140,28 @@ final class Operator
         }
 
         $class->addStmt(
-            $factory->method('call')->makePublic()->setReturnType('\\' . PromiseInterface::class)->addParams($callParams)->addStmts([
+            $factory->method('call')->makePublic()->setDocComment(implode(PHP_EOL, [
+                '/**',
+                ' * @return \\' . PromiseInterface::class . '<' . (static function (Representation\Operation $operation): string {
+                    /** @phpstan-ignore-next-line */
+                    $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
+                    if ($returnType === null) {
+                        return 'void';
+                    }
+
+                    if ((string) $returnType === 'mixed') {
+                        return (string) $returnType;
+                    }
+
+                    return implode('|',
+                        array_map(
+                            static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
+                            explode('|', (string) $returnType),
+                        )
+                    );
+                })($operation) . '>',
+                ' **/',
+            ]))->setReturnType('\\' . PromiseInterface::class)->addParams($callParams)->addStmts([
                 new Node\Stmt\Expression(new Node\Expr\Assign(
                     new Node\Expr\Variable('operation'),
                     new Node\Expr\New_(
@@ -224,7 +245,7 @@ final class Operator
                                 'uses' => [
                                     new Node\Expr\Variable('operation'),
                                 ],
-                                'returnType' => (static function (Representation\Operation $operation, ClassString $classString): Node\UnionType|Node\Name {
+                                'returnType' => (static function (Representation\Operation $operation): Node\UnionType|Node\Name {
                                     /** @phpstan-ignore-next-line */
                                     $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
                                     if ($returnType === null) {
@@ -239,11 +260,11 @@ final class Operator
 
                                     return new Node\UnionType(
                                         array_map(
-                                            static fn (string $object): Node\Name => new Node\Name('\\' . $object),
+                                            static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
                                             explode('|', (string) $returnType),
                                         )
                                     );
-                                })($operation, $operation->className),
+                                })($operation),
                             ])),
                         ],
                     ),

@@ -12,6 +12,7 @@ final class Schema
     /**
      * @param array<mixed>    $example
      * @param array<Property> $properties
+     * @param array<string> $type
      */
     public function __construct(
         public readonly ClassString $className,
@@ -25,6 +26,7 @@ final class Schema
         public readonly array $properties,
         public readonly baseSchema $schema,
         public readonly bool $isArray,
+        public readonly array $type,
     ) {
     }
 }

@@ -162,7 +162,7 @@ final class Operations
                 $factory->method((new Convert($operation->name))->toCamel())->makePublic()->setReturnType('\\' . PromiseInterface::class)->addParams([
                     ...(static function (array $params): iterable {
                         foreach ($params as $param) {
-                            yield (new Param($param->targetName))->setType($param->type === '' ? 'mixed' : $param->type);
+                            yield (new Param($param->name))->setType($param->type === '' ? 'mixed' : $param->type);
                         }
                     })($operation->parameters),
                     ...(count($operation->requestBody) > 0 ? [
@@ -247,7 +247,7 @@ final class Operations
                             [
                                 ...(static function (array $params): iterable {
                                     foreach ($params as $param) {
-                                        yield new Arg(new Node\Expr\Variable($param->targetName));
+                                        yield new Arg(new Node\Expr\Variable($param->name));
                                     }
                                 })($operation->parameters),
                                 ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),

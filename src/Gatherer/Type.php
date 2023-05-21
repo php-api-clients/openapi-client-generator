@@ -9,6 +9,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Schema as baseSchema;
+use NumberToWords\NumberToWords;
 
 use function array_filter;
 use function count;
@@ -28,6 +29,9 @@ final class Type
         bool $required,
         SchemaRegistry $schemaRegistry,
     ): PropertyType {
+        $type     = $property->type;
+        $nullable = ! $required;
+
         if (is_array($property->allOf) && count($property->allOf) > 0) {
             return self::gather(
                 $baseNamespace,
@@ -55,13 +59,39 @@ final class Type
                 );
             }
 
-            return self::gather(
-                $baseNamespace,
-                $className,
-                $propertyName,
-                $property->oneOf[0],
-                $required,
-                $schemaRegistry,
+            return new PropertyType(
+                'union',
+                null,
+                null,
+                [
+                    ...(static function (
+                        Namespace_ $baseNamespace,
+                        string $className,
+                        string $propertyName,
+                        array $properties,
+                        bool $required,
+                        SchemaRegistry $schemaRegistry,
+                    ): iterable {
+                        foreach ($properties as $index => $property) {
+                            yield self::gather(
+                                $baseNamespace,
+                                $className,
+                                $propertyName . '\\' . NumberToWords::transformNumber('en', $index),
+                                $property,
+                                $required,
+                                $schemaRegistry,
+                            );
+                        }
+                    })(
+                        $baseNamespace,
+                        $className,
+                        $propertyName,
+                        $property->oneOf,
+                        $required,
+                        $schemaRegistry,
+                    ),
+                ],
+                $nullable,
             );
         }
 
@@ -81,18 +111,41 @@ final class Type
                 );
             }
 
-            return self::gather(
-                $baseNamespace,
-                $className,
-                $propertyName,
-                $property->anyOf[0],
-                $required,
-                $schemaRegistry,
+            return new PropertyType(
+                'union',
+                null,
+                null,
+                [
+                    ...(static function (
+                        Namespace_ $baseNamespace,
+                        string $className,
+                        string $propertyName,
+                        array $properties,
+                        bool $required,
+                        SchemaRegistry $schemaRegistry,
+                    ): iterable {
+                        foreach ($properties as $index => $property) {
+                            yield self::gather(
+                                $baseNamespace,
+                                $className,
+                                $propertyName . '\\' . NumberToWords::transformNumber('en', $index),
+                                $property,
+                                $required,
+                                $schemaRegistry,
+                            );
+                        }
+                    })(
+                        $baseNamespace,
+                        $className,
+                        $propertyName,
+                        $property->anyOf,
+                        $required,
+                        $schemaRegistry,
+                    ),
+                ],
+                $nullable,
             );
         }
-
-        $type     = $property->type;
-        $nullable = ! $required;
 
         if (
             is_array($type) &&
@@ -114,18 +167,24 @@ final class Type
         }
 
         if ($type === 'array') {
-            return new PropertyType(
-                'array',
-                null,
-                null,
-                self::gather(
+            $arrayItems = [];
+
+            foreach (range(0, ($property->maxItems ?? $property->minItems ?? 2) -1) as $index) {
+                $arrayItems[] = self::gather(
                     $baseNamespace,
                     $className,
                     $propertyName,
                     $property->items,
                     $required,
                     $schemaRegistry,
-                ),
+                );
+            }
+
+            return new PropertyType(
+                'array',
+                null,
+                null,
+                $arrayItems,
                 $nullable
             );
         }
@@ -153,7 +212,7 @@ final class Type
                 'scalar',
                 null,
                 null,
-                'mixed',
+                'string',
                 false,
             );
         }

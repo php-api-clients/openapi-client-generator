@@ -6,23 +6,29 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema\CastUnionToType;
 use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use EventSauce\ObjectHydrator\MapFrom;
 use EventSauce\ObjectHydrator\PropertyCasters\CastListToType;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Class_;
 
+use function array_filter;
 use function array_unique;
 use function count;
 use function explode;
+use function gettype;
 use function implode;
+use function is_array;
 use function is_string;
 use function md5;
 use function Safe\json_encode;
 use function str_replace;
 use function strlen;
+use function trim;
 
 use const PHP_EOL;
 
@@ -125,42 +131,62 @@ final class Schema
             }
 
             $types = [];
-            foreach ($property->type as $type) {
-                if ($type->type === 'array' && ! is_string($type->payload)) {
-                    if ($type->payload instanceof Representation\PropertyType) {
-                        if (! $type->payload->payload instanceof Representation\PropertyType) {
-                            $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . ($type->payload->payload instanceof Representation\Schema ? $type->payload->payload->className->fullyQualified->source : $type->payload->payload) . '> $' . $property->name;
+            if ($property->type->type === 'union' && is_array($property->type->payload)) {
+                $types[] = self::buildUnionType($property->type);
+            }
+
+            if ($property->type->type === 'array' && ! is_string($property->type->payload)) {
+                if ($property->type->payload instanceof Representation\PropertyType) {
+                    if (! $property->type->payload->payload instanceof Representation\PropertyType) {
+                        $iterableType = $property->type->payload;
+                        if ($iterableType->payload instanceof Representation\Schema) {
+                            $iterableType = $iterableType->payload->className->fullyQualified->source;
                         }
 
-                        if ($type->payload->payload instanceof Representation\Schema) {
-                            $constructorParam->addAttribute(
-                                new Node\Attribute(
-                                    new Node\Name('\\' . CastListToType::class),
-                                    [
-                                        new Node\Arg(new Node\Expr\ClassConstFetch(
-                                            new Node\Name($type->payload->payload->className->relative),
-                                            'class',
-                                        )),
-                                    ],
-                                ),
-                            );
+                        if ($iterableType instanceof Representation\PropertyType && (($iterableType->payload instanceof Representation\PropertyType && $iterableType->payload->type === 'union') || is_array($iterableType->payload))) {
+                            $schemaClasses = [...self::getUnionTypeSchemas($iterableType)];
+                            $iterableType  = self::buildUnionType($iterableType);
+
+                            if (count($schemaClasses) > 0) {
+                                $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+
+                                yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
+
+                                $constructorParam->addAttribute(
+                                    new Node\Attribute(
+                                        new Node\Name($castToUnionToType->fullyQualified->source),
+                                    ),
+                                );
+                            }
                         }
+
+                        if ($iterableType instanceof Representation\PropertyType) {
+                            $iterableType = $iterableType->payload;
+                        }
+
+                        $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . $iterableType . '> $' . $property->name;
                     }
 
-                    $types[] = 'array';
-                    continue;
+                    if ($property->type->payload->payload instanceof Representation\Schema) {
+                        $constructorParam->addAttribute(
+                            new Node\Attribute(
+                                new Node\Name('\\' . CastListToType::class),
+                                [
+                                    new Node\Arg(new Node\Expr\ClassConstFetch(
+                                        new Node\Name($property->type->payload->payload->className->relative),
+                                        'class',
+                                    )),
+                                ],
+                            ),
+                        );
+                    }
                 }
 
-                if ($type->payload instanceof Representation\Schema) {
-                    $types[] = $type->payload->className->relative;
-                    continue;
-                }
-
-                if (! is_string($type->payload)) {
-                    continue;
-                }
-
-                $types[] = $type->payload;
+                $types[] = 'array';
+            } elseif ($property->type->payload instanceof Representation\Schema) {
+                $types[] = $property->type->payload->className->relative;
+            } elseif (is_string($property->type->payload)) {
+                $types[] = $property->type->payload;
             }
 
             $types = array_unique($types);
@@ -186,6 +212,57 @@ final class Schema
             $aliasClass = $factory->class($alias->className)->makeFinal()->makeReadonly()->extend($className->relative);
 
             yield new File($pathPrefix, $alias->className, $aliasTms->addStmt($aliasClass)->getNode());
+        }
+    }
+
+    private static function buildUnionType(Representation\PropertyType $type): string
+    {
+        $typeList = [];
+        if (is_array($type->payload)) {
+            foreach ($type->payload as $typeInUnion) {
+                $typeList[] = match (gettype($typeInUnion->payload)) {
+                    'string' => $typeInUnion->payload,
+                    'array' => 'array',
+                    'object' => match ($typeInUnion->payload::class) {
+                        Representation\Schema::class => $typeInUnion->payload->className->relative,
+                        Representation\PropertyType::class => self::buildUnionType($typeInUnion->payload),
+                    },
+                };
+            }
+        } else {
+            $typeList[] = $type->payload;
+        }
+
+        return implode(
+            '|',
+            array_unique(
+                array_filter(
+                    $typeList,
+                    static fn (string $item): bool => strlen(trim($item)) > 0,
+                ),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<Representation\Schema>
+     */
+    private static function getUnionTypeSchemas(Representation\PropertyType $type): iterable
+    {
+        if (! is_array($type->payload)) {
+            return;
+        }
+
+        foreach ($type->payload as $typeInUnion) {
+            if ($typeInUnion->payload instanceof Representation\Schema) {
+                yield $typeInUnion->payload;
+            }
+
+            if (! ($typeInUnion->payload instanceof Representation\PropertyType)) {
+                continue;
+            }
+
+            yield from self::getUnionTypeSchemas($typeInUnion->payload);
         }
     }
 }

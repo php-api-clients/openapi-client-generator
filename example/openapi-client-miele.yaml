@@ -4,19 +4,23 @@ state:
     - composer.json
     - composer.lock
 spec: https://www.miele.com/developer/swagger-ui/m3rdapi.yaml
+#spec: m3rdapi.yaml
 namespace:
   source: ApiClients\Client\Miele
   test: ApiClients\Tests\Client\Miele
 entryPoints:
   call: true
   operations: true
-  webHooks: true
+  webHooks: false
 destination:
   root: generated-miele
   source: src
   test: tests
 templates:
-  dir: ../templates
+  dir: templates
+  variables:
+    fullname: Miele
+    packageName: miele
 schemas:
   allowDuplication: true
   useAliasesForDuplication: true

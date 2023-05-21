@@ -10,6 +10,7 @@ use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Gatherer\ExampleData;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use Jawira\CaseConverter\Convert;
 use NumberToWords\NumberToWords;
 use PhpParser\Builder\Method;
@@ -25,8 +26,10 @@ use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
 
 use function count;
 use function implode;
+use function is_array;
 use function Safe\preg_replace;
 use function str_replace;
+use function strtolower;
 
 use const PHP_EOL;
 
@@ -52,12 +55,12 @@ final class OperationTest
 
         foreach ($operation->response as $contentTypeSchema) {
             $contentTypePayloads = $contentTypeSchema->content->payload;
-            if (!is_array($contentTypePayloads)) {
+            if (! is_array($contentTypePayloads)) {
                 $contentTypePayloads = [$contentTypePayloads];
             }
 
             foreach ($contentTypePayloads as $index => $contentTypePayload) {
-                if (!$contentTypePayload instanceof Representation\Schema) {
+                if (! $contentTypePayload instanceof Representation\Schema) {
                     continue;
                 }
 
@@ -106,7 +109,7 @@ final class OperationTest
                             );
                         }
 
-                        if (!$configuration->entryPoints->operations) {
+                        if (! $configuration->entryPoints->operations) {
                             continue;
                         }
 
@@ -125,7 +128,6 @@ final class OperationTest
                 }
             }
         }
-
 
         foreach ($operation->empty as $emptyResponse) {
             if (count($operation->requestBody) === 0) {
@@ -172,7 +174,7 @@ final class OperationTest
                         );
                     }
 
-                    if (!$configuration->entryPoints->operations) {
+                    if (! $configuration->entryPoints->operations) {
                         continue;
                     }
 
@@ -204,7 +206,7 @@ final class OperationTest
                 ),
                 'SCHEMA_EXAMPLE_DATA',
             );
-        } else if ($response instanceof Representation\OperationResponse) {
+        } elseif ($response instanceof Representation\OperationResponse) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
         } else {
             $responseSchemaFetch = new Node\Scalar\String_('');
@@ -323,7 +325,7 @@ final class OperationTest
                 ),
                 'SCHEMA_EXAMPLE_DATA',
             );
-        } else if ($response instanceof Representation\OperationResponse) {
+        } elseif ($response instanceof Representation\OperationResponse) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
         } else {
             $responseSchemaFetch = new Node\Scalar\String_('');
@@ -408,7 +410,7 @@ final class OperationTest
                             new Node\Expr\Variable(
                                 'result',
                             ),
-                        )
+                        ),
                     ],
                 ),
                 new Node\Expr\StaticCall(
@@ -427,7 +429,7 @@ final class OperationTest
                                 ),
                                 new Node\Scalar\String_('code'),
                             ),
-                        )
+                        ),
                     ],
                 ),
                 ...(static function (Representation\Header ...$headers): iterable {
@@ -443,7 +445,7 @@ final class OperationTest
                                     new Node\Expr\Variable(
                                         'result',
                                     ),
-                                )
+                                ),
                             ],
                         );
                         yield new Node\Expr\StaticCall(
@@ -460,7 +462,7 @@ final class OperationTest
                                         ),
                                         new Node\Scalar\String_(strtolower($header->name)),
                                     ),
-                                )
+                                ),
                             ],
                         );
                     }
@@ -530,7 +532,7 @@ final class OperationTest
                                     ]),
                                 ),
                                 new Arg(
-                                    $contentTypePayload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema && $contentTypePayload->isArray ? new Node\Expr\BinaryOp\Concat(
+                                    $contentTypePayload instanceof Schema && $contentTypePayload->isArray ? new Node\Expr\BinaryOp\Concat(
                                         new Node\Scalar\String_('['),
                                         new Node\Expr\BinaryOp\Concat(
                                             $responseSchemaFetch,

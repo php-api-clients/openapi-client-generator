@@ -6,16 +6,18 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use cebe\openapi\spec\Schema as baseSchema;
 use Jawira\CaseConverter\Convert;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use PhpParser\Node;
 use NumberToWords\NumberToWords;
+use PhpParser\Node;
 
 use function array_filter;
 use function array_values;
 use function count;
+use function is_array;
 use function preg_replace_callback;
+use function str_pad;
 use function str_replace;
 use function strlen;
 
@@ -90,13 +92,13 @@ final class Property
         }
 
         if ($property->type === 'array' && is_array($type->payload)) {
-            $arrayItemsRaw = [];
+            $arrayItemsRaw  = [];
             $arrayItemsNode = [];
 
             foreach ($type->payload as $index => $arrayItem) {
                 $arrayItemExampleData = ExampleData::gather($exampleData, $arrayItem, $propertyName . str_pad('', $index + 1, '_'));
-                $arrayItemsRaw[] = $arrayItemExampleData->raw;
-                $arrayItemsNode[] = new Node\Expr\ArrayItem($arrayItemExampleData->node);
+                $arrayItemsRaw[]      = $arrayItemExampleData->raw;
+                $arrayItemsNode[]     = new Node\Expr\ArrayItem($arrayItemExampleData->node);
             }
 
             $exampleData = new Representation\ExampleData($arrayItemsRaw, new Node\Expr\Array_($arrayItemsNode));

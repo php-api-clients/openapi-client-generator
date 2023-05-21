@@ -257,22 +257,23 @@ final class Operation
                         continue;
                     }
 
-                    if (!$contentTypeSchema->content->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                    if (! $contentTypeSchema->content->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
                         if ($contentTypeSchema->content->type === 'scalar') {
-                            $returnType[]    = $returnTypeRaw[] = $contentTypeSchema->content->payload;
+                            $returnType[] = $returnTypeRaw[] = $contentTypeSchema->content->payload;
 
                             $caseCases[] = new Node\Stmt\Case_(
                                 new Node\Scalar\LNumber($contentTypeSchema->code),
                                 [
-                                        new Node\Stmt\Return_(
-                                            new Node\Expr\Variable(
-                                                'body',
-                                            ),
+                                    new Node\Stmt\Return_(
+                                        new Node\Expr\Variable(
+                                            'body',
                                         ),
-                                    ],
+                                    ),
+                                ],
                             );
                             continue;
                         }
+
                         continue;
                     }
 
@@ -332,7 +333,7 @@ final class Operation
                                     'SCHEMA_JSON',
                                 )),
                                 new Arg(new Node\Expr\ClassConstFetch(
-                                    new Node\Name('\\' . \cebe\openapi\spec\Schema::class),
+                                    new Node\Name('\\' . Schema::class),
                                     'class',
                                 )),
                             ])),
@@ -637,7 +638,7 @@ final class Operation
 
                 $returnType[]    = 'array{' . implode(',', array_keys($arrayItems)) . '}';
                 $returnTypeRaw[] = 'array';
-                $empties[]     = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
+                $empties[]       = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
             }
 
             $emptyCase = new Node\Stmt\Case_(

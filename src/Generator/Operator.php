@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
-use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
@@ -28,6 +27,10 @@ use function array_filter;
 use function array_map;
 use function count;
 use function explode;
+use function implode;
+use function strpos;
+
+use const PHP_EOL;
 
 final class Operator
 {
@@ -153,7 +156,8 @@ final class Operator
                         return (string) $returnType;
                     }
 
-                    return implode('|',
+                    return implode(
+                        '|',
                         array_map(
                             static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
                             explode('|', (string) $returnType),

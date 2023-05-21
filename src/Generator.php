@@ -231,10 +231,10 @@ final readonly class Generator
 
                 file_put_contents($fileName, $fileContents);
                 $this->state->generatedFiles->upsert($fileName, $fileContentsHash);
-            }
 
-            while (! file_exists($fileName) || $fileContentsHash !== md5(file_get_contents($fileName))) {
-                usleep(100);
+                while (! file_exists($fileName) || $fileContentsHash !== md5(file_get_contents($fileName))) {
+                    usleep(100);
+                }
             }
 
             include_once $fileName;

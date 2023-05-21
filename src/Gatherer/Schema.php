@@ -72,6 +72,7 @@ final class Schema
             $properties,
             $schema,
             $isArray,
+            ($schema->type === null ? ['object'] : (is_array($schema->type) ? $schema->type : [$schema->type]))
         );
     }
 }

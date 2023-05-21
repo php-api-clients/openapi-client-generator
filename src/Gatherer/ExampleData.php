@@ -46,9 +46,14 @@ final class ExampleData
         }
 
         if ($exampleData === null && $type->type === 'scalar' && is_string($type->payload)) {
-            return self::scalarData($type->payload, $type->format, $type->pattern);
+            return self::scalarData(strlen($propertyName), $type->payload, $type->format, $type->pattern);
         }
 
+        return self::determiteType($exampleData);
+    }
+
+    public static function determiteType(mixed $exampleData): Representation\ExampleData
+    {
         return match (gettype($exampleData)) {
             'boolean' => new Representation\ExampleData(
                 $exampleData,
@@ -83,14 +88,14 @@ final class ExampleData
     }
 
     /** @phpstan-ignore-next-line */
-    public static function scalarData(string $type, ?string $format, ?string $pattern = null): Representation\ExampleData
+    public static function scalarData(int $seed, string $type, ?string $format, ?string $pattern = null): Representation\ExampleData
     {
         if ($type === 'int' || $type === '?int') {
-            return new Representation\ExampleData(13, new Node\Scalar\LNumber(13));
+            return new Representation\ExampleData($seed, new Node\Scalar\LNumber($seed));
         }
 
         if ($type === 'float' || $type === '?float' || $type === 'int|float' || $type === 'null|int|float') {
-            return new Representation\ExampleData(13.13, new Node\Scalar\DNumber(13.13));
+            return new Representation\ExampleData($seed / 10, new Node\Scalar\DNumber($seed / 10));
         }
 
         if ($type === 'bool' || $type === '?bool') {

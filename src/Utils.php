@@ -22,8 +22,8 @@ final class Utils
     public static function className(string $className): string
     {
         $className = str_replace(
-            ['{', '}', '-', '$', '+', '*', '.', ';', '='],
-            ['', '', '_', '_', '_', '_', '_', '_', '_'],
+            ['{', '}', '-', '$', '+', '*', '.', ';', '=', ' '],
+            ['', '', '_', '_', '_', '_', '_', '_', '_', '_'],
             $className,
         );
 

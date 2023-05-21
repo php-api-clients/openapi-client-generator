@@ -108,8 +108,23 @@ final readonly class Generator
         );
         $this->statusOutput->render();
 
+        if (!$this->configuration->entryPoints->operations){
+            $this->statusOutput->markStepWontDo('generating_operationsinterface_entry_point');
+            $this->statusOutput->markStepWontDo('generating_operations_entry_point');
+        }
+
+        if (!$this->configuration->entryPoints->webHooks){
+            $this->statusOutput->markStepWontDo('generating_webhooks');
+            $this->statusOutput->markStepWontDo('generating_webhooks_entry_point');
+        }
+
+        $specLocation = $this->configuration->spec;
+        if (strpos($specLocation, '://') === false) {
+            $specLocation = realpath($configurationLocation . $specLocation);
+        }
+
         $this->statusOutput->markStepBusy('hash_current_spec');
-        $this->currentSpecHash = md5(file_get_contents($this->configuration->spec));
+        $this->currentSpecHash = md5(file_get_contents($specLocation));
         $this->statusOutput->markStepDone('hash_current_spec');
 
         $this->statusOutput->markStepBusy('loading_state');
@@ -152,7 +167,7 @@ final readonly class Generator
         $this->state->specHash = $this->currentSpecHash;
 
         $this->statusOutput->markStepBusy('loading_spec');
-        $this->spec = Reader::readFromYamlFile($this->configuration->spec);
+        $this->spec = Reader::readFromYamlFile($specLocation);
         $this->statusOutput->markStepDone('loading_spec');
     }
 
@@ -167,25 +182,28 @@ final readonly class Generator
         foreach ($this->all($configurationLocation) as $file) {
             $fileName = $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $file->pathPrefix . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $file->fqcn) . '.php';
             if ($file->contents instanceof Node\Stmt\Namespace_) {
-                array_unshift($file->contents->stmts, ...(static function (string $namespace, array $uses): iterable {
+                array_unshift($file->contents->stmts, ...(static function (array $uses): iterable {
                     foreach ($uses as $use => $alias) {
                         yield new Node\Stmt\Use_([
                             new Node\Stmt\UseUse(
                                 new Node\Name(
-                                    ltrim($namespace, '\\') . $use,
+                                    $use,
                                 ),
                                 $alias,
                             ),
                         ]);
                     }
-                })($namespace, [
-                    'Error' => 'ErrorSchemas',
-                    'Hydrator' => null,
-                    'Operation' => null,
-                    'Operator' => null,
-                    'Schema' => null,
-                    'WebHook' => null,
-                    'Router' => null,
+                })([
+                    ltrim($namespace, '\\') . 'Error' => 'ErrorSchemas',
+                    ltrim($namespace, '\\') . 'Hydrator' => null,
+                    ltrim($namespace, '\\') . 'Operation' => null,
+                    ltrim($namespace, '\\') . 'Operator' => null,
+                    ltrim($namespace, '\\') . 'Schema' => null,
+                    ltrim($namespace, '\\') . 'WebHook' => null,
+                    ltrim($namespace, '\\') . 'Router' => null,
+                    'League\OpenAPIValidation' => null,
+                    'React\Http' => null,
+                    'ApiClients\Contracts' => null,
                 ]));
             }
 
@@ -339,7 +357,6 @@ final readonly class Generator
         }
 
         if ($this->configuration->subSplit === null) {
-            $this->statusOutput->markStepDone('client_single');
             $this->statusOutput->markStepWontDo(
                 'client_subsplit',
                 'generating_templates_files_root_package',
@@ -348,17 +365,20 @@ final readonly class Generator
                 'generating_subsplit_configuration',
             );
 
+            $this->statusOutput->markStepBusy('client_single');
             /** @phpstan-ignore-next-line */
             yield from $this->oneClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            $this->statusOutput->markStepDone('client_single');
         } else {
-            $this->statusOutput->markStepDone('client_subsplit');
             $this->statusOutput->markStepWontDo(
                 'client_single',
                 'generating_templated_files',
             );
 
+            $this->statusOutput->markStepBusy('client_subsplit');
             /** @phpstan-ignore-next-line */
             yield from $this->subSplitClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            $this->statusOutput->markStepDone('client_subsplit');
         }
     }
 
@@ -471,54 +491,58 @@ final readonly class Generator
 
         $this->statusOutput->markStepDone('generating_client');
 
-        $this->statusOutput->markStepBusy('generating_operationsinterface_entry_point');
+        if ($this->configuration->entryPoints->operations) {
+            $this->statusOutput->markStepBusy('generating_operationsinterface_entry_point');
 
-        yield from OperationsInterface::generate(
-            $this->configuration,
-            $this->configuration->destination->source . DIRECTORY_SEPARATOR,
-            $operations,
-        );
-
-        $this->statusOutput->markStepDone('generating_operationsinterface_entry_point');
-
-        $this->statusOutput->markStepBusy('generating_operations_entry_point');
-
-        yield from Operations::generate(
-            $this->configuration,
-            $this->configuration->destination->source . DIRECTORY_SEPARATOR,
-            $paths,
-            $operations,
-        );
-
-        $this->statusOutput->markStepDone('generating_operations_entry_point');
-
-        $webHooksHydrators = [];
-        $this->statusOutput->itemForStep('generating_webhooks', count($webHooks));
-        foreach ($webHooks as $event => $webHook) {
-            $webHooksHydrators[$event] = $hydrators[] = WebHookHydrator::gather(
-                $this->configuration->namespace,
-                $event,
-                ...$webHook,
-            );
-
-            yield from WebHook::generate(
+            yield from OperationsInterface::generate(
+                $this->configuration,
                 $this->configuration->destination->source . DIRECTORY_SEPARATOR,
-                $this->configuration->namespace->source . '\\',
-                $event,
-                $schemaRegistry,
-                ...$webHook,
+                $operations,
             );
 
-            $this->statusOutput->advanceStep('generating_webhooks');
+            $this->statusOutput->markStepDone('generating_operationsinterface_entry_point');
+
+            $this->statusOutput->markStepBusy('generating_operations_entry_point');
+
+            yield from Operations::generate(
+                $this->configuration,
+                $this->configuration->destination->source . DIRECTORY_SEPARATOR,
+                $paths,
+                $operations,
+            );
+
+            $this->statusOutput->markStepDone('generating_operations_entry_point');
         }
 
-        $this->statusOutput->markStepDone('generating_webhooks');
+        if ($this->configuration->entryPoints->webHooks) {
+            $webHooksHydrators = [];
+            $this->statusOutput->itemForStep('generating_webhooks', count($webHooks));
+            foreach ($webHooks as $event => $webHook) {
+                $webHooksHydrators[$event] = $hydrators[] = WebHookHydrator::gather(
+                    $this->configuration->namespace,
+                    $event,
+                    ...$webHook,
+                );
 
-        $this->statusOutput->markStepBusy('generating_webhooks_entry_point');
+                yield from WebHook::generate(
+                    $this->configuration->destination->source . DIRECTORY_SEPARATOR,
+                    $this->configuration->namespace->source . '\\',
+                    $event,
+                    $schemaRegistry,
+                    ...$webHook,
+                );
 
-        yield from WebHooks::generate($this->configuration->destination->source . DIRECTORY_SEPARATOR, $this->configuration->namespace->source . '\\', $webHooksHydrators, $webHooks);
+                $this->statusOutput->advanceStep('generating_webhooks');
+            }
 
-        $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+            $this->statusOutput->markStepDone('generating_webhooks');
+
+            $this->statusOutput->markStepBusy('generating_webhooks_entry_point');
+
+            yield from WebHooks::generate($this->configuration->destination->source . DIRECTORY_SEPARATOR, $this->configuration->namespace->source . '\\', $webHooksHydrators, $webHooks);
+
+            $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+        }
 
         $this->statusOutput->itemForStep('generating_hydrators', count($hydrators));
         foreach ($hydrators as $hydrator) {
@@ -659,11 +683,11 @@ final readonly class Generator
 
         $sortedSchemas = [];
         foreach ($schemas as $schema) {
-            if (array_key_exists($schema->className->className, $sortedSchemas)) {
+            if (array_key_exists($schema->className->relative, $sortedSchemas)) {
                 continue;
             }
 
-            $sortedSchemas[$schema->className->className] = [
+            $sortedSchemas[$schema->className->relative] = [
                 'section' => 'common',
                 'sections' => [],
             ];
@@ -745,66 +769,70 @@ final readonly class Generator
 
         $this->statusOutput->markStepDone('generating_client');
 
-        $this->statusOutput->markStepBusy('generating_operationsinterface_entry_point');
+        if ($this->configuration->entryPoints->operations) {
+            $this->statusOutput->markStepBusy('generating_operationsinterface_entry_point');
 
-        yield from OperationsInterface::generate(
-            $this->configuration,
-            $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
-            $operations,
-        );
-
-        $this->statusOutput->markStepDone('generating_operationsinterface_entry_point');
-
-        $this->statusOutput->markStepBusy('generating_operations_entry_point');
-
-        yield from Operations::generate(
-            $this->configuration,
-            $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
-            $paths,
-            $operations,
-        );
-
-        $this->statusOutput->markStepDone('generating_operations_entry_point');
-
-        $this->statusOutput->itemForStep('generating_webhooks', count($webHooks));
-        foreach ($webHooks as $event => $webHook) {
-            $split = null;
-            foreach ($this->configuration->subSplit->sectionGenerator ?? [] as $generator) {
-                $split = $generator::webHook(...$webHook);
-                if (is_string($split)) {
-                    break;
-                }
-            }
-
-            if (! is_string($split)) {
-                continue;
-            }
-
-            $splits[] = $split;
-
-            yield from WebHook::generate(
-                $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, $split) . $this->configuration->destination->source,
-                $this->configuration->namespace->source,
-                $event,
-                $schemaRegistry,
-                ...$webHook,
+            yield from OperationsInterface::generate(
+                $this->configuration,
+                $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
+                $operations,
             );
 
-            $this->statusOutput->advanceStep('generating_webhooks');
+            $this->statusOutput->markStepDone('generating_operationsinterface_entry_point');
+
+            $this->statusOutput->markStepBusy('generating_operations_entry_point');
+
+            yield from Operations::generate(
+                $this->configuration,
+                $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
+                $paths,
+                $operations,
+            );
+
+            $this->statusOutput->markStepDone('generating_operations_entry_point');
         }
 
-        $this->statusOutput->markStepDone('generating_webhooks');
+        if ($this->configuration->entryPoints->webHooks) {
+            $this->statusOutput->itemForStep('generating_webhooks', count($webHooks));
+            foreach ($webHooks as $event => $webHook) {
+                $split = null;
+                foreach ($this->configuration->subSplit->sectionGenerator ?? [] as $generator) {
+                    $split = $generator::webHook(...$webHook);
+                    if (is_string($split)) {
+                        break;
+                    }
+                }
 
-        $this->statusOutput->markStepBusy('generating_webhooks_entry_point');
+                if (!is_string($split)) {
+                    continue;
+                }
 
-        yield from WebHooks::generate(
-            $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
-            $this->configuration->namespace->source,
-            $webHooksHydrators,
-            $webHooks
-        );
+                $splits[] = $split;
 
-        $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+                yield from WebHook::generate(
+                    $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, $split) . $this->configuration->destination->source,
+                    $this->configuration->namespace->source,
+                    $event,
+                    $schemaRegistry,
+                    ...$webHook,
+                );
+
+                $this->statusOutput->advanceStep('generating_webhooks');
+            }
+
+            $this->statusOutput->markStepDone('generating_webhooks');
+
+            $this->statusOutput->markStepBusy('generating_webhooks_entry_point');
+
+            yield from WebHooks::generate(
+                $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
+                $this->configuration->namespace->source,
+                $webHooksHydrators,
+                $webHooks
+            );
+
+            $this->statusOutput->markStepDone('generating_webhooks_entry_point');
+        }
 
         $this->statusOutput->itemForStep('generating_hydrators', count($hydrators));
         foreach ($hydrators as $section => $sectionHydrators) {
@@ -824,6 +852,7 @@ final readonly class Generator
 
         yield from Hydrators::generate(
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
+            $this->configuration->namespace->source . '\\',
             ...(static function (array $hydratorSplit): iterable {
                 foreach ($hydratorSplit as $hydrators) {
                     yield from [...$hydrators];

@@ -17,6 +17,7 @@ final class Raw implements ContentType
         yield 'text/plain';
         yield 'text/x-markdown';
         yield 'text/html';
+        yield 'application/pdf';
     }
 
     public static function parse(Expr $expr): Expr

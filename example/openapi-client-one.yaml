@@ -4,7 +4,7 @@ state:
     - composer.json
     - composer.lock
 spec: https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
-#spec: file:///home/wyrihaximus/Projects/PHPAPIClients/openapi-client-generator/example/api.github.com.yaml
+#spec: api.github.com.yaml
 entryPoints:
   call: true
   operations: true

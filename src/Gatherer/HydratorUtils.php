@@ -17,9 +17,7 @@ final class HydratorUtils
         yield $schema;
 
         foreach ($schema->properties as $property) {
-            foreach ($property->type as $propertyType) {
-                yield from self::listSchemasFromPropertyType($propertyType);
-            }
+            yield from self::listSchemasFromPropertyType($property->type);
         }
     }
 

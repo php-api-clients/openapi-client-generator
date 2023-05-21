@@ -34,9 +34,12 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
+use function is_int;
 use function rtrim;
 use function strlen;
+use function strpos;
 use function strtolower;
+use function substr;
 
 use const PHP_EOL;
 
@@ -129,7 +132,7 @@ final class Operation
             $paramterStmt = $factory->property($parameter->name);
             $param        = new Param($parameter->name);
             if (strlen($parameter->description) > 0) {
-                $paramterStmt->setDocComment('/**' . $parameter->description . '**/');
+                $paramterStmt->setDocComment('/**' . $parameter->description . ' **/');
             }
 
             if ($parameter->type !== '') {
@@ -192,14 +195,12 @@ final class Operation
             )),
         ];
 
-        $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class);
+        $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->makePublic();
         if (count($operation->requestBody) > 0) {
             $createRequestMethod->addParam(
                 $factory->param('data')->setType('array')
             );
         }
-
-        $createRequestMethod->makePublic();
 
         foreach ($operation->requestBody as $requestBody) {
             $requestParameters[] = new Node\Arg(new Node\Expr\Array_([new Node\Expr\ArrayItem(new Node\Scalar\String_($requestBody->contentType), new Node\Scalar\String_('Content-Type'))]));
@@ -248,7 +249,30 @@ final class Operation
             foreach ($contentType::contentType() as $supportedContentType) {
                 $caseCases = [];
                 foreach ($operation->response as $contentTypeSchema) {
-                    if ($supportedContentType !== $contentTypeSchema->contentType) {
+                    $scPosition = strpos($contentTypeSchema->contentType, ';');
+                    if (
+                        (! is_int($scPosition) && $supportedContentType !== $contentTypeSchema->contentType) ||
+                        (is_int($scPosition) && $scPosition >= 0 && $supportedContentType !== substr($contentTypeSchema->contentType, 0, $scPosition))
+                    ) {
+                        continue;
+                    }
+
+                    if (!$contentTypeSchema->content->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                        if ($contentTypeSchema->content->type === 'scalar') {
+                            $returnType[]    = $returnTypeRaw[] = $contentTypeSchema->content->payload;
+
+                            $caseCases[] = new Node\Stmt\Case_(
+                                new Node\Scalar\LNumber($contentTypeSchema->code),
+                                [
+                                        new Node\Stmt\Return_(
+                                            new Node\Expr\Variable(
+                                                'body',
+                                            ),
+                                        ),
+                                    ],
+                            );
+                            continue;
+                        }
                         continue;
                     }
 
@@ -256,13 +280,13 @@ final class Operation
                     $isError       = $contentTypeSchema->code >= 400;
                     if ($isError) {
                         $returnOrThrow = Node\Stmt\Throw_::class;
-                        $throwableSchemaRegistry->add($contentTypeSchema->schema->className->relative);
+                        $throwableSchemaRegistry->add($contentTypeSchema->content->payload->className->relative);
                     }
 
-                    $object = $isError ? $contentTypeSchema->schema->errorClassNameAliased->relative : $contentTypeSchema->schema->className->relative;
+                    $object = $isError ? $contentTypeSchema->content->payload->errorClassNameAliased->relative : $contentTypeSchema->content->payload->className->relative;
                     if (! $isError) {
-                        $returnType[]    = ($contentTypeSchema->schema->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->schema->isArray ? '>' : '');
-                        $returnTypeRaw[] = $contentTypeSchema->schema->isArray ? '\\' . Observable::class : $object;
+                        $returnType[]    = ($contentTypeSchema->content->payload->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->content->payload->isArray ? '>' : '');
+                        $returnTypeRaw[] = $contentTypeSchema->content->payload->isArray ? '\\' . Observable::class : $object;
                     }
 
                     $hydrate = new Node\Expr\MethodCall(
@@ -273,7 +297,7 @@ final class Operation
                         'hydrateObject',
                         [
                             new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($contentTypeSchema->schema->className->relative),
+                                new Node\Name($contentTypeSchema->content->payload->className->relative),
                                 'class',
                             )),
                             new Node\Arg(new Node\Expr\Variable('body')),
@@ -282,7 +306,7 @@ final class Operation
 
                     if ($isError) {
                         $hydrate = new Node\Expr\New_(
-                            new Node\Name($contentTypeSchema->schema->errorClassNameAliased->relative),
+                            new Node\Name($contentTypeSchema->content->payload->errorClassNameAliased->relative),
                             [
                                 new Arg(
                                     new Node\Scalar\LNumber($contentTypeSchema->code),
@@ -301,13 +325,16 @@ final class Operation
                         ),
                         'validate',
                         [
-                            new Node\Arg(new Node\Expr\Variable($contentTypeSchema->schema->isArray ? 'bodyItem' : 'body')),
+                            new Node\Arg(new Node\Expr\Variable($contentTypeSchema->content->payload->isArray ? 'bodyItem' : 'body')),
                             new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
                                 new Arg(new Node\Expr\ClassConstFetch(
-                                    new Node\Name($contentTypeSchema->schema->className->relative),
+                                    new Node\Name($contentTypeSchema->content->payload->className->relative),
                                     'SCHEMA_JSON',
                                 )),
-                                new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
+                                new Arg(new Node\Expr\ClassConstFetch(
+                                    new Node\Name('\\' . \cebe\openapi\spec\Schema::class),
+                                    'class',
+                                )),
                             ])),
                         ]
                     ));
@@ -315,7 +342,7 @@ final class Operation
                     $case = new Node\Stmt\Case_(
                         new Node\Scalar\LNumber($contentTypeSchema->code),
                         [
-                            $contentTypeSchema->schema->isArray ? new Node\Stmt\Foreach_(
+                            $contentTypeSchema->content->payload->isArray ? new Node\Stmt\Foreach_(
                                 new Node\Expr\Variable('body'),
                                 new Node\Expr\Variable('bodyItem'),
                                 [
@@ -323,7 +350,7 @@ final class Operation
                                 ],
                             ) : $validate,
                             new $returnOrThrow(
-                                $contentTypeSchema->schema->isArray ? new Node\Expr\MethodCall(
+                                $contentTypeSchema->content->payload->isArray ? new Node\Expr\MethodCall(
                                     new Node\Expr\StaticCall(
                                         new Node\Name('\\' . Observable::class),
                                         'fromArray',
@@ -354,7 +381,7 @@ final class Operation
                     );
 
                     if (strlen($contentTypeSchema->description) > 0) {
-                        $case->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $contentTypeSchema->description . PHP_EOL . '**/'));
+                        $case->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $contentTypeSchema->description . PHP_EOL . ' **/'));
                     }
 
                     $caseCases[] = $case;
@@ -395,12 +422,12 @@ final class Operation
             }
         }
 
-        $redirectCases = [];
-        foreach ($operation->redirect as $redirect) {
-            $redirects = [];
+        $casesWithoutContent = [];
+        foreach ($operation->empty as $empty) {
+            $empties = [];
 
             if ($operation->matchMethod === 'STREAM') {
-                $redirects[] = new Node\Stmt\Expression(
+                $empties[] = new Node\Stmt\Expression(
                     new Node\Expr\Assign(
                         new Node\Expr\Variable('stream'),
                         new Node\Expr\New_(
@@ -408,7 +435,7 @@ final class Operation
                         ),
                     ),
                 );
-                $redirects[] = new Node\Stmt\Expression(
+                $empties[] = new Node\Stmt\Expression(
                     new Node\Expr\MethodCall(
                         new Node\Expr\MethodCall(
                             new Node\Expr\PropertyFetch(
@@ -585,17 +612,17 @@ final class Operation
                         ],
                     ),
                 );
-                $redirects[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
+                $empties[] = new Node\Stmt\Return_(new Node\Expr\Variable('stream'));
 
                 $returnType[]    = '\\' . Observable::class . '<string>';
                 $returnTypeRaw[] = '\\' . Observable::class;
             } else {
                 $arrayItems              = [];
                 $arrayItems['code: int'] = new Node\Expr\ArrayItem(
-                    new Node\Scalar\LNumber($redirect->code),
+                    new Node\Scalar\LNumber($empty->code),
                     new Node\Scalar\String_('code'),
                 );
-                foreach ($redirect->headers as $header) {
+                foreach ($empty->headers as $header) {
                     $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
                         new Node\Expr\MethodCall(
                             new Node\Expr\Variable('response'),
@@ -610,23 +637,23 @@ final class Operation
 
                 $returnType[]    = 'array{' . implode(',', array_keys($arrayItems)) . '}';
                 $returnTypeRaw[] = 'array';
-                $redirects[]     = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
+                $empties[]     = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
             }
 
-            $redirectCase = new Node\Stmt\Case_(
-                new Node\Scalar\LNumber($redirect->code),
-                $redirects,
+            $emptyCase = new Node\Stmt\Case_(
+                new Node\Scalar\LNumber($empty->code),
+                $empties,
             );
-            if (strlen($redirect->description) > 0) {
-                $redirectCase->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $redirect->description . PHP_EOL . '**/'));
+            if (strlen($empty->description) > 0) {
+                $emptyCase->setDocComment(new Doc('/**' . PHP_EOL . ' * ' . $empty->description . PHP_EOL . ' **/'));
             }
 
-            $redirectCases[] = $redirectCase;
+            $casesWithoutContent[] = $emptyCase;
         }
 
         $createResponseMethod = $factory->method('createResponse')->makePublic();
 
-        if (count($cases) > 0 || count($redirectCases) > 0) {
+        if (count($cases) > 0 || count($casesWithoutContent) > 0) {
             $createResponseMethod->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
@@ -678,16 +705,16 @@ final class Operation
             );
         }
 
-        if (count($redirectCases) > 0) {
+        if (count($casesWithoutContent) > 0) {
             $createResponseMethod->addStmt(
                 new Node\Stmt\Switch_(
                     new Node\Expr\Variable('code'),
-                    $redirectCases,
+                    $casesWithoutContent,
                 ),
             );
         }
 
-        if (count($cases) > 0 || count($redirectCases) > 0) {
+        if (count($cases) > 0 || count($casesWithoutContent) > 0) {
             $createResponseMethod->addStmt(
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(

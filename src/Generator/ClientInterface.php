@@ -105,22 +105,6 @@ final class ClientInterface
             );
         }
 
-//        $class->addStmt(
-//            $factory->method('hydrateObject')->makePublic()->setDocComment(
-//                new Doc(implode(PHP_EOL, [
-//                    '/**',
-//                    ' * @template H',
-//                    ' * @param class-string<H> $className',
-//                    ' * @return H',
-//                    ' */',
-//                ]))
-//            )->setReturnType('object')->addParam(
-//                (new Param('className'))->setType('string')
-//            )->addParam(
-//                (new Param('data'))->setType('array')
-//            )
-//        );
-
         if ($configuration->entryPoints->operations) {
             $class->addStmt(
                 $factory->method('operations')->setReturnType('OperationsInterface')->makePublic()

@@ -45,7 +45,7 @@ final class WebHook
                 ),
                 $header->schema,
                 $schemaRegistry
-            ));
+            ), ExampleData::determiteType($headerSpec->example));
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook(

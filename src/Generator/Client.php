@@ -70,13 +70,27 @@ final class Client
             $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
-        )->addStmt(
-            $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
-        )->addStmt(
-            $factory->property('operations')->setType('Operations')->makeReadonly()->makePrivate()
-        )->addStmt(
-            $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate()
-        )->addStmt(
+        );
+
+        if ($configuration->entryPoints->call) {
+            $class->addStmt(
+                $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
+            );
+        }
+
+        if ($configuration->entryPoints->operations) {
+            $class->addStmt(
+                $factory->property('operations')->setType('OperationsInterface')->makeReadonly()->makePrivate()
+            );
+        }
+
+        if ($configuration->entryPoints->webHooks){
+            $class->addStmt(
+                $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate()
+            );
+        }
+
+        $class->addStmt(
             $factory->property('hydrators')->setType('Hydrators')->makeReadonly()->makePrivate()
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
@@ -161,89 +175,93 @@ final class Client
                         []
                     ),
                 )
-            )->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'operations'
+            )->addStmts([
+                ...($configuration->entryPoints->operations ? [
+                    new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'operations'
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('Operations'),
+                            [
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'browser'
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('browser'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'authentication'
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('authentication'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'requestSchemaValidator'
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('requestSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'responseSchemaValidator'
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('responseSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'hydrators'
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('hydrators'),
+                                ),
+                            ],
+                        ),
                     ),
-                    new Node\Expr\New_(
-                        new Node\Name('Operations'),
-                        [
-                            new Arg(
-                                new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'browser'
-                                ),
-                                false,
-                                false,
-                                [],
-                                new Node\Identifier('browser'),
-                            ),
-                            new Arg(
-                                new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'authentication'
-                                ),
-                                false,
-                                false,
-                                [],
-                                new Node\Identifier('authentication'),
-                            ),
-                            new Arg(
-                                new Node\Expr\PropertyFetch(
+                ] : []),
+            ])->addStmts([
+                ...($configuration->entryPoints->webHooks ? [
+                    new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'webHooks'
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('WebHooks'),
+                            [
+                                new Node\Arg(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
                                     'requestSchemaValidator'
-                                ),
-                                false,
-                                false,
-                                [],
-                                new Node\Identifier('requestSchemaValidator'),
-                            ),
-                            new Arg(
-                                new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'responseSchemaValidator'
-                                ),
-                                false,
-                                false,
-                                [],
-                                new Node\Identifier('responseSchemaValidator'),
-                            ),
-                            new Arg(
-                                new Node\Expr\PropertyFetch(
+                                )),
+                                new Node\Arg(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
                                     'hydrators'
-                                ),
-                                false,
-                                false,
-                                [],
-                                new Node\Identifier('hydrators'),
-                            ),
-                        ],
+                                )),
+                            ]
+                        ),
                     ),
-                )
-            )->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'webHooks'
-                    ),
-                    new Node\Expr\New_(
-                        new Node\Name('WebHooks'),
-                        [
-                            new Node\Arg(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'requestSchemaValidator'
-                            )),
-                            new Node\Arg(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'hydrators'
-                            )),
-                        ]
-                    ),
-                )
-            )
+                ] : [])
+            ])
         );
 
         if ($configuration->entryPoints->call) {

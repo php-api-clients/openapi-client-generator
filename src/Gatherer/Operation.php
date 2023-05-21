@@ -9,7 +9,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRedirect;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationEmptyResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationRequestBody;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\OperationResponse;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Parameter;
@@ -27,6 +27,7 @@ use function is_array;
 use function lcfirst;
 use function Safe\preg_replace;
 use function str_replace;
+use function strlen;
 use function strtoupper;
 use function trim;
 use function ucfirst;
@@ -49,7 +50,7 @@ final class Operation
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
         $parameters = [];
-        $redirects  = [];
+        $empties  = [];
         foreach ($operation->parameters as $parameter) {
             $parameterType = str_replace([
                 'integer',
@@ -57,7 +58,7 @@ final class Operation
                 'boolean',
             ], [
                 'int',
-                'mixed',
+                'string|object',
                 'bool',
             ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]));
 
@@ -69,7 +70,7 @@ final class Operation
                 $parameter->schema->format,
                 $parameter->in,
                 $parameter->schema->default,
-                ExampleData::scalarData($parameterType, $parameter->schema->format),
+                ExampleData::scalarData(strlen($parameter->name),$parameterType, $parameter->schema->format),
             );
         }
 
@@ -91,7 +92,9 @@ final class Operation
         $response = [];
         foreach ($operation->responses ?? [] as $code => $spec) {
             $isError = $code >= 400;
+            $contentCount = 0;
             foreach ($spec->content as $contentType => $contentTypeMediaType) {
+                $contentCount++;
                 $responseClassname = $schemaRegistry->get(
                     $contentTypeMediaType->schema,
                     'Operations\\' . $classNameSanitized . '\\Response\\' . Utils::className(
@@ -106,10 +109,12 @@ final class Operation
                     $code,
                     $contentType,
                     $spec->description,
-                    Schema::gather(
+                    Type::gather(
                         $baseNamespace,
                         $responseClassname,
+                        $contentType,
                         $contentTypeMediaType->schema,
+                        true,
                         $schemaRegistry,
                     ),
                 );
@@ -121,28 +126,22 @@ final class Operation
                 $returnType[] = $responseClassname;
             }
 
-            if ($code < 300 || $code >= 400) {
-                continue;
-            }
-
-            $headers = [];
-            foreach ($spec->headers as $headerName => $headerSpec) {
-                $headers[$headerName] = new Header($headerName, Schema::gather(
-                    $baseNamespace,
-                    $schemaRegistry->get(
+            if ($contentCount === 0) {
+                $headers = [];
+                foreach ($spec->headers as $headerName => $headerSpec) {
+                    $headers[$headerName] = new Header($headerName, Schema::gather(
+                        $baseNamespace,
+                        $schemaRegistry->get(
+                            $headerSpec->schema,
+                            'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
+                        ),
                         $headerSpec->schema,
-                        'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
-                    ),
-                    $headerSpec->schema,
-                    $schemaRegistry
-                ));
-            }
+                        $schemaRegistry
+                    ), ExampleData::determiteType($headerSpec->example));
+                }
 
-            if (count($headers) <= 0) {
-                continue;
+                $empties[] = new OperationEmptyResponse($code, $spec->description, $headers);
             }
-
-            $redirects[] = new OperationRedirect($code, $spec->description, $headers);
         }
 
         if (count($returnType) === 0) {
@@ -154,7 +153,7 @@ final class Operation
             ClassString::factory($baseNamespace, $classNameSanitized),
             ClassString::factory($baseNamespace, 'Operator\\' . Utils::fixKeyword($className)),
             lcfirst(trim(Utils::basename($className), '\\')),
-            trim(Utils::dirname($className), '\\'),
+            strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : 'Fallback',
             $operation->operationId,
             strtoupper($matchMethod),
             strtoupper($method),
@@ -167,7 +166,7 @@ final class Operation
             ],
             $requestBody,
             $response,
-            $redirects,
+            $empties,
         );
     }
 }

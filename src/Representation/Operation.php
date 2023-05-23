@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
+use cebe\openapi\spec\ExternalDocumentation;
 
 final readonly class Operation
 {
@@ -21,10 +22,14 @@ final readonly class Operation
         public ClassString $classNameSanitized,
         public ClassString $operatorClassName,
         public string $name,
+        public string $nameCamel,
         public string $group,
+        public string $groupCamel,
         public string $operationId,
         public string $matchMethod,
         public string $method,
+        public string $summary,
+        public ?ExternalDocumentation $externalDocs,
         public string $path,
         /** @var array<mixed> $metaData */
         public array $metaData,

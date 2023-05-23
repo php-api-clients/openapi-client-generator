@@ -570,12 +570,23 @@ final readonly class Generator
         \WyriHaximus\SubSplitTools\Files::setUp(
             $configurationLocation . $this->configuration->templates->dir,
             $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR,
-            (static function (string $namespace, ?array $variables): array {
+            (static function (string $namespace, ?array $variables, array $operations, array $webHooks, Configuration $configuration): array {
                 $vars              = $variables ?? [];
                 $vars['namespace'] = $namespace;
+                $vars['client'] = [
+                    'configuration' => $configuration,
+                    'operations' => $operations,
+                    'webHooks' => $webHooks,
+                ];
 
                 return $vars;
-            })($this->configuration->namespace->source . '\\', $this->configuration->templates->variables),
+            })(
+                $this->configuration->namespace->source . '\\',
+                $this->configuration->templates->variables,
+                $operations,
+                $webHooks,
+                $this->configuration,
+            ),
         );
         $this->statusOutput->markStepDone('generating_templated_files');
     }
@@ -727,12 +738,6 @@ final readonly class Generator
         $this->statusOutput->itemForStep('generating_schemas', count($schemas));
         foreach ($schemas as $schema) {
             if ($throwableSchemaRegistry->has($schema->className->relative)) {
-                yield from Schema::generate(
-                    $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, 'common') . $this->configuration->destination->source,
-                    $schema,
-                    [...$schemaRegistry->aliasesForClassName($schema->className->relative)],
-                );
-
                 yield from Error::generate(
                     $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, 'common') . $this->configuration->destination->source,
                     $schema,

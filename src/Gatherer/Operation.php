@@ -150,15 +150,22 @@ final class Operation
             $returnType[] = '\\' . ResponseInterface::class;
         }
 
+        $name = lcfirst(trim(Utils::basename($className), '\\'));
+        $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : 'Fallback';
+
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(
             ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),
             ClassString::factory($baseNamespace, $classNameSanitized),
             ClassString::factory($baseNamespace, 'Operator\\' . Utils::fixKeyword($className)),
-            lcfirst(trim(Utils::basename($className), '\\')),
-            strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : 'Fallback',
+            $name,
+            (new Convert($name))->toCamel(),
+            $group,
+            (new Convert($group))->toCamel(),
             $operation->operationId,
             strtoupper($matchMethod),
             strtoupper($method),
+            $operation->summary,
+            $operation->externalDocs,
             $path,
             $metaData,
             array_unique($returnType),

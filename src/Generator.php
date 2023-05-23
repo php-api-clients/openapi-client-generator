@@ -84,7 +84,7 @@ final readonly class Generator
         $this->forceGeneration = is_string(getenv('FORCE_GENERATION')) && strlen(getenv('FORCE_GENERATION')) > 0;
 
         $this->statusOutput = new StatusOutput(
-            ! (new CiDetector())->isCiDetected(),
+            false,//! (new CiDetector())->isCiDetected(),
             new Step('hash_current_spec', 'Hashing current spec', false),
             new Step('loading_state', 'Loading state', false),
             new Step('loading_spec', 'Loading spec', false),
@@ -284,10 +284,8 @@ final readonly class Generator
     {
         $schemaRegistry = new SchemaRegistry(
             $this->configuration->namespace,
-            false,
-            false,
-            //            $this->configuration->schemas->allowDuplication ?? false,
-            //            $this->configuration->schemas->useAliasesForDuplication ?? false,
+                        $this->configuration->schemas->allowDuplication ?? false,
+                        $this->configuration->schemas->useAliasesForDuplication ?? false,
         );
         $schemas                 = [];
         $throwableSchemaRegistry = new ThrowableSchema();
@@ -726,6 +724,12 @@ final readonly class Generator
 
         $this->statusOutput->itemForStep('generating_schemas', count($schemas));
         foreach ($schemas as $schema) {
+            yield from Schema::generate(
+                $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, 'common') . $this->configuration->destination->source,
+                $schema,
+                [...$schemaRegistry->aliasesForClassName($schema->className->relative)],
+            );
+
             if ($throwableSchemaRegistry->has($schema->className->relative)) {
                 yield from Schema::generate(
                     $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, 'common') . $this->configuration->destination->source,
@@ -736,14 +740,6 @@ final readonly class Generator
                 yield from Error::generate(
                     $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, 'common') . $this->configuration->destination->source,
                     $schema,
-                );
-            } else {
-                $aliases = [...$schemaRegistry->aliasesForClassName($schema->className->relative)];
-
-                yield from Schema::generate(
-                    $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, count($aliases) > 0 ? 'common' : $sortedSchemas[$schema->className->relative]['section']) . $this->configuration->destination->source,
-                    $schema,
-                    $aliases,
                 );
             }
 

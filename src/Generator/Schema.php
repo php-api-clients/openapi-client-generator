@@ -44,8 +44,8 @@ final class Schema
         $className = $schema->className;
         if (count($aliases) > 0) {
             $className = ClassString::factory(
-                $className->namespace,
-                'Schema\\AliasAbstract\\Abstract' . md5(json_encode($schema->schema->getSerializableData())),
+                $className->baseNamespaces,
+                'Schema\\AliasAbstract\\Tiet' . implode('\\Tiet', str_split(strtoupper(md5(json_encode($schema->schema->getSerializableData()))), 8)),
             );
             $aliases[] = $schema->className;
         }
@@ -133,6 +133,19 @@ final class Schema
             $types = [];
             if ($property->type->type === 'union' && is_array($property->type->payload)) {
                 $types[] = self::buildUnionType($property->type);
+                $schemaClasses = [...self::getUnionTypeSchemas($property->type)];
+
+                if (count($schemaClasses) > 0) {
+                    $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+
+                    yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
+
+                    $constructorParam->addAttribute(
+                        new Node\Attribute(
+                            new Node\Name($castToUnionToType->fullyQualified->source),
+                        ),
+                    );
+                }
             }
 
             if ($property->type->type === 'array' && ! is_string($property->type->payload)) {
@@ -196,7 +209,11 @@ final class Schema
                 $nullable = count($types) > 1 || count(explode('|', implode('|', $types))) > 1 ? 'null|' : '?';
             }
 
-            $constructor->addParam($constructorParam->setType($nullable . implode('|', $types)));
+            if (count($types) > 0) {
+                $constructorParam->setType($nullable . implode('|', $types));
+            }
+
+            $constructor->addParam($constructorParam);
         }
 
         if (count($constructDocBlock) > 0) {
@@ -211,7 +228,7 @@ final class Schema
             $aliasTms   = $factory->namespace($alias->namespace->source);
             $aliasClass = $factory->class($alias->className)->makeFinal()->makeReadonly()->extend($className->relative);
 
-            yield new File($pathPrefix, $alias->className, $aliasTms->addStmt($aliasClass)->getNode());
+            yield new File($pathPrefix, $alias->relative, $aliasTms->addStmt($aliasClass)->getNode());
         }
     }
 

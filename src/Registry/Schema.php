@@ -85,13 +85,13 @@ final class Schema
         $className = Utils::fixKeyword($fallbackName);
 
         if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->json)) {
-            $this->aliasses[$this->json[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
+            $this->aliasses['Schema\\' . $this->json[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
 
             return $className;
         }
 
         if ($this->allowDuplicatedSchemas && $this->useAliasesForDuplication && array_key_exists($json, $this->unknownSchemasJson)) {
-            $this->aliasses[$this->unknownSchemasJson[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
+            $this->aliasses['Schema\\' . $this->unknownSchemasJson[$json]][] = ClassString::factory($this->baseNamespaces, 'Schema\\' . $className);
 
             return $className;
         }
@@ -133,6 +133,6 @@ final class Schema
             return;
         }
 
-        yield from array_unique($this->aliasses[$classname]);
+        yield from $this->aliasses[$classname];
     }
 }

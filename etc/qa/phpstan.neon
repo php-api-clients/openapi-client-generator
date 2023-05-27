@@ -1,4 +1,7 @@
 parameters:
+	excludePaths:
+		- ../../tests/app/*
+		- ../../tests/test-app/*
 	ignoreErrors:
 		- '#cebe\\openapi\\spec\\Reference#'
 		- '#Call to function in_array\(\) requires parameter \#3 to be true.#'

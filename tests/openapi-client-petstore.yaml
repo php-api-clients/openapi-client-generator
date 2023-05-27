@@ -3,24 +3,18 @@ state:
   additionalFiles:
     - composer.json
     - composer.lock
-spec: https://www.miele.com/developer/swagger-ui/m3rdapi.yaml
-#spec: m3rdapi.yaml
+spec: petstore.yaml
 namespace:
-  source: ApiClients\Client\Miele
-  test: ApiClients\Tests\Client\Miele
+  source: ApiClients\Client\PetStore
+  test: ApiClients\Tests\Client\PetStore
 entryPoints:
   call: true
   operations: true
   webHooks: false
 destination:
-  root: generated-miele
+  root: app
   source: src
   test: tests
-templates:
-  dir: templates
-  variables:
-    fullname: Miele
-    packageName: miele
 schemas:
   allowDuplication: true
   useAliasesForDuplication: true

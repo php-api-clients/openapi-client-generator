@@ -8,6 +8,8 @@
 
     <file>../../src</file>
     <file>../../tests</file>
+    <exclude-pattern type="relative-root">*/tests/app/*</exclude-pattern>
+    <exclude-pattern type="relative-root">*/tests/test-app/*</exclude-pattern>
 
     <rule ref="WyriHaximus-OSS" />
 </ruleset>

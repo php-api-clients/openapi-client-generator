@@ -25,7 +25,7 @@ final readonly class Configuration
         public string $spec,
         #[MapFrom('entryPoints')]
         public EntryPoints $entryPoints,
-        public Templates $templates,
+        public ?Templates $templates,
         public Namespace_ $namespace,
         public Destination $destination,
         #[MapFrom('contentType')]

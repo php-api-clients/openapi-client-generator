@@ -1,11 +1,11 @@
-name: Continuous Integration (Single Client)
+name: Generate and test client
 on:
-  push:
-    branches:
-      - 'main'
-      - 'master'
-      - 'refs/heads/v[0-9]+.[0-9]+.[0-9]+'
-  pull_request:
+  workflow_call:
+    inputs:
+      name:
+        description: Name of the client to test
+        required: true
+        type: string
 jobs:
   generate-and-test-client:
     runs-on: ubuntu-latest
@@ -18,13 +18,13 @@ jobs:
           fetch-depth: '0'
           persist-credentials: 'false'
       - uses: "ramsey/composer-install@v2"
-      - run: make generate-example-client-one
+      - run: make generate-example-client-${{ inputs.name }}
       - name: Tar example files
         run: tar -czf example.tar ./example
       - name: Upload Generated Client
         uses: actions/upload-artifact@v3
         with:
-          name: example-single-client
+          name: example-${{ inputs.name }}-client
           path: ./example.tar
   supported-versions-matrix:
     name: Supported Versions Matrix
@@ -50,14 +50,14 @@ jobs:
       - name: Download Generated Client
         uses: actions/download-artifact@v3
         with:
-          name: example-single-client
+          name: example-${{ inputs.name }}-client
           path: ./
       - name: UnTar example files
-        run:  tar -xzf example.tar
+        run: tar -xzf example.tar
       - id: supported-checks-matrix
         name: Generate check
         run: |
-          cd example/generated
+          cd example/generated-${{ inputs.name }}
           printf "Checks found: %s\r\n" $(make task-list-ci)
           printf "::set-output name=check::%s" $(make task-list-ci)
   qa:
@@ -83,23 +83,23 @@ jobs:
       - name: Download Generated Client
         uses: actions/download-artifact@v3
         with:
-          name: example-single-client
+          name: example-${{ inputs.name }}-client
           path: ./
       - name: UnTar example files
-        run:  tar -xzf example.tar
+        run: tar -xzf example.tar
       - uses: ramsey/composer-install@v2
         with:
-          working-directory: "example/generated/"
+          working-directory: "example/generated-${{ inputs.name }}/"
           ignore-cache: "yes"
       - run: |
-          cd example/generated
+          cd example/generated-${{ inputs.name }}
           make ${{ matrix.check }} || true
         if: needs.supported-versions-matrix.outputs.upcoming == matrix.php
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
           COVERALLS_RUN_LOCALLY: ${{ secrets.COVERALLS_RUN_LOCALLY }}
       - run: |
-          cd example/generated
+          cd example/generated-${{ inputs.name }}
           make ${{ matrix.check }}
         if: needs.supported-versions-matrix.outputs.upcoming != matrix.php
         env:

@@ -91,7 +91,7 @@ final class Operation
 
         $response = [];
         foreach ($operation->responses ?? [] as $code => $spec) {
-            $isError      = $code >= 400;
+            $isError      = $code === 'default' || $code >= 400;
             $contentCount = 0;
             foreach ($spec->content as $contentType => $contentTypeMediaType) {
                 $contentCount++;
@@ -102,10 +102,11 @@ final class Operation
                             '/',
                             '_',
                             $contentType,
-                        ) . '\\' . (HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown')
+                        ) . '\\' . ($code === 'default' ? 'Default' : (HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown'))
                     ),
                 );
-                $response[]        = new OperationResponse(
+
+                $response[] = new OperationResponse(
                     $code,
                     $contentType,
                     $spec->description,
@@ -150,7 +151,7 @@ final class Operation
             $returnType[] = '\\' . ResponseInterface::class;
         }
 
-        $name = lcfirst(trim(Utils::basename($className), '\\'));
+        $name  = lcfirst(trim(Utils::basename($className), '\\'));
         $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : 'Fallback';
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(

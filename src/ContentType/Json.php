@@ -17,6 +17,7 @@ final class Json implements ContentType
     public static function contentType(): iterable
     {
         yield 'application/json';
+        yield 'application/scim+json';
     }
 
     public static function parse(Expr $expr): Expr

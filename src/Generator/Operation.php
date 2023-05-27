@@ -35,6 +35,7 @@ use function array_values;
 use function count;
 use function implode;
 use function is_int;
+use function is_string;
 use function rtrim;
 use function strlen;
 use function strpos;
@@ -310,7 +311,7 @@ final class Operation
                             new Node\Name($contentTypeSchema->content->payload->errorClassNameAliased->relative),
                             [
                                 new Arg(
-                                    new Node\Scalar\LNumber($contentTypeSchema->code),
+                                    is_string($contentTypeSchema->code) ? new Node\Expr\Variable('code') : new Node\Scalar\LNumber($contentTypeSchema->code),
                                 ),
                                 new Arg(
                                     $hydrate,
@@ -341,7 +342,7 @@ final class Operation
                     ));
 
                     $case = new Node\Stmt\Case_(
-                        new Node\Scalar\LNumber($contentTypeSchema->code),
+                        is_string($contentTypeSchema->code) ? null : new Node\Scalar\LNumber($contentTypeSchema->code),
                         [
                             $contentTypeSchema->content->payload->isArray ? new Node\Stmt\Foreach_(
                                 new Node\Expr\Variable('body'),

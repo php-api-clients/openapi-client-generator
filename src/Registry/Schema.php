@@ -12,7 +12,6 @@ use RuntimeException;
 use Safe\Exceptions\JsonException;
 
 use function array_key_exists;
-use function array_unique;
 use function count;
 use function Safe\json_encode;
 use function spl_object_hash;

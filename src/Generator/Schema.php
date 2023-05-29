@@ -27,7 +27,9 @@ use function is_string;
 use function md5;
 use function Safe\json_encode;
 use function str_replace;
+use function str_split;
 use function strlen;
+use function strtoupper;
 use function trim;
 
 use const PHP_EOL;
@@ -132,7 +134,7 @@ final class Schema
 
             $types = [];
             if ($property->type->type === 'union' && is_array($property->type->payload)) {
-                $types[] = self::buildUnionType($property->type);
+                $types[]       = self::buildUnionType($property->type);
                 $schemaClasses = [...self::getUnionTypeSchemas($property->type)];
 
                 if (count($schemaClasses) > 0) {

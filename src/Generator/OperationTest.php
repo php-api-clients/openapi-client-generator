@@ -27,6 +27,7 @@ use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
 use function count;
 use function implode;
 use function is_array;
+use function is_string;
 use function Safe\preg_replace;
 use function str_replace;
 use function strtolower;
@@ -485,7 +486,7 @@ final class OperationTest
     private static function testSetUp(Node\Expr $responseSchemaFetch, Representation\Operation $operation, Representation\OperationRequestBody|null $request, Representation\OperationResponse|Representation\OperationEmptyResponse $response, Configuration $configuration, Representation\Schema|Representation\PropertyType|string|null $contentTypePayload): array
     {
         return [
-            ...($response->code < 400 || $contentTypePayload === null ? [] : [
+            ...(is_string($response->code) || $response->code < 400 || $contentTypePayload === null ? [] : [
                 new Node\Stmt\Expression(
                     new Node\Expr\StaticCall(
                         new Node\Expr\ConstFetch(
@@ -518,9 +519,7 @@ final class OperationTest
                         ),
                         [
                             new Arg(
-                                new Node\Scalar\LNumber(
-                                    $response->code,
-                                ),
+                                new Node\Scalar\LNumber(is_string($response->code) ? 999 : $response->code),
                             ),
                             ...($response instanceof Representation\OperationResponse ? [
                                 new Arg(

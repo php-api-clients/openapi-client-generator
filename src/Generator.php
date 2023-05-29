@@ -6,6 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\SubSplit\RootPackage;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\SubSplit\SectionPackage;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\Templates;
 use ApiClients\Tools\OpenApiClientGenerator\Gatherer\WebHookHydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\ClientInterface;
@@ -84,7 +85,7 @@ final readonly class Generator
         $this->forceGeneration = is_string(getenv('FORCE_GENERATION')) && strlen(getenv('FORCE_GENERATION')) > 0;
 
         $this->statusOutput = new StatusOutput(
-            false,//! (new CiDetector())->isCiDetected(),
+            ! (new CiDetector())->isCiDetected(),
             new Step('hash_current_spec', 'Hashing current spec', false),
             new Step('loading_state', 'Loading state', false),
             new Step('loading_spec', 'Loading spec', false),
@@ -119,6 +120,13 @@ final readonly class Generator
         if (! $this->configuration->entryPoints->webHooks) {
             $this->statusOutput->markStepWontDo('generating_webhooks');
             $this->statusOutput->markStepWontDo('generating_webhooks_entry_point');
+        }
+
+        if ($this->configuration->templates === null) {
+            $this->statusOutput->markStepWontDo('generating_templated_files');
+            $this->statusOutput->markStepWontDo('generating_templates_files_root_package');
+            $this->statusOutput->markStepWontDo('generating_templates_files_common_package');
+            $this->statusOutput->markStepWontDo('generating_templates_files_subsplit_package');
         }
 
         $specLocation = $this->configuration->spec;
@@ -282,10 +290,10 @@ final readonly class Generator
      */
     private function all(string $configurationLocation): iterable
     {
-        $schemaRegistry = new SchemaRegistry(
+        $schemaRegistry          = new SchemaRegistry(
             $this->configuration->namespace,
-                        $this->configuration->schemas->allowDuplication ?? false,
-                        $this->configuration->schemas->useAliasesForDuplication ?? false,
+            $this->configuration->schemas->allowDuplication ?? false,
+            $this->configuration->schemas->useAliasesForDuplication ?? false,
         );
         $schemas                 = [];
         $throwableSchemaRegistry = new ThrowableSchema();
@@ -564,6 +572,10 @@ final readonly class Generator
 
         $this->statusOutput->markStepDone('generating_hydrators_entry_point');
 
+        if (! ($this->configuration->templates instanceof Templates)) {
+            return;
+        }
+
         $this->statusOutput->markStepBusy('generating_templated_files');
         \WyriHaximus\SubSplitTools\Files::setUp(
             $configurationLocation . $this->configuration->templates->dir,
@@ -571,7 +583,7 @@ final readonly class Generator
             (static function (string $namespace, ?array $variables, array $operations, array $webHooks, Configuration $configuration): array {
                 $vars              = $variables ?? [];
                 $vars['namespace'] = $namespace;
-                $vars['client'] = [
+                $vars['client']    = [
                     'configuration' => $configuration,
                     'operations' => $operations,
                     'webHooks' => $webHooks,
@@ -873,85 +885,55 @@ final readonly class Generator
         $subSplitConfig = [];
         $splits         = array_values(array_unique($splits));
 
-        $this->statusOutput->markStepBusy('generating_templates_files_root_package');
-        $subSplitConfig['root'] = [
-            'name' => $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
-            'directory' => $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
-            'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->rootPackage->name, '') . '.git',
-            'target-branch' => $this->configuration->subSplit->branch,
-        ];
-        \WyriHaximus\SubSplitTools\Files::setUp(
-            $configurationLocation . $this->configuration->templates->dir,
-            $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
-            [
-                'packageName' => $this->configuration->subSplit->rootPackage->name,
-                'fullName' => render($this->configuration->subSplit->fullName, ['section' => '']),
-                'namespace' => $this->configuration->namespace->source,
-                'requires' => [
-                    [
-                        'name' => $this->configuration->subSplit->vendor . '/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-                        'version' => '^0.3',
-                    ],
-                ],
-                'suggests' => [
-                    ...(function (string $sectionPackageName, string ...$splits): iterable {
-                        foreach ($splits as $split) {
-                            yield [
-                                'name' => $this->packageName($sectionPackageName, $split),
-                                'reason' => '*',
-                            ];
-                        }
-                    })($this->configuration->subSplit->sectionPackage->name, ...$splits),
-                ],
-            ],
-        );
-        $this->statusOutput->markStepDone('generating_templates_files_root_package');
-
-        $this->statusOutput->markStepBusy('generating_templates_files_common_package');
-        $subSplitConfig['common'] = [
-            'name' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-            'directory' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-            'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common') . '.git',
-            'target-branch' => $this->configuration->subSplit->branch,
-        ];
-        \WyriHaximus\SubSplitTools\Files::setUp(
-            $configurationLocation . $this->configuration->templates->dir,
-            $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-            [
-                'packageName' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-                'fullName' => render($this->configuration->subSplit->fullName, ['section' => 'common']),
-                'namespace' => $this->configuration->namespace->source,
-                'requires-dev' => [
-                    [
-                        'name' => $this->configuration->subSplit->vendor . '/' . $this->configuration->subSplit->rootPackage->name,
-                        'version' => $this->configuration->subSplit->targetVersion,
-                    ],
-                ],
-            ],
-        );
-        $this->statusOutput->markStepDone('generating_templates_files_common_package');
-
-        $this->statusOutput->itemForStep('generating_templates_files_subsplit_package', count($splits));
-        foreach ($splits as $split) {
-            $subSplitConfig[$split] = [
-                'name' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
-                'directory' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
-                'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, $split) . '.git',
+        if ($this->configuration->templates instanceof Templates) {
+            $this->statusOutput->markStepBusy('generating_templates_files_root_package');
+            $subSplitConfig['root'] = [
+                'name' => $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
+                'directory' => $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
+                'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->rootPackage->name, '') . '.git',
                 'target-branch' => $this->configuration->subSplit->branch,
             ];
             \WyriHaximus\SubSplitTools\Files::setUp(
                 $configurationLocation . $this->configuration->templates->dir,
-                $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
+                $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->rootPackage->name, ''),
                 [
-                    'packageName' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
-                    'fullName' => render($this->configuration->subSplit->fullName, ['section' => $split]),
+                    'packageName' => $this->configuration->subSplit->rootPackage->name,
+                    'fullName' => render($this->configuration->subSplit->fullName, ['section' => '']),
                     'namespace' => $this->configuration->namespace->source,
                     'requires' => [
                         [
                             'name' => $this->configuration->subSplit->vendor . '/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
-                            'version' => $this->configuration->subSplit->targetVersion,
+                            'version' => '^0.3',
                         ],
                     ],
+                    'suggests' => [
+                        ...(function (string $sectionPackageName, string ...$splits): iterable {
+                            foreach ($splits as $split) {
+                                yield [
+                                    'name' => $this->packageName($sectionPackageName, $split),
+                                    'reason' => '*',
+                                ];
+                            }
+                        })($this->configuration->subSplit->sectionPackage->name, ...$splits),
+                    ],
+                ],
+            );
+            $this->statusOutput->markStepDone('generating_templates_files_root_package');
+
+            $this->statusOutput->markStepBusy('generating_templates_files_common_package');
+            $subSplitConfig['common'] = [
+                'name' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
+                'directory' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
+                'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common') . '.git',
+                'target-branch' => $this->configuration->subSplit->branch,
+            ];
+            \WyriHaximus\SubSplitTools\Files::setUp(
+                $configurationLocation . $this->configuration->templates->dir,
+                $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
+                [
+                    'packageName' => $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
+                    'fullName' => render($this->configuration->subSplit->fullName, ['section' => 'common']),
+                    'namespace' => $this->configuration->namespace->source,
                     'requires-dev' => [
                         [
                             'name' => $this->configuration->subSplit->vendor . '/' . $this->configuration->subSplit->rootPackage->name,
@@ -960,10 +942,42 @@ final readonly class Generator
                     ],
                 ],
             );
-            $this->statusOutput->advanceStep('generating_templates_files_subsplit_package');
-        }
+            $this->statusOutput->markStepDone('generating_templates_files_common_package');
 
-        $this->statusOutput->markStepDone('generating_templates_files_subsplit_package');
+            $this->statusOutput->itemForStep('generating_templates_files_subsplit_package', count($splits));
+            foreach ($splits as $split) {
+                $subSplitConfig[$split] = [
+                    'name' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
+                    'directory' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
+                    'target' => 'git@github.com:php-api-clients/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, $split) . '.git',
+                    'target-branch' => $this->configuration->subSplit->branch,
+                ];
+                \WyriHaximus\SubSplitTools\Files::setUp(
+                    $configurationLocation . $this->configuration->templates->dir,
+                    $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
+                    [
+                        'packageName' => $this->packageName($this->configuration->subSplit->sectionPackage->name, $split),
+                        'fullName' => render($this->configuration->subSplit->fullName, ['section' => $split]),
+                        'namespace' => $this->configuration->namespace->source,
+                        'requires' => [
+                            [
+                                'name' => $this->configuration->subSplit->vendor . '/' . $this->packageName($this->configuration->subSplit->sectionPackage->name, 'common'),
+                                'version' => $this->configuration->subSplit->targetVersion,
+                            ],
+                        ],
+                        'requires-dev' => [
+                            [
+                                'name' => $this->configuration->subSplit->vendor . '/' . $this->configuration->subSplit->rootPackage->name,
+                                'version' => $this->configuration->subSplit->targetVersion,
+                            ],
+                        ],
+                    ],
+                );
+                $this->statusOutput->advanceStep('generating_templates_files_subsplit_package');
+            }
+
+            $this->statusOutput->markStepDone('generating_templates_files_subsplit_package');
+        }
 
         $this->statusOutput->markStepBusy('generating_subsplit_configuration');
         try {

@@ -4,4 +4,5 @@ example/etc
 example/generated-github
 example/generated-github-subsplit
 example/generated-miele
+tests/test-app
 vendor

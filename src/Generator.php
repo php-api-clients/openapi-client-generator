@@ -300,10 +300,24 @@ final readonly class Generator
         if (count($this->spec->components->schemas ?? []) > 0) {
             /** @phpstan-ignore-next-line */
             $this->statusOutput->itemForStep('gathering_schemas', count($this->spec->components->schemas));
-            /** @phpstan-ignore-next-line */
+            /**
+             * Do this loop twice to ensure we added all schemas to the schema registry BEFORE we start to gather them
+             * which will trigger looking up schemas as properties and end up with weird naming.
+             *
+             * @phpstan-ignore-next-line
+             */
             foreach ($this->spec->components->schemas as $name => $schema) {
                 assert($schema instanceof \cebe\openapi\spec\Schema);
                 $schemaRegistry->addClassName(Utils::className($name), $schema);
+            }
+
+            /**
+             * Gather all the schemas now that we've added all of them to the schema registry.
+             *
+             * @phpstan-ignore-next-line
+             */
+            foreach ($this->spec->components->schemas as $name => $schema) {
+                assert($schema instanceof \cebe\openapi\spec\Schema);
                 $schemas[] = Gatherer\Schema::gather($this->configuration->namespace, Utils::className($name), $schema, $schemaRegistry);
                 $this->statusOutput->advanceStep('gathering_schemas');
             }

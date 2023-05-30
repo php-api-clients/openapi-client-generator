@@ -13,6 +13,6 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final readonly class Ok extends Schema\AliasAbstract\TietD65BC5E9\Tiet6F251EDA\Tiet699DECD9\TietD8B901F6
+final readonly class Ok extends Schema\AliasAbstract\Tiet3079EDA6\TietC8A57480\TietAA436E3B\Tiet0E7D3D03
 {
 }

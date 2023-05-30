@@ -1,4 +1,5 @@
 etc/qa/.phpcs.cache
+etc/qa/.phpunit.result.cache
 bin/openapi-client-generator
 example/etc
 example/generated-github

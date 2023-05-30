@@ -107,6 +107,7 @@ components:
       required:
         - id
         - name
+        - eyes
       properties:
         id:
           type: integer
@@ -115,11 +116,22 @@ components:
           type: string
         indoor:
           type: bool
+        features:
+          type: object
+        eyes:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/RedEyes"
+            - $ref: "#/components/schemas/BlueEyes"
+            - $ref: "#/components/schemas/GreenEyes"
+            - $ref: "#/components/schemas/YellowEyes"
+            - $ref: "#/components/schemas/BlackEyes"
     Dog:
       type: object
       required:
         - id
         - name
+        - eyes
       properties:
         id:
           type: integer
@@ -128,11 +140,20 @@ components:
           type: string
         good-boy:
           type: bool
+        eyes:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/RedEyes"
+            - $ref: "#/components/schemas/BlueEyes"
+            - $ref: "#/components/schemas/GreenEyes"
+            - $ref: "#/components/schemas/YellowEyes"
+            - $ref: "#/components/schemas/BlackEyes"
     Bird:
       type: object
       required:
         - id
         - name
+        - eyes
       properties:
         id:
           type: integer
@@ -141,11 +162,20 @@ components:
           type: string4
         flies:
           type: bool
+        eyes:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/RedEyes"
+            - $ref: "#/components/schemas/BlueEyes"
+            - $ref: "#/components/schemas/GreenEyes"
+            - $ref: "#/components/schemas/YellowEyes"
+            - $ref: "#/components/schemas/BlackEyes"
     Fish:
       type: object
       required:
         - id
         - name
+        - eyes
       properties:
         id:
           type: integer
@@ -154,6 +184,14 @@ components:
           type: string
         flat:
           type: bool
+        eyes:
+          type: object
+          oneOf:
+            - $ref: "#/components/schemas/RedEyes"
+            - $ref: "#/components/schemas/BlueEyes"
+            - $ref: "#/components/schemas/GreenEyes"
+            - $ref: "#/components/schemas/YellowEyes"
+            - $ref: "#/components/schemas/BlackEyes"
     Pets:
       type: array
       maxItems: 100
@@ -170,3 +208,105 @@ components:
           format: int32
         message:
           type: string
+    Legs:
+      type: object
+      required:
+        - count
+        - joints
+      properties:
+        count:
+          type: integer
+        joins:
+          type: integer
+    Tails:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
+    Fins:
+      type: object
+      required:
+        - count
+        - spikes
+      properties:
+        count:
+          type: integer
+        spikes:
+          type: integer
+    Wings:
+      type: object
+      required:
+        - count
+        - features
+      properties:
+        count:
+          type: integer
+        features:
+          type: integer
+    RedEyes:
+      type: object
+      required:
+        - count
+        - type
+      properties:
+        count:
+          type: integer
+        type:
+          type: string
+          enum:
+            - blood
+            - wine
+            - stale
+    GreenEyes:
+      type: object
+      required:
+        - count
+        - type
+      properties:
+        count:
+          type: integer
+        type:
+          type: string
+          enum:
+            - hulk
+            - forest
+            - feral
+    YellowEyes:
+      type: object
+      required:
+        - count
+        - type
+      properties:
+        count:
+          type: integer
+        type:
+          type: string
+          enum:
+            - snake
+    BlackEyes:
+      type: object
+      required:
+        - count
+        - type
+      properties:
+        count:
+          type: integer
+        type:
+          type: string
+          enum:
+            - rage
+    BlueEyes:
+      type: object
+      required:
+        - count
+        - type
+      properties:
+        count:
+          type: integer
+        type:
+          type: string
+          enum:
+            - sky
+            - boobies

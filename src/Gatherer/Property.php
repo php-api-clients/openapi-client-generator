@@ -81,15 +81,6 @@ final class Property
             $required,
             $schemaRegistry,
         );
-        if ($type->payload instanceof Representation\Schema) {
-            if (count($type->payload->properties) === 0) {
-                $type = new Representation\PropertyType('scalar', null, null, 'string', false);
-            }
-        } elseif ($type->payload instanceof Representation\PropertyType && $type->payload->payload instanceof Representation\Schema) {
-            if (count($type->payload->payload->properties) === 0) {
-                $type = new Representation\PropertyType('scalar', null, null, 'string', false);
-            }
-        }
 
         if ($property->type === 'array' && is_array($type->payload)) {
             $arrayItemsRaw  = [];

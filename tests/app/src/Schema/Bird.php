@@ -15,11 +15,11 @@ use React\Http;
 use ApiClients\Contracts;
 final readonly class Bird
 {
-    public const SCHEMA_JSON = '{"required":["id","name"],"type":"object","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string4"},"flies":{"type":"bool"}}}';
+    public const SCHEMA_JSON = '{"required":["id","name","eyes"],"type":"object","properties":{"id":{"type":"integer","format":"int64"},"name":{"type":"string4"},"flies":{"type":"bool"},"eyes":{"type":"object","oneOf":[{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["blood","wine","stale"],"type":"string"}}},{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["sky","boobies"],"type":"string"}}},{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["hulk","forest","feral"],"type":"string"}}},{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["snake"],"type":"string"}}},{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["rage"],"type":"string"}}}]}}}';
     public const SCHEMA_TITLE = '';
     public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{"id":2,"name":null,"flies":false}';
-    public function __construct(public int $id, public string4 $name, public ?bool $flies)
+    public const SCHEMA_EXAMPLE_DATA = '{"id":2,"name":null,"flies":false,"eyes":null}';
+    public function __construct(public int $id, public string4 $name, public ?bool $flies, #[\ApiClients\Client\PetStore\Attribute\CastUnionToType\Schema\Bird\Eyes] public Schema\RedEyes|Schema\BlueEyes|Schema\GreenEyes|Schema\YellowEyes|Schema\BlackEyes $eyes)
     {
     }
 }

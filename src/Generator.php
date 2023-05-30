@@ -164,6 +164,10 @@ final readonly class Generator
             $this->state->specHash === $this->currentSpecHash &&
             (static function (string $root, Files $files, string ...$additionalFiles): bool {
                 foreach ($additionalFiles as $additionalFile) {
+                    if (!$files->has($additionalFile)) {
+                        return false;
+                    }
+
                     if ($files->has($additionalFile) && (! file_exists($root . $additionalFile) || $files->get($additionalFile)->hash !== md5(file_get_contents($root . $additionalFile)))) {
                         return false;
                     }

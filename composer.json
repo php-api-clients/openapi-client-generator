@@ -24,7 +24,7 @@
         "nunomaduro/termwind": "^1.15",
         "ondram/ci-detector": "^4.1",
         "pointybeard/reverse-regex": "1.0.0.3",
-        "psr/http-message": "^1.0",
+        "psr/http-message": "^1.1 || ^2 || ^3",
         "react/async": "^4.0",
         "react/http": "^1.8",
         "reactivex/rxphp": "^2.0",

@@ -9,9 +9,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 
 final class HydratorUtils
 {
-    /**
-     * @return iterable<Schema>
-     */
+    /** @return iterable<Schema> */
     public static function listSchemas(Schema $schema): iterable
     {
         yield $schema;
@@ -21,9 +19,7 @@ final class HydratorUtils
         }
     }
 
-    /**
-     * @return iterable<Schema>
-     */
+    /** @return iterable<Schema> */
     private static function listSchemasFromPropertyType(PropertyType $propertyType): iterable
     {
         if ($propertyType->payload instanceof Schema) {

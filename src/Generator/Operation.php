@@ -46,9 +46,7 @@ use const PHP_EOL;
 
 final class Operation
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         $noHydrator = true;
@@ -61,12 +59,12 @@ final class Operation
                     new Node\Const_(
                         'OPERATION_ID',
                         new Node\Scalar\String_(
-                            $operation->operationId
-                        )
+                            $operation->operationId,
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PUBLIC
-            )
+                Class_::MODIFIER_PUBLIC,
+            ),
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
@@ -74,11 +72,11 @@ final class Operation
                         'OPERATION_MATCH',
                         new Node\Scalar\String_(
                             $operation->matchMethod . ' ' . $operation->path, // Deal with the query
-                        )
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PUBLIC
-            )
+                Class_::MODIFIER_PUBLIC,
+            ),
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
@@ -86,11 +84,11 @@ final class Operation
                         'METHOD',
                         new Node\Scalar\String_(
                             $operation->method,
-                        )
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PRIVATE
-            )
+                Class_::MODIFIER_PRIVATE,
+            ),
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
@@ -98,15 +96,15 @@ final class Operation
                         'PATH',
                         new Node\Scalar\String_(
                             $operation->path, // Deal with the query
-                        )
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PRIVATE
-            )
+                Class_::MODIFIER_PRIVATE,
+            ),
         );
         if (count($operation->requestBody) > 0) {
             $class->addStmt(
-                $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+                $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
             );
         }
 
@@ -114,15 +112,15 @@ final class Operation
 
         if (count($operation->requestBody) > 0) {
             $constructor->addParam(
-                (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+                (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'requestSchemaValidator'
+                        'requestSchemaValidator',
                     ),
                     new Node\Expr\Variable('requestSchemaValidator'),
-                )
+                ),
             );
         }
 
@@ -153,15 +151,15 @@ final class Operation
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        $parameter->name
+                        $parameter->name,
                     ),
                     new Node\Expr\Variable($parameter->name),
-                )
+                ),
             );
             if ($parameter->location === 'path' || $parameter->location === 'query') {
                 $requestReplaces['{' . $parameter->targetName . '}'] = new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    $parameter->name
+                    $parameter->name,
                 );
             }
 
@@ -192,14 +190,14 @@ final class Operation
                         new Node\Name('self'),
                         'PATH',
                     )),
-                ]
+                ],
             )),
         ];
 
         $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->makePublic();
         if (count($operation->requestBody) > 0) {
             $createRequestMethod->addParam(
-                $factory->param('data')->setType('array')
+                $factory->param('data')->setType('array'),
             );
         }
 
@@ -210,7 +208,7 @@ final class Operation
                 new Node\Stmt\Expression(new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'requestSchemaValidator'
+                        'requestSchemaValidator',
                     ),
                     'validate',
                     [
@@ -225,8 +223,8 @@ final class Operation
                                 'class',
                             )),
                         ])),
-                    ]
-                ))
+                    ],
+                )),
             );
             break;
         }
@@ -235,11 +233,11 @@ final class Operation
             new Node\Stmt\Return_(
                 new Node\Expr\New_(
                     new Node\Name(
-                        '\\' . Request::class
+                        '\\' . Request::class,
                     ),
-                    $requestParameters
-                )
-            )
+                    $requestParameters,
+                ),
+            ),
         );
 
         $returnType    = [];
@@ -294,7 +292,7 @@ final class Operation
                     $hydrate = new Node\Expr\MethodCall(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'hydrator'
+                            'hydrator',
                         ),
                         'hydrateObject',
                         [
@@ -323,7 +321,7 @@ final class Operation
                     $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'responseSchemaValidator'
+                            'responseSchemaValidator',
                         ),
                         'validate',
                         [
@@ -338,7 +336,7 @@ final class Operation
                                     'class',
                                 )),
                             ])),
-                        ]
+                        ],
                     ));
 
                     $case = new Node\Stmt\Case_(
@@ -363,7 +361,7 @@ final class Operation
                                                     new Node\Name('\\' . ImmediateScheduler::class),
                                                 ),
                                             ),
-                                        ]
+                                        ],
                                     ),
                                     'map',
                                     [
@@ -376,7 +374,7 @@ final class Operation
                                             'params' => [new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))],
                                             'returnType' => $object,
                                         ])),
-                                    ]
+                                    ],
                                 ) : $hydrate,
                             ),
                         ],
@@ -442,7 +440,7 @@ final class Operation
                         new Node\Expr\MethodCall(
                             new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'browser'
+                                'browser',
                             ),
                             'requestStreaming',
                             [
@@ -477,13 +475,13 @@ final class Operation
                                                 new Node\Expr\BinaryOp\BooleanAnd(
                                                     new Node\Expr\Instanceof_(
                                                         new Node\Expr\Variable('body'),
-                                                        new Node\Name('\\' . StreamInterface::class)
+                                                        new Node\Name('\\' . StreamInterface::class),
                                                     ),
                                                     new Node\Expr\Instanceof_(
                                                         new Node\Expr\Variable('body'),
-                                                        new Node\Name('\\' . ReadableStreamInterface::class)
+                                                        new Node\Name('\\' . ReadableStreamInterface::class),
                                                     ),
-                                                )
+                                                ),
                                             ),
                                             [
                                                 'stmts' => [
@@ -493,7 +491,7 @@ final class Operation
                                                             'onError',
                                                             [
                                                                 new Arg(new Node\Expr\New_(
-                                                                    new Node\Name('\\' . RuntimeException::class)
+                                                                    new Node\Name('\\' . RuntimeException::class),
                                                                 )),
                                                             ],
                                                         ),
@@ -633,7 +631,7 @@ final class Operation
                                 new Arg(new Node\Scalar\String_($header->name)),
                             ],
                         ),
-                        new Node\Scalar\String_(strtolower($header->name))
+                        new Node\Scalar\String_(strtolower($header->name)),
                     );
                 }
 
@@ -721,9 +719,9 @@ final class Operation
                 new Node\Stmt\Throw_(
                     new Node\Expr\New_(
                         new Node\Name('\\' . RuntimeException::class),
-                        [new Arg(new Node\Scalar\String_('Unable to find matching response code and content type'))]
-                    )
-                )
+                        [new Arg(new Node\Scalar\String_('Unable to find matching response code and content type'))],
+                    ),
+                ),
             );
         } else {
             $createResponseMethod->addStmt(new Node\Stmt\Return_(new Node\Expr\Variable('response')));
@@ -732,11 +730,11 @@ final class Operation
 
         $returnTypeRaw = array_unique($returnTypeRaw);
         if (count($returnTypeRaw) === 0) {
-            $returnTypeRaw[] = 'mixed';
+            $returnTypeRaw[] = 'void';
         }
 
         $createResponseMethod->setReturnType(
-            new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), $returnTypeRaw))
+            new Node\UnionType(array_map(static fn (string $object): Node\Name => new Node\Name($object), $returnTypeRaw)),
         );
 
         if (count($returnType) > 0) {
@@ -745,58 +743,58 @@ final class Operation
                     '/**',
                     ' * @return ' . implode('|', array_unique($returnType)),
                     ' */',
-                ]))
+                ])),
             );
         }
 
         $createResponseMethod->addParam(
-            $factory->param('response')->setType('\\' . ResponseInterface::class)
+            $factory->param('response')->setType('\\' . ResponseInterface::class),
         );
 
         if ($noHydrator === false) {
             $class->addStmt(
-                $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+                $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
             )->addStmt(
-                $factory->property('hydrator')->setType($hydrator->className->relative)->makeReadonly()->makePrivate()
+                $factory->property('hydrator')->setType($hydrator->className->relative)->makeReadonly()->makePrivate(),
             );
 
             $constructor->addParam(
-                (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+                (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'responseSchemaValidator'
+                        'responseSchemaValidator',
                     ),
                     new Node\Expr\Variable('responseSchemaValidator'),
-                )
+                ),
             )->addParam(
-                (new Param('hydrator'))->setType($hydrator->className->relative)
+                (new Param('hydrator'))->setType($hydrator->className->relative),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'hydrator'
+                        'hydrator',
                     ),
                     new Node\Expr\Variable('hydrator'),
-                )
+                ),
             );
         }
 
         if ($operation->matchMethod === 'STREAM') {
             $class->addStmt(
-                $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
+                $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate(),
             );
             $constructor->addParam(
-                (new Param('browser'))->setType('\\' . Browser::class)
+                (new Param('browser'))->setType('\\' . Browser::class),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'browser'
+                        'browser',
                     ),
                     new Node\Expr\Variable('browser'),
-                )
+                ),
             );
         }
 

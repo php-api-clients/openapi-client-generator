@@ -33,48 +33,41 @@ final class Client implements ClientInterface
     }
     // phpcs:disable
     /**
-     * @return ($call is ListPets::OPERATION_MATCH ? Schema\Operations\ListPets\Response\ApplicationJson\Ok : ($call is CreatePets::OPERATION_MATCH ? \Psr\Http\Message\ResponseInterface : Schema\Operations\ShowPetById\Response\ApplicationJson\Ok)))
+     * @return ($call is Operation\Pets\List_::OPERATION_MATCH ? Operations\Pets\List_\Response\ApplicationJson\Ok : ($call is Operation\Pets\Create::OPERATION_MATCH ? \Psr\Http\Message\ResponseInterface : Operations\ShowPetById\Response\ApplicationJson\Ok)))
      */
     // phpcs:enable
     public function call(string $call, array $params = array())
     {
-        $result = \React\Async\await($this->callAsync($call, $params));
-        if ($result instanceof \Rx\Observable) {
-            $result = \WyriHaximus\React\awaitObservable($result);
-        }
-        return $result;
-    }
-    // phpcs:disable
-    /**
-     * @return ($call is ListPets::OPERATION_MATCH ? \React\Promise\PromiseInterface<Schema\Operations\ListPets\Response\ApplicationJson\Ok> : ($call is CreatePets::OPERATION_MATCH ? \React\Promise\PromiseInterface<\Psr\Http\Message\ResponseInterface> : \React\Promise\PromiseInterface<Schema\Operations\ShowPetById\Response\ApplicationJson\Ok>)))
-     */
-    // phpcs:enable
-    public function callAsync(string $call, array $params = array())
-    {
         [$method, $path] = explode(' ', $call);
         $pathChunks = explode('/', $path);
         $pathChunksCount = count($pathChunks);
+        $matched = false;
         if ($method === 'GET') {
             if ($pathChunksCount === 2) {
+                $matched = true;
                 if (\array_key_exists(Router\Get\Two::class, $this->router) == false) {
                     $this->router[Router\Get\Two::class] = new Router\Get\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
-                return $this->router[Router\Get\Two::class]->call($call, $params, $pathChunks);
+                $this->router[Router\Get\Two::class]->call($call, $params, $pathChunks);
             } elseif ($pathChunksCount === 3) {
+                $matched = true;
                 if (\array_key_exists(Router\Get\Three::class, $this->router) == false) {
                     $this->router[Router\Get\Three::class] = new Router\Get\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
-                return $this->router[Router\Get\Three::class]->call($call, $params, $pathChunks);
+                $this->router[Router\Get\Three::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'POST') {
             if ($pathChunksCount === 2) {
+                $matched = true;
                 if (\array_key_exists(Router\Post\Two::class, $this->router) == false) {
                     $this->router[Router\Post\Two::class] = new Router\Post\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
                 return $this->router[Router\Post\Two::class]->call($call, $params, $pathChunks);
             }
         }
-        throw new \InvalidArgumentException();
+        if ($matched === false) {
+            throw new \InvalidArgumentException();
+        }
     }
     public function operations() : OperationsInterface
     {

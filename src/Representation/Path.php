@@ -8,9 +8,7 @@ use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 
 final class Path
 {
-    /**
-     * @param array<Operation> $operations
-     */
+    /** @param array<Operation> $operations */
     public function __construct(
         public readonly ClassString $className,
         public readonly Hydrator $hydrator,

@@ -30,7 +30,7 @@
     "{{ require.name }}": "{{ require.version }}",
 {% endfor %}
 {% endif %}
-    "wyrihaximus/async-test-utilities": "^6.1"
+    "wyrihaximus/async-test-utilities": "^7"
   },
   "autoload": {
     "psr-4": {
@@ -42,6 +42,13 @@
       "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
     }
   },
+{% if suggests is iterable and suggests|length > 0 %}
+"suggest": {
+{% for suggest in suggests %}
+"api-clients/{{ suggest.name }}": "{{ suggest.reason }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+},
+{% endif %}
   "config": {
     "sort-packages": true,
     "platform": {
@@ -55,15 +62,5 @@
       "wyrihaximus/composer-update-bin-autoload-path": true,
       "infection/extension-installer": true
     }
-  },
-{% if suggests is iterable and suggests|length > 0 %}
-"sugest": {
-{% for suggest in suggests %}
-"api-clients/{{ suggest.name }}": "{{ suggest.reason }}"{% if not loop.last %},{% endif %}
-{% endfor %}
-},
-{% endif %}
-  "require-dev": {
-    "wyrihaximus/async-test-utilities": "^5.0"
   }
 }

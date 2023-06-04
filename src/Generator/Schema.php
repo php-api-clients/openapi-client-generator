@@ -64,7 +64,7 @@ final class Schema
                     ),
                 ),
             ],
-            Class_::MODIFIER_PUBLIC
+            Class_::MODIFIER_PUBLIC,
         );
 
         $class = $factory->class($className->className)->makeReadonly();
@@ -76,31 +76,31 @@ final class Schema
         }
 
         $class->addStmt(
-            $schemaJson
+            $schemaJson,
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
                         'SCHEMA_TITLE',
                         new Node\Scalar\String_(
-                            $schema->title
-                        )
+                            $schema->title,
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PUBLIC
-            )
+                Class_::MODIFIER_PUBLIC,
+            ),
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
                         'SCHEMA_DESCRIPTION',
                         new Node\Scalar\String_(
-                            $schema->description
-                        )
+                            $schema->description,
+                        ),
                     ),
                 ],
-                Class_::MODIFIER_PUBLIC
-            )
+                Class_::MODIFIER_PUBLIC,
+            ),
         )->addStmt(
             new Node\Stmt\ClassConst(
                 [
@@ -109,8 +109,8 @@ final class Schema
                         $factory->val(json_encode($schema->example)),
                     ),
                 ],
-                Class_::MODIFIER_PUBLIC
-            )
+                Class_::MODIFIER_PUBLIC,
+            ),
         );
 
         $constructor       = (new BuilderFactory())->method('__construct')->makePublic();
@@ -263,9 +263,7 @@ final class Schema
         );
     }
 
-    /**
-     * @return iterable<Representation\Schema>
-     */
+    /** @return iterable<Representation\Schema> */
     private static function getUnionTypeSchemas(Representation\PropertyType $type): iterable
     {
         if (! is_array($type->payload)) {

@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Tests\Client\PetStore\Operation;
+namespace ApiClients\Tests\Client\PetStore\Operation\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -13,7 +13,7 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final class CreatePetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
+final class CreateTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
 {
     /**
      * @test
@@ -26,11 +26,11 @@ final class CreatePetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->call(Operation\CreatePets::OPERATION_MATCH, (static function (array $data) : array {
+        $result = $client->call(Operation\Pets\Create::OPERATION_MATCH, (static function (array $data) : array {
             return $data;
-        })(json_decode(Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
+        })(json_decode(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
     }
     /**
      * @test
@@ -43,9 +43,9 @@ final class CreatePetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = \React\Async\await($client->operations()->fallback()->createPets(json_decode(Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
+        $result = $client->operations()->pets()->create(json_decode(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true));
     }
     /**
      * @test
@@ -58,11 +58,11 @@ final class CreatePetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->call(Operation\CreatePets::OPERATION_MATCH, (static function (array $data) : array {
+        $result = $client->call(Operation\Pets\Create::OPERATION_MATCH, (static function (array $data) : array {
             return $data;
-        })(json_decode(Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
+        })(json_decode(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
     }
     /**
      * @test
@@ -75,9 +75,9 @@ final class CreatePetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('POST', '/pets', \Prophecy\Argument::type('array'), Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA)->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = \React\Async\await($client->operations()->fallback()->createPets(json_decode(Schema\CreatePets\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true)));
+        $result = $client->operations()->pets()->create(json_decode(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_EXAMPLE_DATA, true));
         self::assertArrayHasKey('code', $result);
         self::assertSame(201, $result['code']);
     }

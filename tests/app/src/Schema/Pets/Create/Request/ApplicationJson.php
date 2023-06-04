@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Schema\CreatePets\Request;
+namespace ApiClients\Client\PetStore\Schema\Pets\Create\Request;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;

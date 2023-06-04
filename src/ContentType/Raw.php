@@ -9,9 +9,7 @@ use PhpParser\Node\Expr;
 
 final class Raw implements ContentType
 {
-    /**
-     * @return iterable<string>
-     */
+    /** @return iterable<string> */
     public static function contentType(): iterable
     {
         yield 'text/plain';

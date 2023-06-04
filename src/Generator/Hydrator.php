@@ -15,9 +15,7 @@ use function trim;
 
 final class Hydrator
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator $hydrator): iterable
     {
         $schemaClasses = [];
@@ -38,10 +36,10 @@ final class Hydrator
                     array_filter(
                         $schemaClasses,
                         static fn (string $className): bool => count((new ReflectionMethod($className, '__construct'))->getParameters()) > 0,
-                    )
+                    ),
                 ),
                 trim($hydrator->className->fullyQualified->source, '\\'),
-            )
+            ),
         );
     }
 }

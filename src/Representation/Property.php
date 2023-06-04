@@ -6,9 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Representation;
 
 final class Property
 {
-    /**
-     * @param array<mixed> $enum
-     */
+    /** @param array<mixed> $enum */
     public function __construct(
         public readonly string $name,
         public readonly string $sourceName,

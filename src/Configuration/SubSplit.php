@@ -11,9 +11,7 @@ use EventSauce\ObjectHydrator\MapFrom;
 
 final readonly class SubSplit
 {
-    /**
-     * @param array<class-string<SectionGenerator>>|null $sectionGenerator
-     */
+    /** @param array<class-string<SectionGenerator>>|null $sectionGenerator */
     public function __construct(
         #[MapFrom('subSplitsDestination')]
         public string $subSplitsDestination,
@@ -26,7 +24,7 @@ final readonly class SubSplit
         public string $fullName,
         public string $vendor,
         #[MapFrom('sectionGenerator')]
-        public ?array $sectionGenerator,
+        public array|null $sectionGenerator,
         #[MapFrom('rootPackage')]
         public RootPackage $rootPackage,
         #[MapFrom('sectionPackage')]

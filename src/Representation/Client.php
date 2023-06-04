@@ -8,7 +8,7 @@ final class Client
 {
     /** @param array<Path> $paths */
     public function __construct(
-        public readonly ?string $baseUrl,
+        public readonly string|null $baseUrl,
         /** @var array<Path> $paths */
         public readonly array $paths,
     ) {

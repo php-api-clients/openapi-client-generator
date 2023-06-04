@@ -9,14 +9,12 @@ use EventSauce\ObjectHydrator\PropertyCasters\CastListToType;
 
 final readonly class State
 {
-    /**
-     * @param array<string> $additionalFiles
-     */
+    /** @param array<string> $additionalFiles */
     public function __construct(
         public string $file,
         #[MapFrom('additionalFiles')]
         #[CastListToType('string')]
-        public ?array $additionalFiles,
+        public array|null $additionalFiles,
     ) {
     }
 }

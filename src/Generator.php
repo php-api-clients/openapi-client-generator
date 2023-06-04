@@ -146,7 +146,7 @@ final readonly class Generator
                 file_get_contents(
                     $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $this->configuration->state->file,
                 ),
-                true
+                true,
             ) : [
                 'specHash' => '',
                 'generatedFiles' => [
@@ -164,7 +164,7 @@ final readonly class Generator
             $this->state->specHash === $this->currentSpecHash &&
             (static function (string $root, Files $files, string ...$additionalFiles): bool {
                 foreach ($additionalFiles as $additionalFile) {
-                    if (!$files->has($additionalFile)) {
+                    if (! $files->has($additionalFile)) {
                         return false;
                     }
 
@@ -285,13 +285,12 @@ final readonly class Generator
                 (new ObjectMapperUsingReflection())->serializeObject(
                     $this->state,
                 ),
+                JSON_PRETTY_PRINT,
             ),
         );
     }
 
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     private function all(string $configurationLocation): iterable
     {
         $schemaRegistry          = new SchemaRegistry(
@@ -329,9 +328,7 @@ final readonly class Generator
 
         $this->statusOutput->markStepDone('gathering_schemas');
 
-        /**
-         * @var array<class-string, array<Representation\WebHook>> $webHooks
-         */
+        /** @var array<class-string, array<Representation\WebHook>> $webHooks */
         $webHooks = [];
         if (count($this->spec->webhooks ?? []) > 0) {
             $this->statusOutput->itemForStep('gathering_webhooks', count($this->spec->webhooks));
@@ -598,7 +595,7 @@ final readonly class Generator
         \WyriHaximus\SubSplitTools\Files::setUp(
             $configurationLocation . $this->configuration->templates->dir,
             $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR,
-            (static function (string $namespace, ?array $variables, array $operations, array $webHooks, Configuration $configuration): array {
+            (static function (string $namespace, array|null $variables, array $operations, array $webHooks, Configuration $configuration): array {
                 $vars              = $variables ?? [];
                 $vars['namespace'] = $namespace;
                 $vars['client']    = [
@@ -639,9 +636,7 @@ final readonly class Generator
         }
 
         $splits = [];
-        /**
-         * @var array<string, array<Representation\Hydrator>> $hydrators
-         */
+        /** @var array<string, array<Representation\Hydrator>> $hydrators */
         $hydrators  = [];
         $operations = [];
         $this->statusOutput->itemForStep('generating_operations', count($paths));
@@ -866,7 +861,7 @@ final readonly class Generator
                 $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
                 $this->configuration->namespace->source,
                 $webHooksHydrators,
-                $webHooks
+                $webHooks,
             );
 
             $this->statusOutput->markStepDone('generating_webhooks_entry_point');
@@ -877,7 +872,7 @@ final readonly class Generator
             foreach ($sectionHydrators as $hydrator) {
                 yield from Hydrator::generate(
                     $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->sectionPackage, $section) . $this->configuration->destination->source,
-                    $hydrator
+                    $hydrator,
                 );
             }
 
@@ -895,7 +890,7 @@ final readonly class Generator
                 foreach ($hydratorSplit as $hydrators) {
                     yield from [...$hydrators];
                 }
-            })($hydrators)
+            })($hydrators),
         );
 
         $this->statusOutput->markStepDone('generating_hydrators_entry_point');

@@ -46,6 +46,6 @@ final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCas
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->request('GET', '/pets/generated', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = \React\Async\await($client->operations()->fallback()->showPetById('generated'));
+        $result = $client->operations()->showPetById('generated');
     }
 }

@@ -11,9 +11,7 @@ use PhpParser\Node\Expr;
 
 final class Json implements ContentType
 {
-    /**
-     * @return iterable<string>
-     */
+    /** @return iterable<string> */
     public static function contentType(): iterable
     {
         yield 'application/json';

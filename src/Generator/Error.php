@@ -11,9 +11,7 @@ use PhpParser\BuilderFactory;
 
 final class Error
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, Schema $schema): iterable
     {
         $factory = new BuilderFactory();
@@ -22,9 +20,9 @@ final class Error
         $class = $factory->class($schema->errorClassName->className)->extend('\\' . \Error::class)->makeFinal();
 
         $class->addStmt((new BuilderFactory())->method('__construct')->makePublic()->addParam(
-            (new PromotedPropertyAsParam('status'))->setType('int')
+            (new PromotedPropertyAsParam('status'))->setType('int'),
         )->addParam(
-            (new PromotedPropertyAsParam('error'))->setType($schema->className->relative)
+            (new PromotedPropertyAsParam('error'))->setType($schema->className->relative),
         ));
 
         yield new File($pathPrefix, $schema->errorClassName->relative, $stmt->addStmt($class)->getNode());

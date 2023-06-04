@@ -24,7 +24,7 @@ final class WebHook
         PathItem $webhook,
         SchemaRegistry $schemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook {
-        if ($webhook->post === null || $webhook->post->requestBody === null || ! property_exists($webhook->post->requestBody, 'content')) {
+        if ($webhook->post?->requestBody === null || ! property_exists($webhook->post->requestBody, 'content')) {
 //            var_export(json_decode(json_encode($webhook->getSerializableData())));
             throw new RuntimeException('Missing request body content to deal with');
         }
@@ -44,7 +44,7 @@ final class WebHook
                     'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $header->name)),
                 ),
                 $header->schema,
-                $schemaRegistry
+                $schemaRegistry,
             ), ExampleData::determiteType($headerSpec->example));
         }
 

@@ -8,11 +8,11 @@ use PhpParser\Node;
 
 final readonly class ChunkCount
 {
-    /**
-     * @param array<Node> $nodes
-     */
+    /** @param array<Node> $nodes */
     public function __construct(
         public string $className,
+        public string $returnType,
+        public string $docBlockReturnType,
         public array $nodes,
     ) {
     }

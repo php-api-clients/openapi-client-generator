@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Operation;
+namespace ApiClients\Client\PetStore\Operation\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -13,27 +13,30 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final class ListPets
+final class Create
 {
-    public const OPERATION_ID = 'listPets';
-    public const OPERATION_MATCH = 'GET /pets';
-    private const METHOD = 'GET';
+    public const OPERATION_ID = 'pets/create';
+    public const OPERATION_MATCH = 'POST /pets';
+    private const METHOD = 'POST';
     private const PATH = '/pets';
-    /**How many items to return at one time (max 100) **/
-    private int $limit;
+    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator;
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
     private readonly Hydrator\Operation\Pets $hydrator;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets $hydrator, int $limit)
+    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets $hydrator)
     {
-        $this->limit = $limit;
+        $this->requestSchemaValidator = $requestSchemaValidator;
         $this->responseSchemaValidator = $responseSchemaValidator;
         $this->hydrator = $hydrator;
     }
-    public function createRequest() : \Psr\Http\Message\RequestInterface
+    public function createRequest(array $data) : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{limit}'), array($this->limit), self::PATH . '?limit={limit}'));
+        $this->requestSchemaValidator->validate($data, \cebe\openapi\Reader::readFromJson(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_JSON, \cebe\openapi\spec\Schema::class));
+        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array(), array(), self::PATH), array('Content-Type' => 'application/json'), json_encode($data));
     }
-    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : mixed
+    /**
+     * @return array{code: int}
+     */
+    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : array
     {
         $code = $response->getStatusCode();
         [$contentType] = explode(';', $response->getHeaderLine('Content-Type'));
@@ -49,6 +52,13 @@ final class ListPets
                         throw new ErrorSchemas\Error($code, $this->hydrator->hydrateObject(Schema\Error::class, $body));
                 }
                 break;
+        }
+        switch ($code) {
+            /**
+             * Null response
+             **/
+            case 201:
+                return array('code' => 201);
         }
         throw new \RuntimeException('Unable to find matching response code and content type');
     }

@@ -11,7 +11,7 @@ final class Parameter
         public readonly string $targetName,
         public readonly string $description,
         public readonly string $type,
-        public readonly ?string $format,
+        public readonly string|null $format,
         public readonly string $location,
         public readonly mixed $default,
         public readonly ExampleData $example,

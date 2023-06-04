@@ -24,7 +24,7 @@ final class Path
         PathItem $pathItem,
         SchemaRegistry $schemaRegistry,
         ThrowableSchema $throwableSchemaRegistry,
-        ?Voter $voters,
+        Voter|null $voters,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Path {
         $className  = Utils::fixKeyword($className);
         $operations = [];

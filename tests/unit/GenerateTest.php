@@ -28,25 +28,23 @@ use const DIRECTORY_SEPARATOR;
 
 final class GenerateTest extends TestCase
 {
-    /**
-     * @test
-     */
+    /** @test */
     public function generateAndCompare(): void
     {
-        $yaml                        = Yaml::parseFile(__DIR__ . '/openapi-client-petstore.yaml');
+        $yaml                        = Yaml::parseFile(dirname(__DIR__) . '/openapi-client-petstore.yaml');
         $yaml['destination']['root'] = 'test-app';
         $configuration               = (new ObjectMapperUsingReflection())->hydrateObject(Configuration::class, $yaml);
         (new Generator(
             $configuration,
-            dirname(__DIR__ . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
+            dirname(dirname(__DIR__) . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
         ))->generate(
             $configuration->namespace->source . '\\',
             $configuration->namespace->test . '\\',
-            dirname(__DIR__ . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
+            dirname(dirname(__DIR__) . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
         );
 
-        $appRootPath     = __DIR__ . '/app/';
-        $testAppRootPath = __DIR__ . '/test-app/';
+        $appRootPath     = dirname(__DIR__) . '/app/';
+        $testAppRootPath = dirname(__DIR__) . '/test-app/';
 
         $appMap     = [];
         $testAppMap = [];

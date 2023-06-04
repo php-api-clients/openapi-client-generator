@@ -24,7 +24,7 @@ final class PrivatePromotedPropertyAsParam extends Param
             $this->variadic,
             [],
             Node\Stmt\Class_::MODIFIER_PRIVATE,
-            $this->attributeGroups
+            $this->attributeGroups,
         );
     }
 }

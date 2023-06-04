@@ -33,7 +33,7 @@ final class ShowPetById
     {
         return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{petId}'), array($this->petId), self::PATH));
     }
-    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : mixed
+    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : void
     {
         $code = $response->getStatusCode();
         [$contentType] = explode(';', $response->getHeaderLine('Content-Type'));

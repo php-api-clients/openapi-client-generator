@@ -51,14 +51,14 @@ final class WebHooks
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    'requestSchemaValidator'
+                    'requestSchemaValidator',
                 ),
                 new Node\Expr\Variable('requestSchemaValidator'),
             ),
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    'hydrator'
+                    'hydrator',
                 ),
                 new Node\Expr\Variable('hydrator'),
             ),
@@ -73,24 +73,24 @@ final class WebHooks
                     ' * @param class-string<H> $className',
                     ' * @return H',
                     ' */',
-                ]))
+                ])),
             )->setReturnType('object')->addParam(
-                (new Param('className'))->setType('string')
+                (new Param('className'))->setType('string'),
             )->addParam(
-                (new Param('data'))->setType('array')
+                (new Param('data'))->setType('array'),
             )->addStmt(new Node\Stmt\Return_(
                 new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'hydrator'
+                        'hydrator',
                     ),
                     'hydrateObject',
                     [
                         new Node\Arg(new Node\Expr\Variable('className')),
                         new Node\Arg(new Node\Expr\Variable('data')),
-                    ]
-                )
-            ))
+                    ],
+                ),
+            )),
         );
 
         $class->addStmt(
@@ -99,9 +99,9 @@ final class WebHooks
                     '/**',
                     ' * @return array{className: class-string, data: mixed}',
                     ' */',
-                ]))
+                ])),
             )->setReturnType('array')->addParam(
-                (new Param('object'))->setType('object')
+                (new Param('object'))->setType('object'),
             )->addStmt(new Node\Stmt\Return_(
                 new Node\Expr\Array_([
                     new Node\Expr\ArrayItem(
@@ -115,17 +115,17 @@ final class WebHooks
                         new Node\Expr\MethodCall(
                             new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'hydrator'
+                                'hydrator',
                             ),
                             'serializeObject',
                             [
                                 new Node\Arg(new Node\Expr\Variable('object')),
-                            ]
+                            ],
                         ),
-                        new Node\Scalar\String_('data')
+                        new Node\Scalar\String_('data'),
                     ),
-                ])
-            ))
+                ]),
+            )),
         );
 
         $method     = $factory->method('resolve')->makePublic()->setReturnType('object')->setDocComment(new Doc(implode(PHP_EOL, [
@@ -147,13 +147,13 @@ final class WebHooks
                     }
 
                     return $hooks;
-                })($webHooks))
+                })($webHooks)),
             )),
             ' */',
         ])))->addParam(
-            (new Param('headers'))->setType('array')
+            (new Param('headers'))->setType('array'),
         )->addParam(
-            (new Param('data'))->setType('array')
+            (new Param('data'))->setType('array'),
         );
         $gotoLabels = 'webhooks_aaaaa';
         $tmts       = [];
@@ -211,7 +211,7 @@ final class WebHooks
                     new Arg(
                         new Node\Expr\Variable('headers'),
                     ),
-                ]
+                ],
             ),
         );
         $tmts[]     = new Node\Expr\Assign(
@@ -220,8 +220,8 @@ final class WebHooks
                 new Node\Name('\\' . RuntimeException::class),
                 [
                     new Arg(new Node\Scalar\String_('No event matching given headers and data')),
-                ]
-            )
+                ],
+            ),
         );
 
         foreach ($webHooks as $event => $hooks) {
@@ -236,7 +236,7 @@ final class WebHooks
                         new Node\Expr\Instanceof_(
                             new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                $eventSanitized
+                                $eventSanitized,
                             ),
                             new Node\Expr\ConstFetch(new Node\Name($eventClassname)),
                         ),
@@ -248,39 +248,39 @@ final class WebHooks
                                 new Node\Expr\Assign(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        $eventSanitized
+                                        $eventSanitized,
                                     ),
                                     new Node\Expr\New_(
                                         new Node\Name($eventClassname),
                                         [
                                             new Node\Arg(new Node\Expr\PropertyFetch(
                                                 new Node\Expr\Variable('this'),
-                                                'requestSchemaValidator'
+                                                'requestSchemaValidator',
                                             )),
                                             new Node\Arg(new Node\Expr\MethodCall(
                                                 new Node\Expr\PropertyFetch(
                                                     new Node\Expr\Variable('this'),
-                                                    'hydrator'
+                                                    'hydrator',
                                                 ),
-                                                'getObjectMapper' . ucfirst($webHooksHydrators[$event]->methodName)
+                                                'getObjectMapper' . ucfirst($webHooksHydrators[$event]->methodName),
                                             )),
-                                        ]
+                                        ],
                                     ),
                                 ),
                             ),
                         ],
-                    ]
+                    ],
                 ),
                 new Node\Stmt\Return_(new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        $eventSanitized
+                        $eventSanitized,
                     ),
                     'resolve',
                     [
                         new Node\Arg(new Node\Expr\Variable('headers')),
                         new Node\Arg(new Node\Expr\Variable('data')),
-                    ]
+                    ],
                 )),
             ], [
                 new Node\Stmt\Catch_(
@@ -288,7 +288,7 @@ final class WebHooks
                     new Node\Expr\Variable('error'),
                     [
                         new Node\Stmt\Goto_($gotoLabels),
-                    ]
+                    ],
                 ),
             ]);
             $tmts[] = new Node\Stmt\Label($gotoLabels);

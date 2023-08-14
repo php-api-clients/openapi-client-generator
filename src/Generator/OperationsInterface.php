@@ -10,6 +10,8 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use Jawira\CaseConverter\Convert;
 use PhpParser\BuilderFactory;
 
+use function strlen;
+
 final class OperationsInterface
 {
     /**
@@ -23,15 +25,28 @@ final class OperationsInterface
         $stmt    = $factory->namespace($configuration->namespace->source);
         $class   = $factory->interface('OperationsInterface');
 
+        /** @var array<string, array<Operation>> $groups */
         $groups = [];
         foreach ($operations as $operation) {
-            $groups[$operation->group] = $operation->group;
+            $groups[$operation->group][] = $operation;
         }
 
-        foreach ($groups as $group) {
-            $class->addStmt(
-                $factory->method((new Convert($group))->toCamel())->makePublic()->setReturnType('Operation\\' . $group),
-            );
+        foreach ($groups as $group => $groupOperations) {
+            if (strlen($group) > 0) {
+                $class->addStmt(
+                    $factory->method((new Convert($group))->toCamel())->makePublic()->setReturnType('Operation\\' . $group),
+                );
+                continue;
+            }
+
+            foreach ($groupOperations as $groupOperation) {
+                $class->addStmt(
+                    Helper\Operation::methodSignature(
+                        $factory->method($groupOperation->nameCamel)->makePublic(),
+                        $groupOperation,
+                    ),
+                );
+            }
         }
 
         yield new File($pathPrefix, 'OperationsInterface', $stmt->addStmt($class)->getNode());

@@ -36,9 +36,7 @@ use const PHP_EOL;
 
 final class OperationTest
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, Representation\Operation $operation, Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
     {
         if (count($operation->response) === 0) {
@@ -51,7 +49,7 @@ final class OperationTest
         $class = $factory->class($operation->className->className . 'Test')->extend(
             new Node\Name(
                 '\\' . AsyncTestCase::class,
-            )
+            ),
         )->makeFinal();
 
         foreach ($operation->response as $contentTypeSchema) {
@@ -218,7 +216,7 @@ final class OperationTest
                 '/**',
                 ' * @test',
                 ' */',
-            ]))
+            ])),
         )->addStmts([
             ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration, $contentTypePayload),
             new Node\Stmt\Expression(
@@ -238,7 +236,7 @@ final class OperationTest
                                         $operation->className->relative,
                                     ),
                                     'OPERATION_MATCH',
-                                )
+                                ),
                             ),
                             new Arg(
                                 new Node\Expr\FuncCall(
@@ -268,7 +266,7 @@ final class OperationTest
                                                                     ),
                                                                     new Node\Scalar\String_($parameter->targetName),
                                                                 ),
-                                                                $parameter->example->node
+                                                                $parameter->example->node,
                                                             ),
                                                         );
                                                     }
@@ -337,7 +335,7 @@ final class OperationTest
                 '/**',
                 ' * @test',
                 ' */',
-            ]))
+            ])),
         )->addStmts([
             ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration, $contentTypePayload),
             new Node\Stmt\Expression(
@@ -345,56 +343,52 @@ final class OperationTest
                     new Node\Expr\Variable(
                         'result',
                     ),
-                    new Node\Expr\FuncCall(
-                        new Node\Name(
-                            '\React\Async\await',
-                        ),
-                        [
-                            new Arg(
-                                new Node\Expr\MethodCall(
-                                    new Node\Expr\MethodCall(
-                                        new Node\Expr\MethodCall(
-                                            new Node\Expr\Variable(
-                                                'client',
-                                            ),
-                                            'operations',
-                                        ),
-                                        (new Convert($operation->group))->toCamel(),
-                                    ),
-                                    (new Convert($operation->name))->toCamel(),
-                                    [
-                                        ...((static function (array $parameters): iterable {
-                                            foreach ($parameters as $parameter) {
-                                                yield new Arg($parameter->example->node);
-                                            }
-                                        })($operation->parameters)),
-                                        ...($request === null ? [] : [
-                                            new Arg(new Node\Expr\FuncCall(
-                                                new Node\Name(
-                                                    'json_decode',
-                                                ),
-                                                [
-                                                    new Arg(
-                                                        new Node\Expr\ClassConstFetch(
-                                                            new Node\Name(
-                                                                $request->schema->className->relative,
-                                                            ),
-                                                            'SCHEMA_EXAMPLE_DATA',
-                                                        ),
-                                                    ),
-                                                    new Arg(
-                                                        new Node\Expr\ConstFetch(
-                                                            new Node\Name(
-                                                                'true',
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ],
-                                            )),
-                                        ]),
-                                    ],
-                                ),
+                    new Node\Expr\MethodCall(
+                        $operation->group === null ? new Node\Expr\MethodCall(
+                            new Node\Expr\Variable(
+                                'client',
                             ),
+                            'operations',
+                        ) : new Node\Expr\MethodCall(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable(
+                                    'client',
+                                ),
+                                'operations',
+                            ),
+                            (new Convert($operation->group))->toCamel(),
+                        ),
+                        (new Convert($operation->name))->toCamel(),
+                        [
+                            ...((static function (array $parameters): iterable {
+                                foreach ($parameters as $parameter) {
+                                    yield new Arg($parameter->example->node);
+                                }
+                            })($operation->parameters)),
+                            ...($request === null ? [] : [
+                                new Arg(new Node\Expr\FuncCall(
+                                    new Node\Name(
+                                        'json_decode',
+                                    ),
+                                    [
+                                        new Arg(
+                                            new Node\Expr\ClassConstFetch(
+                                                new Node\Name(
+                                                    $request->schema->className->relative,
+                                                ),
+                                                'SCHEMA_EXAMPLE_DATA',
+                                            ),
+                                        ),
+                                        new Arg(
+                                            new Node\Expr\ConstFetch(
+                                                new Node\Name(
+                                                    'true',
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                )),
+                            ]),
                         ],
                     ),
                 ),
@@ -480,9 +474,7 @@ final class OperationTest
         );
     }
 
-    /**
-     * @return array<Node>
-     */
+    /** @return array<Node> */
     private static function testSetUp(Node\Expr $responseSchemaFetch, Representation\Operation $operation, Representation\OperationRequestBody|null $request, Representation\OperationResponse|Representation\OperationEmptyResponse $response, Configuration $configuration, Representation\Schema|Representation\PropertyType|string|null $contentTypePayload): array
     {
         return [
@@ -574,7 +566,7 @@ final class OperationTest
                                         '\\' . AuthenticationInterface::class,
                                     ),
                                     'class',
-                                )
+                                ),
                             ),
                         ],
                     ),
@@ -623,7 +615,7 @@ final class OperationTest
                                         '\\' . Browser::class,
                                     ),
                                     'class',
-                                )
+                                ),
                             ),
                         ],
                     ),
@@ -661,7 +653,7 @@ final class OperationTest
             new Node\Expr\MethodCall(
                 new Node\Expr\MethodCall(
                     new Node\Expr\Variable(
-                        'browser'
+                        'browser',
                     ),
                     'withFollowRedirects',
                     [
@@ -698,7 +690,7 @@ final class OperationTest
                             new Arg(
                                 new Node\Scalar\String_(
                                     $operation->method,
-                                )
+                                ),
                             ),
                             new Arg(
                                 new Node\Scalar\String_(
@@ -740,7 +732,7 @@ final class OperationTest
 
                                         return count($items) > 0 ? '?' . implode('&', $items) : '';
                                     })($operation->parameters),
-                                )
+                                ),
                             ),
                             new Arg(
                                 new Node\Expr\StaticCall(

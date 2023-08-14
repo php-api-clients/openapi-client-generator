@@ -72,9 +72,6 @@ final class Utils
     {
         $fqcn = str_replace('\\', '/', $fqcn);
 
-        /**
-         * @var class-string
-         */
         return trim(self::cleanUpNamespace(basename($fqcn)), '\\');
     }
 

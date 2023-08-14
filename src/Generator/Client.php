@@ -11,6 +11,8 @@ use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Methods\ChunkCount;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
+use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use EventSauce\ObjectHydrator\ObjectMapper;
@@ -25,7 +27,6 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use React\EventLoop\Loop;
 use React\Http\Browser;
-use React\Promise\PromiseInterface;
 use ReflectionClass;
 use ReflectionParameter;
 use Rx\Observable;
@@ -41,6 +42,7 @@ use function array_unique;
 use function count;
 use function explode;
 use function implode;
+use function strlen;
 use function strpos;
 use function trim;
 use function ucfirst;
@@ -49,9 +51,7 @@ use const PHP_EOL;
 
 final class Client
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(Configuration $configuration, string $pathPrefix, Representation\Client $client, Routers $routers): iterable
     {
         $operations = [];
@@ -63,13 +63,13 @@ final class Client
         $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
 
         $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->addStmt(
-            $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()
+            $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate(),
         )->addStmt(
-            $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()
+            $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate(),
         )->addStmt(
-            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
         )->addStmt(
-            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()
+            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
         );
 
         if ($configuration->entryPoints->call) {
@@ -80,31 +80,31 @@ final class Client
 
         if ($configuration->entryPoints->operations) {
             $class->addStmt(
-                $factory->property('operations')->setType('OperationsInterface')->makeReadonly()->makePrivate()
+                $factory->property('operations')->setType('OperationsInterface')->makeReadonly()->makePrivate(),
             );
         }
 
         if ($configuration->entryPoints->webHooks) {
             $class->addStmt(
-                $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate()
+                $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate(),
             );
         }
 
         $class->addStmt(
-            $factory->property('hydrators')->setType('Hydrators')->makeReadonly()->makePrivate()
+            $factory->property('hydrators')->setType('Hydrators')->makeReadonly()->makePrivate(),
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new Param('authentication'))->setType('\\' . AuthenticationInterface::class)
+                (new Param('authentication'))->setType('\\' . AuthenticationInterface::class),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'authentication'
+                        'authentication',
                     ),
                     new Node\Expr\Variable('authentication'),
-                )
+                ),
             )->addParam(
-                (new Param('browser'))->setType('\\' . Browser::class)
+                (new Param('browser'))->setType('\\' . Browser::class),
             )->addStmt((static function (Representation\Client $client): Node\Expr {
                 $assignExpr = new Node\Expr\Variable('browser');
 
@@ -122,7 +122,7 @@ final class Client
 
                 return new Node\Expr\Assign(new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    'browser'
+                    'browser',
                 ), new Node\Expr\MethodCall(
                     $assignExpr,
                     'withFollowRedirects',
@@ -136,7 +136,7 @@ final class Client
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'requestSchemaValidator'
+                        'requestSchemaValidator',
                     ),
                     new Node\Expr\New_(
                         new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
@@ -145,14 +145,14 @@ final class Client
                                 new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
                                 'VALIDATE_AS_REQUEST',
                             )),
-                        ]
+                        ],
                     ),
-                )
+                ),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'responseSchemaValidator'
+                        'responseSchemaValidator',
                     ),
                     new Node\Expr\New_(
                         new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
@@ -161,26 +161,26 @@ final class Client
                                 new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
                                 'VALIDATE_AS_RESPONSE',
                             )),
-                        ]
+                        ],
                     ),
-                )
+                ),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'hydrators'
+                        'hydrators',
                     ),
                     new Node\Expr\New_(
                         new Node\Name('Hydrators'),
-                        []
+                        [],
                     ),
-                )
+                ),
             )->addStmts([
                 ...($configuration->entryPoints->operations ? [
                     new Node\Expr\Assign(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'operations'
+                            'operations',
                         ),
                         new Node\Expr\New_(
                             new Node\Name('Operations'),
@@ -188,7 +188,7 @@ final class Client
                                 new Arg(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'browser'
+                                        'browser',
                                     ),
                                     false,
                                     false,
@@ -198,7 +198,7 @@ final class Client
                                 new Arg(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'authentication'
+                                        'authentication',
                                     ),
                                     false,
                                     false,
@@ -208,7 +208,7 @@ final class Client
                                 new Arg(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'requestSchemaValidator'
+                                        'requestSchemaValidator',
                                     ),
                                     false,
                                     false,
@@ -218,7 +218,7 @@ final class Client
                                 new Arg(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'responseSchemaValidator'
+                                        'responseSchemaValidator',
                                     ),
                                     false,
                                     false,
@@ -228,7 +228,7 @@ final class Client
                                 new Arg(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'hydrators'
+                                        'hydrators',
                                     ),
                                     false,
                                     false,
@@ -244,105 +244,25 @@ final class Client
                     new Node\Expr\Assign(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'webHooks'
+                            'webHooks',
                         ),
                         new Node\Expr\New_(
                             new Node\Name('WebHooks'),
                             [
                                 new Node\Arg(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
-                                    'requestSchemaValidator'
+                                    'requestSchemaValidator',
                                 )),
                                 new Node\Arg(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
-                                    'hydrators'
+                                    'hydrators',
                                 )),
-                            ]
+                            ],
                         ),
                     ),
                 ] : []),
-            ])
+            ]),
         );
-
-        if ($configuration->entryPoints->call) {
-            $class->addStmt(
-                $factory->method('call')->makePublic()->setDocComment(
-                    new Doc(implode(PHP_EOL, [
-                        '// phpcs:disable',
-                        '/**',
-                        ' * @return ' . (static function (array $operations): string {
-                            $count    = count($operations);
-                            $lastItem = $count - 1;
-                            $left     = '';
-                            $right    = '';
-                            for ($i = 0; $i < $count; $i++) {
-                                $returnType = implode('|', [
-                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
-                                    ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
-                                ]);
-                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
-                                if ($i !== $lastItem) {
-                                    $left .= '($call is ' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
-                                } else {
-                                    $left .= $returnType;
-                                }
-
-                                $right .= ')';
-                            }
-
-                            return $left . $right;
-                        })($operations),
-                        ' */',
-                        '// phpcs:enable',
-                    ]))
-                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmts([
-                    new Node\Stmt\Expression(
-                        new Node\Expr\Assign(
-                            new Node\Expr\Variable('result'),
-                            new Node\Expr\FuncCall(
-                                new Node\Name('\React\Async\await'),
-                                [
-                                    new Node\Arg(
-                                        new Node\Expr\MethodCall(
-                                            new Node\Expr\Variable('this'),
-                                            'callAsync',
-                                            [
-                                                new Node\Arg(new Node\Expr\Variable('call')),
-                                                new Node\Arg(new Node\Expr\Variable('params')),
-                                            ]
-                                        )
-                                    ),
-                                ],
-                            ),
-                        ),
-                    ),
-                    new Node\Stmt\If_(
-                        new Node\Expr\Instanceof_(
-                            new Node\Expr\Variable('result'),
-                            new Node\Name('\\' . Observable::class)
-                        ),
-                        [
-                            'stmts' => [
-                                new Node\Stmt\Expression(
-                                    new Node\Expr\Assign(
-                                        new Node\Expr\Variable('result'),
-                                        new Node\Expr\FuncCall(
-                                            new Node\Name('\WyriHaximus\React\awaitObservable'),
-                                            [
-                                                new Arg(new Node\Expr\Variable('result')),
-                                            ],
-                                        )
-                                    ),
-                                ),
-                            ],
-                        ],
-                    ),
-                    new Node\Stmt\Return_(
-                        new Node\Expr\Variable('result'),
-                    ),
-                ])
-            );
-        }
 
         $sortedOperations = [];
         foreach ($client->paths as $path) {
@@ -376,8 +296,68 @@ final class Client
             foreach ($sortedOperations as $method => $ops) {
                 $opsTmts = [];
                 foreach ($ops as $chunkCount => $moar) {
-                    $chunkCountClasses[] = $cc = new ChunkCount(
+                    $returnTypes            = [];
+                    $docBlockReturnTypes    = [];
+                    $traverseForReturnTypes = static function (array $moar) use (&$returnTypes, &$docBlockReturnTypes, &$traverseForReturnTypes): void {
+                        foreach (
+                            array_map(
+                                static fn (array $a): Representation\Operation => $a['operation'],
+                                $moar['operations'],
+                            ) as $operation
+                        ) {
+                            $returnTypes         = [
+                                ...$returnTypes,
+                                ...explode('|', Operation::getResultTypeFromOperation($operation)),
+                            ];
+                            $docBlockReturnTypes = [
+                                ...$docBlockReturnTypes,
+                                ...explode('|', Operation::getDocBlockResultTypeFromOperation($operation)),
+                            ];
+                        }
+
+                        foreach ($moar['paths'] as $path) {
+                            $traverseForReturnTypes($path);
+                        }
+                    };
+
+                    $traverseForReturnTypes($moar);
+                    $returnTypesUnfilterred = implode(
+                        '|',
+                        array_map(
+                            'trim',
+                            array_unique(
+                                $returnTypes,
+                            ),
+                        ),
+                    );
+                    $returnTypes            = implode(
+                        '|',
+                        array_map(
+                            'trim',
+                            array_filter(
+                                array_unique(
+                                    $returnTypes,
+                                ),
+                                static fn (string $type): bool => $type !== 'void',
+                            ),
+                        ),
+                    );
+                    $docBlockReturnTypes    = implode(
+                        '|',
+                        array_map(
+                            'trim',
+                            array_filter(
+                                array_unique(
+                                    $docBlockReturnTypes,
+                                ),
+                                static fn (string $type): bool => $type !== 'void',
+                            ),
+                        ),
+                    );
+                    $chunkCountClasses[]    = $cc = new ChunkCount(
                         'Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert(NumberToWords::transformNumber('en', $chunkCount)))->toPascal(),
+                        $returnTypes,
+                        $docBlockReturnTypes,
                         self::traverseOperations(
                             $moar['operations'], /** @phpstan-ignore-line */
                             $moar['paths'], /** @phpstan-ignore-line */
@@ -386,12 +366,21 @@ final class Client
                         ),
                     );
 
-                    $opsTmts[] = [
+                    $returnOrExpression = $returnTypesUnfilterred === 'void' ? Node\Stmt\Expression::class : Node\Stmt\Return_::class;
+                    $opsTmts[]          = [
                         new Node\Expr\BinaryOp\Identical(
                             new Node\Expr\Variable('pathChunksCount'),
                             new Node\Scalar\LNumber($chunkCount),
                         ),
                         [
+                            new Node\Stmt\Expression(
+                                new Node\Expr\Assign(
+                                    new Node\Expr\Variable('matched'),
+                                    new Expr\ConstFetch(
+                                        new Node\Name('true'),
+                                    ),
+                                ),
+                            ),
                             new Node\Stmt\If_(
                                 new Node\Expr\BinaryOp\Equal(
                                     new Node\Expr\FuncCall(
@@ -403,11 +392,11 @@ final class Client
                                             )),
                                             new Arg(new Node\Expr\PropertyFetch(
                                                 new Node\Expr\Variable('this'),
-                                                'router'
+                                                'router',
                                             )),
                                         ],
                                     ),
-                                    new Node\Expr\ConstFetch(new Node\Name('false'))
+                                    new Node\Expr\ConstFetch(new Node\Name('false')),
                                 ),
                                 [
                                     'stmts' => [
@@ -415,7 +404,7 @@ final class Client
                                             new Node\Expr\Assign(
                                                 new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
                                                     new Node\Expr\Variable('this'),
-                                                    'router'
+                                                    'router',
                                                 ), new Node\Expr\ClassConstFetch(
                                                     new Node\Name($cc->className),
                                                     'class',
@@ -426,7 +415,7 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'browser'
+                                                                'browser',
                                                             ),
                                                             false,
                                                             false,
@@ -436,7 +425,7 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'authentication'
+                                                                'authentication',
                                                             ),
                                                             false,
                                                             false,
@@ -446,7 +435,7 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'requestSchemaValidator'
+                                                                'requestSchemaValidator',
                                                             ),
                                                             false,
                                                             false,
@@ -456,7 +445,7 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'responseSchemaValidator'
+                                                                'responseSchemaValidator',
                                                             ),
                                                             false,
                                                             false,
@@ -466,7 +455,7 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'hydrators'
+                                                                'hydrators',
                                                             ),
                                                             false,
                                                             false,
@@ -480,11 +469,11 @@ final class Client
                                     ],
                                 ],
                             ),
-                            new Node\Stmt\Return_(
+                            new $returnOrExpression(
                                 new Expr\MethodCall(
                                     new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'router'
+                                        'router',
                                     ), new Node\Expr\ClassConstFetch(
                                         new Node\Name($cc->className),
                                         'class',
@@ -505,6 +494,7 @@ final class Client
                                     ],
                                 ),
                             ),
+//                            ...($returnTypesUnfilterred === 'void' ? [new Node\Stmt\Return_()] : []),
                         ],
                     ];
                 }
@@ -553,7 +543,7 @@ final class Client
             );
 
             $class->addStmt(
-                $factory->method('callAsync')->makePublic()->setDocComment(
+                $factory->method('call')->makePublic()->setDocComment(
                     new Doc(implode(PHP_EOL, [
                         '// phpcs:disable',
                         '/**',
@@ -564,14 +554,14 @@ final class Client
                             $right    = '';
                             for ($i = 0; $i < $count; $i++) {
                                 $returnType = implode('|', [
-                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['\\' . Observable::class . '<string>'] : []),
-                                    ...array_map(static fn (string $className): string => strpos($className, '\\') === 0 ? $className : 'Schema\\' . $className, array_unique($operations[$i]->returnType)),
+                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
+                                    ...array_unique($operations[$i]->returnType),
                                 ]);
-                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? '\\' . Observable::class . '<' . $returnType . '>' : $returnType);
+                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
                                 if ($i !== $lastItem) {
-                                    $left .= '($call is ' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? \\' . PromiseInterface::class . '<' . $returnType . '> : ';
+                                    $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                                 } else {
-                                    $left .= '\\' . PromiseInterface::class . '<' . $returnType . '>';
+                                    $left .= $returnType;
                                 }
 
                                 $right .= ')';
@@ -581,7 +571,7 @@ final class Client
                         })($operations),
                         ' */',
                         '// phpcs:enable',
-                    ]))
+                    ])),
                 )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(
                     new Node\Expr\Assign(
                         new Node\Expr\Array_([
@@ -604,8 +594,8 @@ final class Client
                                     new Node\Expr\Variable('call'),
                                 ),
                             ],
-                        )
-                    )
+                        ),
+                    ),
                 )->addStmt(
                     new Node\Expr\Assign(
                         new Node\Expr\Variable('pathChunks'),
@@ -619,8 +609,8 @@ final class Client
                                     new Node\Expr\Variable('path'),
                                 ),
                             ],
-                        )
-                    )
+                        ),
+                    ),
                 )->addStmt(
                     new Node\Expr\Assign(
                         new Node\Expr\Variable('pathChunksCount'),
@@ -631,15 +621,34 @@ final class Client
                                     new Node\Expr\Variable('pathChunks'),
                                 ),
                             ],
-                        )
-                    )
+                        ),
+                    ),
+                )->addStmt(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('matched'),
+                        new Expr\ConstFetch(
+                            new Node\Name('false'),
+                        ),
+                    ),
                 )->addStmt($operationsIf)->addStmt(
-                    new Node\Stmt\Throw_(
-                        new Node\Expr\New_(
-                            new Node\Name('\InvalidArgumentException')
-                        )
-                    )
-                )
+                    new Node\Stmt\If_(
+                        new Expr\BinaryOp\Identical(
+                            new Node\Expr\Variable('matched'),
+                            new Expr\ConstFetch(
+                                new Node\Name('false'),
+                            ),
+                        ),
+                        [
+                            'stmts' => [
+                                new Node\Stmt\Throw_(
+                                    new Node\Expr\New_(
+                                        new Node\Name('\InvalidArgumentException'),
+                                    ),
+                                ),
+                            ],
+                        ],
+                    ),
+                ),
             );
         }
 
@@ -648,9 +657,9 @@ final class Client
                 $factory->method('operations')->makePublic()->setReturnType('OperationsInterface')->addStmt(new Node\Stmt\Return_(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'operations'
+                        'operations',
                     ),
-                ))
+                )),
             );
         }
 
@@ -659,71 +668,24 @@ final class Client
                 $factory->method('webHooks')->makePublic()->setReturnType('\\' . WebHooksInterface::class)->addStmt(new Node\Stmt\Return_(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'webHooks'
+                        'webHooks',
                     ),
-                ))
+                )),
             );
         }
 
         yield new File($pathPrefix, 'Client', $stmt->addStmt($class)->getNode());
 
-        $sharedProperties  = [
-            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()->getNode(),
-            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate()->getNode(),
-            $factory->property('hydrators')->setType('\\' . $configuration->namespace->source . '\\Hydrators')->makeReadonly()->makePrivate()->getNode(),
-            $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate()->getNode(),
-            $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate()->getNode(),
-        ];
         $sharedConstructor = $factory->method('__construct')->makePublic()->addParam(
-            $factory->param('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
         )->addParam(
-            $factory->param('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')
+            (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
         )->addParam(
-            $factory->param('hydrators')->setType('\\' . $configuration->namespace->source . '\\Hydrators')
+            (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $configuration->namespace->source . '\\Hydrators'),
         )->addParam(
-            $factory->param('browser')->setType('\\' . Browser::class)
+            (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
         )->addParam(
-            $factory->param('authentication')->setType('\\' . AuthenticationInterface::class)
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'requestSchemaValidator'
-                ),
-                new Node\Expr\Variable('requestSchemaValidator'),
-            )
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'responseSchemaValidator'
-                ),
-                new Node\Expr\Variable('responseSchemaValidator'),
-            ),
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'hydrators'
-                ),
-                new Node\Expr\Variable('hydrators'),
-            ),
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'browser'
-                ),
-                new Node\Expr\Variable('browser'),
-            ),
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'authentication'
-                ),
-                new Node\Expr\Variable('authentication'),
-            ),
+            (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
         );
 
         foreach ($routers->get() as $router) {
@@ -733,7 +695,6 @@ final class Client
                 $router,
                 $routers,
                 $sharedConstructor,
-                $sharedProperties,
             );
         }
 
@@ -748,7 +709,6 @@ final class Client
                 $configuration->namespace->source . '\\',
                 $chunkCountClass,
                 $sharedConstructor,
-                $sharedProperties,
             );
         }
     }
@@ -853,16 +813,25 @@ final class Client
         ];
     }
 
-    /**
-     * @return array<Node\Stmt>
-     */
+    /** @return array<Node\Stmt> */
     private static function callOperation(Routers $routers, Representation\Operation $operation, Representation\Path $path): array
     {
-        $router =  $routers->add(
+        $returnType = Operation::getResultTypeFromOperation($operation);
+        $router     =  $routers->add(
             $operation->method,
             $operation->group,
             $operation->name,
+            $returnType,
+            Operation::getDocBlockResultTypeFromOperation($operation),
             [
+                new Node\Stmt\Expression(
+                    new Node\Expr\Assign(
+                        new Node\Expr\Variable('matched'),
+                        new Expr\ConstFetch(
+                            new Node\Name('true'),
+                        ),
+                    ),
+                ),
                 ...(count($operation->parameters) > 0 ? [
                     new Node\Stmt\Expression(new Node\Expr\Assign(
                         new Node\Expr\Variable('arguments'),
@@ -881,8 +850,8 @@ final class Client
                                     ),
                                     new Expr\ConstFetch(
                                         new Node\Name(
-                                            'false'
-                                        )
+                                            'false',
+                                        ),
                                     ),
                                 ),
                                 [
@@ -892,7 +861,7 @@ final class Client
                                                 new Node\Name('\InvalidArgumentException'),
                                                 [
                                                     new Arg(
-                                                        new Node\Scalar\String_('Missing mandatory field: ' . $param->targetName)
+                                                        new Node\Scalar\String_('Missing mandatory field: ' . $param->targetName),
                                                     ),
                                                 ],
                                             ),
@@ -934,11 +903,11 @@ final class Client
                                     )),
                                     new Arg(new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'hydrator'
+                                        'hydrator',
                                     )),
                                 ],
                             ),
-                            new Node\Expr\ConstFetch(new Node\Name('false'))
+                            new Node\Expr\ConstFetch(new Node\Name('false')),
                         ),
                         [
                             'stmts' => [
@@ -946,7 +915,7 @@ final class Client
                                     new Node\Expr\Assign(
                                         new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'hydrator'
+                                            'hydrator',
                                         ), new Node\Expr\ClassConstFetch(
                                             new Node\Name($path->hydrator->className->relative),
                                             'class',
@@ -954,17 +923,21 @@ final class Client
                                         new Node\Expr\MethodCall(
                                             new Node\Expr\PropertyFetch(
                                                 new Node\Expr\Variable('this'),
-                                                'hydrators'
+                                                'hydrators',
                                             ),
                                             'getObjectMapper' . ucfirst($path->hydrator->methodName),
-                                        )
+                                        ),
                                     ),
                                 ),
                             ],
-                        ]
+                        ],
                     ),
                 ] : []),
-                ...($operation->matchMethod !== 'LIST' ? self::makeCall($operation, $path, static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)) : [
+                ...($operation->matchMethod !== 'LIST' ? self::makeCall(
+                    $operation,
+                    $path,
+                    $returnType === 'void' ? static fn (Expr $expr): Node\Stmt\Expression => new Node\Stmt\Expression($expr) : static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)
+                ) : [
                     new Node\Stmt\Expression(
                         new Node\Expr\Assign(
                             new Node\Expr\Variable('stream'),
@@ -1096,7 +1069,7 @@ final class Client
                                                     'returnType' => new Node\Name('void'),
                                                 ]),
                                             ),
-                                        ]
+                                        ],
                                     ),
                                 ),
                             ],
@@ -1116,7 +1089,17 @@ final class Client
             ],
         );
 
+        $returnOrExpression = $returnType === 'void' ? Node\Stmt\Expression::class : Node\Stmt\Return_::class;
+
         return [
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable('matched'),
+                    new Expr\ConstFetch(
+                        new Node\Name('true'),
+                    ),
+                ),
+            ),
             new Node\Stmt\If_(
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\FuncCall(
@@ -1128,11 +1111,11 @@ final class Client
                             )),
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'router'
+                                'router',
                             )),
                         ],
                     ),
-                    new Node\Expr\ConstFetch(new Node\Name('false'))
+                    new Node\Expr\ConstFetch(new Node\Name('false')),
                 ),
                 [
                     'stmts' => [
@@ -1140,7 +1123,7 @@ final class Client
                             new Node\Expr\Assign(
                                 new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
-                                    'router'
+                                    'router',
                                 ), new Node\Expr\ClassConstFetch(
                                     new Node\Name($router->class),
                                     'class',
@@ -1150,23 +1133,23 @@ final class Client
                                     [
                                         new Arg(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'requestSchemaValidator'
+                                            'requestSchemaValidator',
                                         )),
                                         new Arg(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'responseSchemaValidator'
+                                            'responseSchemaValidator',
                                         )),
                                         new Arg(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'hydrators'
+                                            'hydrators',
                                         )),
                                         new Arg(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'browser'
+                                            'browser',
                                         )),
                                         new Arg(new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'authentication'
+                                            'authentication',
                                         )),
                                     ],
                                 ),
@@ -1175,12 +1158,12 @@ final class Client
                     ],
                 ],
             ),
-            new Node\Stmt\Return_(
+            new $returnOrExpression(
                 new Expr\MethodCall(
                     new Node\Expr\ArrayDimFetch(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'router'
+                            'router',
                         ),
                         new Node\Expr\ClassConstFetch(
                             new Node\Name($router->class),
@@ -1197,12 +1180,11 @@ final class Client
                     ],
                 ),
             ),
+//            ...($returnType === 'void' ? [new Node\Stmt\Return_()] : []),
         ];
     }
 
-    /**
-     * @return array<Node\Stmt>
-     */
+    /** @return array<Node\Stmt> */
     private static function makeCall(Representation\Operation $operation, Representation\Path $path, callable $calWrap): array
     {
         return [
@@ -1213,34 +1195,34 @@ final class Client
                     [
                         new Arg(new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'browser'
+                            'browser',
                         )),
                         new Arg(new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'authentication'
+                            'authentication',
                         )),
                         ...(count($operation->requestBody) > 0 ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'requestSchemaValidator'
+                                'requestSchemaValidator',
                             )),
                         ] : []),
                         /** @phpstan-ignore-next-line */
                         ...(count(array_filter((new ReflectionClass($operation->className->fullyQualified->source))->getConstructor()->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0 ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'responseSchemaValidator'
+                                'responseSchemaValidator',
                             )),
                             new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
-                                'hydrator'
+                                'hydrator',
                             ), new Node\Expr\ClassConstFetch(
                                 new Node\Name($path->hydrator->className->relative),
                                 'class',
                             ))),
                         ] : []),
                     ],
-                )
+                ),
             )),
             $calWrap(
                 new Node\Expr\MethodCall(
@@ -1254,17 +1236,13 @@ final class Client
                         })($operation->parameters),
                         ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),
                     ],
-                )
+                ),
             ),
         ];
     }
 
-    /**
-     * @param array<Node\Stmt\Property> $properties
-     *
-     * @return iterable<File>
-     */
-    private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers, Method $constructor, array $properties): iterable
+    /** @return iterable<File> */
+    private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers, Method $constructor): iterable
     {
         $className = $routers->createClassName(Utils::fixKeyword($router->method), $router->group, '')->class;
         $factory   = new BuilderFactory();
@@ -1275,7 +1253,7 @@ final class Client
                 ' * @var array<class-string, \\' . ObjectMapper::class . '>',
                 ' */',
             ]))),
-        )->addStmts($properties)->addStmt(
+        )->addStmt(
             $constructor,
         );
 
@@ -1283,50 +1261,95 @@ final class Client
             $class->addStmt(
                 $factory->method($method->name)->makePublic()->addParam(
                     (new Param('params'))->setType('array'),
-                )->addStmts($method->nodes)
+                )->addStmts($method->nodes)->setReturnType(
+                    $method->returnType,
+                )->setDocComment(
+                    new Doc(
+                        implode(
+                            PHP_EOL,
+                            [
+                                '/**',
+                                ' * @return ' . $method->docBlockReturnType,
+                                ' */',
+                            ],
+                        ),
+                    ),
+                ),
             );
         }
 
         yield new File($pathPrefix, $className, $stmt->addStmt($class)->getNode());
     }
 
-    /**
-     * @param array<Node\Stmt\Property> $properties
-     *
-     * @return iterable<File>
-     */
-    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount, Method $constructor, array $properties): iterable
+    /** @return iterable<File> */
+    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount, Method $constructor): iterable
     {
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(Utils::dirname($namespace . $chunkCount->className));
 
         $class = $factory->class(Utils::basename($chunkCount->className))->makeFinal()->addStmt(
             $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
-        )->addStmts(
-            $properties
         )->addStmt(
             $constructor,
         );
 
-        $class->addStmt(
-            $factory->method('call')->makePublic()->addParams([
-                ...(static function (array $params): iterable {
-                    foreach ($params as $param => $type) {
-                        yield (new Param($param))->setType($type);
-                    }
-                })([
-                    'call' => 'string',
-                    'params' => 'array',
-                    'pathChunks' => 'array',
-                ]),
-            ])->addStmts($chunkCount->nodes)->addStmt(
-                new Node\Stmt\Throw_(
-                    new Node\Expr\New_(
-                        new Node\Name('\InvalidArgumentException')
-                    )
-                )
-            )
+        $callMethod = $factory->method('call')->makePublic()->addParams([
+            ...(static function (array $params): iterable {
+                foreach ($params as $param => $type) {
+                    yield (new Param($param))->setType($type);
+                }
+            })([
+                'call' => 'string',
+                'params' => 'array',
+                'pathChunks' => 'array',
+            ]),
+        ])->addStmt(
+            new Node\Expr\Assign(
+                new Node\Expr\Variable('matched'),
+                new Expr\ConstFetch(
+                    new Node\Name('false'),
+                ),
+            ),
+        )->addStmts($chunkCount->nodes)->addStmt(
+            new Node\Stmt\If_(
+                new Expr\BinaryOp\Identical(
+                    new Node\Expr\Variable('matched'),
+                    new Expr\ConstFetch(
+                        new Node\Name('false'),
+                    ),
+                ),
+                [
+                    'stmts' => [
+                        new Node\Stmt\Throw_(
+                            new Node\Expr\New_(
+                                new Node\Name('\InvalidArgumentException'),
+                            ),
+                        ),
+                    ],
+                ],
+            ),
         );
+
+        if (strlen($chunkCount->returnType) > 0) {
+            $callMethod->setReturnType($chunkCount->returnType);
+        }
+
+        if (strlen($chunkCount->docBlockReturnType) > 0) {
+            $callMethod->setDocComment(
+                new Doc(
+                    implode(
+                        PHP_EOL,
+                        [
+                            '/**',
+                            ' * @return ' . $chunkCount->docBlockReturnType,
+                            ' */',
+                        ],
+                    ),
+                ),
+            );
+        }
+
+        $class->addStmt($callMethod);
 
         yield new File($pathPrefix, $chunkCount->className, $stmt->addStmt($class)->getNode());
     }

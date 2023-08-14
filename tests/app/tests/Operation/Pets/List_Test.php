@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Tests\Client\PetStore\Operation;
+namespace ApiClients\Tests\Client\PetStore\Operation\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -13,7 +13,7 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final class ListPetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
+final class List_Test extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
 {
     /**
      * @test
@@ -28,7 +28,7 @@ final class ListPetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->request('GET', '/pets?limit=5', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->call(Operation\ListPets::OPERATION_MATCH, (static function (array $data) : array {
+        $result = $client->call(Operation\Pets\List_::OPERATION_MATCH, (static function (array $data) : array {
             $data['limit'] = 5;
             return $data;
         })(array()));
@@ -46,6 +46,6 @@ final class ListPetsTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->request('GET', '/pets?limit=5', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = \React\Async\await($client->operations()->fallback()->listPets(5));
+        $result = $client->operations()->pets()->list(5);
     }
 }

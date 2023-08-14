@@ -23,9 +23,7 @@ use function ucfirst;
 
 final class Hydrators
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, string $namespace, Hydrator ...$hydrators): iterable
     {
         $knownScehmas = [];
@@ -63,7 +61,7 @@ final class Hydrators
                         new Node\Expr\Variable('className'),
                         array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
                             array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
-                                $schema->className->fullyQualified->source
+                                $schema->className->fullyQualified->source,
                             ), $usefullHydrators[$hydrator->className->relative]),
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
@@ -73,17 +71,17 @@ final class Hydrators
                                 'hydrateObject',
                                 [
                                     new Node\Arg(
-                                        new Node\Expr\Variable('className')
+                                        new Node\Expr\Variable('className'),
                                     ),
                                     new Node\Arg(
-                                        new Node\Expr\Variable('payload')
+                                        new Node\Expr\Variable('payload'),
                                     ),
-                                ]
-                            )
-                        ), $matchHydrators)
-                    )
-                )
-            )
+                                ],
+                            ),
+                        ), $matchHydrators),
+                    ),
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -101,18 +99,18 @@ final class Hydrators
                                     'doHydrateObjects',
                                     [
                                         new Node\Arg(
-                                            new Node\Expr\Variable('className')
+                                            new Node\Expr\Variable('className'),
                                         ),
                                         new Node\Arg(
-                                            new Node\Expr\Variable('payloads')
+                                            new Node\Expr\Variable('payloads'),
                                         ),
-                                    ]
-                                )
+                                    ],
+                                ),
                             ),
-                        ]
-                    )
-                )
-            )
+                        ],
+                    ),
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -133,20 +131,20 @@ final class Hydrators
                                         'hydrateObject',
                                         [
                                             new Node\Arg(
-                                                new Node\Expr\Variable('className')
+                                                new Node\Expr\Variable('className'),
                                             ),
                                             new Node\Arg(
-                                                new Node\Expr\Variable('payload')
+                                                new Node\Expr\Variable('payload'),
                                             ),
-                                        ]
+                                        ],
                                     ),
                                     new Node\Expr\Variable('index'),
-                                )
+                                ),
                             ),
                         ],
                     ],
-                )
-            )
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -164,13 +162,13 @@ final class Hydrators
                             new Node\Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Expr\Variable('object'),
-                                    'class'
+                                    'class',
                                 ),
                             ),
                         ],
                     ),
-                )
-            )
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -183,7 +181,7 @@ final class Hydrators
                         new Node\Expr\Variable('className'),
                         array_map(static fn (Hydrator $hydrator): Node\MatchArm => new Node\MatchArm(
                             array_map(static fn (Schema $schema): Node\Scalar\String_ => new Node\Scalar\String_(
-                                $schema->className->fullyQualified->source
+                                $schema->className->fullyQualified->source,
                             ), $usefullHydrators[$hydrator->className->relative]),
                             new Node\Expr\MethodCall(
                                 new Node\Expr\MethodCall(
@@ -193,14 +191,14 @@ final class Hydrators
                                 'serializeObject',
                                 [
                                     new Node\Arg(
-                                        new Node\Expr\Variable('object')
+                                        new Node\Expr\Variable('object'),
                                     ),
-                                ]
-                            )
-                        ), $matchHydrators)
-                    )
-                )
-            )
+                                ],
+                            ),
+                        ), $matchHydrators),
+                    ),
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -217,15 +215,15 @@ final class Hydrators
                                     'doSerializeObjects',
                                     [
                                         new Node\Arg(
-                                            new Node\Expr\Variable('payloads')
+                                            new Node\Expr\Variable('payloads'),
                                         ),
-                                    ]
-                                )
+                                    ],
+                                ),
                             ),
-                        ]
-                    )
-                )
-            )
+                        ],
+                    ),
+                ),
+            ),
         );
 
         $class->addStmt(
@@ -245,17 +243,17 @@ final class Hydrators
                                         'serializeObject',
                                         [
                                             new Node\Arg(
-                                                new Node\Expr\Variable('object')
+                                                new Node\Expr\Variable('object'),
                                             ),
-                                        ]
+                                        ],
                                     ),
                                     new Node\Expr\Variable('index'),
-                                )
+                                ),
                             ),
                         ],
                     ],
-                )
-            )
+                ),
+            ),
         );
 
         foreach ($hydrators as $hydrator) {
@@ -266,7 +264,7 @@ final class Hydrators
                             new Node\Expr\Instanceof_(
                                 new Node\Expr\PropertyFetch(
                                     new Node\Expr\Variable('this'),
-                                    $hydrator->methodName
+                                    $hydrator->methodName,
                                 ),
                                 new Node\Expr\ConstFetch(new Node\Name($hydrator->className->relative)),
                             ),
@@ -278,23 +276,23 @@ final class Hydrators
                                     new Node\Expr\Assign(
                                         new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            $hydrator->methodName
+                                            $hydrator->methodName,
                                         ),
                                         new Node\Expr\New_(
-                                            new Node\Name($hydrator->className->relative)
+                                            new Node\Name($hydrator->className->relative),
                                         ),
                                     ),
                                 ),
                             ],
-                        ]
+                        ],
                     ),
                     new Node\Stmt\Return_(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            $hydrator->methodName
+                            $hydrator->methodName,
                         ),
                     ),
-                ])
+                ]),
             );
         }
 

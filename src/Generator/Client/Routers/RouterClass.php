@@ -6,9 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 
 final readonly class RouterClass
 {
-    /**
-     * @param array<RouterClassMethod> $methods
-     */
+    /** @param array<RouterClassMethod> $methods */
     public function __construct(
         public string $method,
         public string $group,

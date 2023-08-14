@@ -54,9 +54,7 @@ final class Schema
         $this->json[json_encode($schema->getSerializableData())] = $className;
     }
 
-    /**
-     * @throws JsonException
-     */
+    /** @throws JsonException */
     public function get(openAPISchema $schema, string $fallbackName): string
     {
         if ($schema->type === 'array') {
@@ -112,9 +110,7 @@ final class Schema
         return count($this->unknownSchemas) > 0;
     }
 
-    /**
-     * @return iterable<UnknownSchema>
-     */
+    /** @return iterable<UnknownSchema> */
     public function unknownSchemas(): iterable
     {
         $unknownSchemas       = $this->unknownSchemas;
@@ -123,9 +119,7 @@ final class Schema
         yield from $unknownSchemas;
     }
 
-    /**
-     * @return iterable<ClassString>
-     */
+    /** @return iterable<ClassString> */
     public function aliasesForClassName(string $classname): iterable
     {
         if (! array_key_exists($classname, $this->aliasses)) {

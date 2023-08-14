@@ -16,31 +16,28 @@ use ApiClients\Contracts;
 final class Two
 {
     private array $router = array();
-    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator;
-    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
-    private readonly \ApiClients\Client\PetStore\Hydrators $hydrators;
-    private readonly \React\Http\Browser $browser;
-    private readonly \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, \ApiClients\Client\PetStore\Hydrators $hydrators, \React\Http\Browser $browser, \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
+    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
-        $this->requestSchemaValidator = $requestSchemaValidator;
-        $this->responseSchemaValidator = $responseSchemaValidator;
-        $this->hydrators = $hydrators;
-        $this->browser = $browser;
-        $this->authentication = $authentication;
     }
-    public function call(string $call, array $params, array $pathChunks)
+    /**
+     * @return array{code: int}
+     */
+    public function call(string $call, array $params, array $pathChunks) : array
     {
+        $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($call == 'POST /pets') {
-                    if (\array_key_exists(Router\Post\Fallback::class, $this->router) == false) {
-                        $this->router[Router\Post\Fallback::class] = new Router\Post\Fallback($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
+                    $matched = true;
+                    if (\array_key_exists(Router\Post\Pets::class, $this->router) == false) {
+                        $this->router[Router\Post\Pets::class] = new Router\Post\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
-                    return $this->router[Router\Post\Fallback::class]->createPets($params);
+                    return $this->router[Router\Post\Pets::class]->create($params);
                 }
             }
         }
-        throw new \InvalidArgumentException();
+        if ($matched === false) {
+            throw new \InvalidArgumentException();
+        }
     }
 }

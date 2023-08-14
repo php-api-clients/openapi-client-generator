@@ -22,9 +22,7 @@ use function implode;
 
 final class CastUnionToType
 {
-    /**
-     * @return iterable<File>
-     */
+    /** @return iterable<File> */
     public static function generate(string $pathPrefix, ClassString $classString, Schema ...$schemas): iterable
     {
         $factory = new BuilderFactory();
@@ -189,7 +187,7 @@ final class CastUnionToType
                 new Node\Stmt\Return_(
                     new Node\Expr\Variable('value'),
                 ),
-            ])
+            ]),
         );
 
         yield new File($pathPrefix, $classString->relative, $stmt->addStmt($class)->getNode());

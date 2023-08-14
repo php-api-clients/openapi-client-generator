@@ -12,9 +12,7 @@ interface ListOperation
 
     public static function incrementorInitialValue(): int;
 
-    /**
-     * @return array<string>
-     */
+    /** @return array<string> */
     public static function keys(): array;
 
     public static function list(Operation $operation): bool;

@@ -17,15 +17,9 @@ interface ClientInterface
 {
     // phpcs:disable
     /**
-     * @return ($call is ListPets::OPERATION_MATCH ? Schema\Operations\ListPets\Response\ApplicationJson\Ok : ($call is CreatePets::OPERATION_MATCH ? \Psr\Http\Message\ResponseInterface : Schema\Operations\ShowPetById\Response\ApplicationJson\Ok)))
+     * @return ($call is Operation\Pets\List_::OPERATION_MATCH ? Operations\Pets\List_\Response\ApplicationJson\Ok : ($call is Operation\Pets\Create::OPERATION_MATCH ? \Psr\Http\Message\ResponseInterface : Operations\ShowPetById\Response\ApplicationJson\Ok)))
      */
     // phpcs:enable
     public function call(string $call, array $params = array());
-    // phpcs:disable
-    /**
-     * @return ($call is ListPets::OPERATION_MATCH ? \React\Promise\PromiseInterface<Schema\Operations\ListPets\Response\ApplicationJson\Ok> : ($call is CreatePets::OPERATION_MATCH ? \React\Promise\PromiseInterface<\Psr\Http\Message\ResponseInterface> : \React\Promise\PromiseInterface<Schema\Operations\ShowPetById\Response\ApplicationJson\Ok>)))
-     */
-    // phpcs:enable
-    public function callAsync(string $call, array $params = array());
     public function operations() : OperationsInterface;
 }

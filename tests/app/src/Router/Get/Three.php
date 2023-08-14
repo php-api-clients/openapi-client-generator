@@ -16,33 +16,27 @@ use ApiClients\Contracts;
 final class Three
 {
     private array $router = array();
-    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator;
-    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
-    private readonly \ApiClients\Client\PetStore\Hydrators $hydrators;
-    private readonly \React\Http\Browser $browser;
-    private readonly \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, \ApiClients\Client\PetStore\Hydrators $hydrators, \React\Http\Browser $browser, \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
+    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
-        $this->requestSchemaValidator = $requestSchemaValidator;
-        $this->responseSchemaValidator = $responseSchemaValidator;
-        $this->hydrators = $hydrators;
-        $this->browser = $browser;
-        $this->authentication = $authentication;
     }
     public function call(string $call, array $params, array $pathChunks)
     {
+        $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($pathChunks[2] == '{petId}') {
                     if ($call == 'GET /pets/{petId}') {
-                        if (\array_key_exists(Router\Get\Fallback::class, $this->router) == false) {
-                            $this->router[Router\Get\Fallback::class] = new Router\Get\Fallback($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
+                        $matched = true;
+                        if (\array_key_exists(Router\Get::class, $this->router) == false) {
+                            $this->router[Router\Get::class] = new Router\Get($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
-                        return $this->router[Router\Get\Fallback::class]->showPetById($params);
+                        $this->router[Router\Get::class]->showPetById($params);
                     }
                 }
             }
         }
-        throw new \InvalidArgumentException();
+        if ($matched === false) {
+            throw new \InvalidArgumentException();
+        }
     }
 }

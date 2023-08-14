@@ -34,9 +34,7 @@ use function ucfirst;
 
 final class Operation
 {
-    /**
-     * @param array<string, mixed> $metaData
-     */
+    /** @param array<string, mixed> $metaData */
     public static function gather(
         Namespace_ $baseNamespace,
         string $className,
@@ -102,7 +100,7 @@ final class Operation
                             '/',
                             '_',
                             $contentType,
-                        ) . '\\' . ($code === 'default' ? 'Default' : (HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown'))
+                        ) . '\\' . ($code === 'default' ? 'Default' : (HttpReasonPhraseLookup::getReasonPhrase($code) ?? 'Unknown')),
                     ),
                 );
 
@@ -140,7 +138,7 @@ final class Operation
                         'WebHookHeader\\' . ucfirst(preg_replace('/\PL/u', '', $headerName)),
                     ),
                     $headerSpec->schema,
-                    $schemaRegistry
+                    $schemaRegistry,
                 ), ExampleData::determiteType($headerSpec->example));
             }
 
@@ -152,7 +150,7 @@ final class Operation
         }
 
         $name  = lcfirst(trim(Utils::basename($className), '\\'));
-        $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : 'Fallback';
+        $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : null;
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(
             ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),
@@ -161,7 +159,7 @@ final class Operation
             $name,
             (new Convert($name))->toCamel(),
             $group,
-            (new Convert($group))->toCamel(),
+            $group === null ? null : (new Convert($group))->toCamel(),
             $operation->operationId,
             strtoupper($matchMethod),
             strtoupper($method),

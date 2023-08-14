@@ -17,23 +17,21 @@ use EventSauce\ObjectHydrator\MapFrom;
 
 final readonly class Configuration
 {
-    /**
-     * @param array<class-string<ContentType>>|null $contentType
-     */
+    /** @param array<class-string<ContentType>>|null $contentType */
     public function __construct(
         public State $state,
         public string $spec,
         #[MapFrom('entryPoints')]
         public EntryPoints $entryPoints,
-        public ?Templates $templates,
+        public Templates|null $templates,
         public Namespace_ $namespace,
         public Destination $destination,
         #[MapFrom('contentType')]
-        public ?array $contentType,
+        public array|null $contentType,
         #[MapFrom('subSplit')]
-        public ?SubSplit $subSplit,
-        public ?Schemas $schemas,
-        public ?Voter $voter,
+        public SubSplit|null $subSplit,
+        public Schemas|null $schemas,
+        public Voter|null $voter,
     ) {
     }
 }

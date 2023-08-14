@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Schema\Operations\ListPets\Response\ApplicationJson;
+namespace ApiClients\Client\PetStore\Schema\Operations\Pets\List_\Response\ApplicationJson;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;

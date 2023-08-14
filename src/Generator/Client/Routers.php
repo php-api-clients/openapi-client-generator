@@ -12,33 +12,35 @@ use PhpParser\Node;
 
 final class Routers
 {
-    /** @var array<string, array<string, array<string, array<Node>>>> $operations */
+    /** @var array<string, array<string, array<string, array{nodes: array<Node>, returnType: string, docBlockReturnType: string}>>> $operations */
     private array $operations = [];
 
-    /**
-     * @param array<Node> $nodes
-     */
+    /** @param array<Node> $nodes */
     public function add(
         string $method,
-        string $group,
+        string|null $group,
         string $name,
+        string $returnType,
+        string $docBlockReturnType,
         array $nodes,
     ): Router {
-        $this->operations[$method][$group][$name] = $nodes;
+        $this->operations[$method][$group ?? ''][$name] = [
+            'nodes' => $nodes,
+            'returnType' => $returnType,
+            'docBlockReturnType' => $docBlockReturnType,
+        ];
 
         return $this->createClassName($method, $group, $name);
     }
 
-    /**
-     * @return iterable<RouterClass>
-     */
+    /** @return iterable<RouterClass> */
     public function get(): iterable
     {
         foreach ($this->operations as $method => $groups) {
             foreach ($groups as $group => $methods) {
                 $classMethods = [];
-                foreach ($methods as $name => $nodes) {
-                    $classMethods[] = new RouterClassMethod($name, $nodes);
+                foreach ($methods as $name => $op) {
+                    $classMethods[] = new RouterClassMethod($name, $op['returnType'], $op['docBlockReturnType'], $op['nodes']);
                 }
 
                 yield new RouterClass(
@@ -52,11 +54,11 @@ final class Routers
 
     public function createClassName(
         string $method,
-        string $group,
+        string|null $group,
         string $name,
     ): Router {
         return new Router(
-            'Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert($group))->toPascal(),
+            'Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()),
             (new Convert($name))->toCamel(),
         );
     }

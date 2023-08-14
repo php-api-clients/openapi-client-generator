@@ -12,9 +12,7 @@ final class Files
     /** @var array<File> $files */
     private array $files = [];
 
-    /**
-     * @param array<File> $files
-     */
+    /** @param array<File> $files */
     public function __construct(
         array $files,
     ) {
@@ -43,9 +41,7 @@ final class Files
         unset($this->files[$fileName]);
     }
 
-    /**
-     * @return array<File>
-     */
+    /** @return array<File> */
     public function files(): array
     {
         return array_values($this->files);

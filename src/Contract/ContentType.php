@@ -8,9 +8,7 @@ use PhpParser\Node\Expr;
 
 interface ContentType
 {
-    /**
-     * @return iterable<string>
-     */
+    /** @return iterable<string> */
     public static function contentType(): iterable;
 
     public static function parse(Expr $expr): Expr;

@@ -13,17 +13,12 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use Jawira\CaseConverter\Convert;
-use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use React\Http\Browser;
-use React\Promise\PromiseInterface;
-
-use function count;
-use function ucfirst;
 
 final class Operations
 {
@@ -42,37 +37,74 @@ final class Operations
             }
         }
 
+        $classReadonly = true;
+        $groups        = [];
+        foreach ($operations as $operation) {
+            $groups[$operation->group][] = $operation;
+
+            if ($operation->group !== null) {
+                continue;
+            }
+
+            $classReadonly = false;
+        }
+
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace($configuration->namespace->source);
 
-        $class = $factory->class('Operations')->makeFinal()->implement(new Name('OperationsInterface'))->makeReadonly();
-
-        $class->addStmt(
-            $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $configuration->namespace->source . '\Hydrators'),
-            ),
-        );
-
-        $groups = [];
-        foreach ($operations as $operation) {
-            $groups[$operation->group][] = $operation;
+        $class = $factory->class('Operations')->makeFinal()->implement(new Name('OperationsInterface'));
+        if ($classReadonly) {
+            $class->makeReadonly();
+        } else {
+            $class->addStmt(
+                $factory->property('operator')->setType('array')->setDefault([])->makePrivate(),
+            );
         }
 
+        $params = [];
+        foreach (
+            [
+                'browser' => '\\' . Browser::class,
+                'authentication' => '\\' . AuthenticationInterface::class,
+                'requestSchemaValidator' => '\League\OpenAPIValidation\Schema\SchemaValidator',
+                'responseSchemaValidator' => '\League\OpenAPIValidation\Schema\SchemaValidator',
+                'hydrators' => '\\' . $configuration->namespace->source . '\Hydrators',
+            ] as $name => $type
+        ) {
+            if ($classReadonly) {
+                $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type);
+
+                continue;
+            }
+
+            $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type);
+//            $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type)->makeReadonly();
+        }
+
+        $class->addStmt(
+            $factory->method('__construct')->makePublic()->addParams($params),
+        );
+
         foreach ($groups as $group => $groupsOperations) {
+            if ($group === '') {
+                foreach ($groupsOperations as $groupsOperation) {
+                    $class->addStmt(
+                        Helper\Operation::methodSignature(
+                            $factory->method((new Convert($groupsOperation->name))->toCamel())->makePublic(),
+                            $groupsOperation,
+                        )->addStmts(Helper\Operation::methodCallOperation($groupsOperation, $operationHydratorMap)),
+                    );
+                }
+
+                continue;
+            }
+
             $class->addStmt(
                 $factory->method((new Convert($group))->toCamel())->makePublic()->setReturnType('Operation\\' . $group)->addStmts([
                     new Node\Stmt\Return_(
                         new Expr\New_(
                             new Name(
-                                'Operation\\' . $group
+                                'Operation\\' . $group,
                             ),
                             [
                                 new Arg(
@@ -159,102 +191,10 @@ final class Operations
             }
 
             $class->addStmt(
-                $factory->method((new Convert($operation->name))->toCamel())->makePublic()->setReturnType('\\' . PromiseInterface::class)->addParams([
-                    ...(static function (array $params): iterable {
-                        foreach ($params as $param) {
-                            yield (new Param($param->name))->setType($param->type === '' ? 'mixed' : $param->type);
-                        }
-                    })($operation->parameters),
-                    ...(count($operation->requestBody) > 0 ? [
-                        (new Param('params'))->setType('array'),
-                    ] : []),
-                ])->addStmts([
-                    new Node\Stmt\If_(
-                        new Node\Expr\BinaryOp\Equal(
-                            new Node\Expr\FuncCall(
-                                new Node\Name('\array_key_exists'),
-                                [
-                                    new Arg(new Node\Expr\ClassConstFetch(
-                                        new Node\Name($operation->operatorClassName->relative),
-                                        'class',
-                                    )),
-                                    new Arg(new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'operator'
-                                    )),
-                                ],
-                            ),
-                            new Node\Expr\ConstFetch(new Node\Name('false'))
-                        ),
-                        [
-                            'stmts' => [
-                                new Node\Stmt\Expression(
-                                    new Node\Expr\Assign(
-                                        new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'operator'
-                                        ), new Node\Expr\ClassConstFetch(
-                                            new Node\Name($operation->operatorClassName->relative),
-                                            'class',
-                                        )),
-                                        new Node\Expr\New_(
-                                            new Node\Name($operation->operatorClassName->relative),
-                                            [
-                                                new Arg(new Node\Expr\PropertyFetch(
-                                                    new Node\Expr\Variable('this'),
-                                                    'browser'
-                                                )),
-                                                new Arg(new Node\Expr\PropertyFetch(
-                                                    new Node\Expr\Variable('this'),
-                                                    'authentication'
-                                                )),
-                                                ...(count($operation->requestBody) > 0 ? [
-                                                    new Arg(new Node\Expr\PropertyFetch(
-                                                        new Node\Expr\Variable('this'),
-                                                        'requestSchemaValidator'
-                                                    )),
-                                                ] : []),
-                                                new Arg(new Node\Expr\PropertyFetch(
-                                                    new Node\Expr\Variable('this'),
-                                                    'responseSchemaValidator'
-                                                )),
-                                                new Arg(
-                                                    new Expr\MethodCall(
-                                                        new Node\Expr\PropertyFetch(
-                                                            new Node\Expr\Variable('this'),
-                                                            'hydrators'
-                                                        ),
-                                                        'getObjectMapper' . ucfirst($operationHydratorMap[$operation->operationId]->methodName),
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        ],
-                    ),
-                    new Node\Stmt\Return_(
-                        new Expr\MethodCall(
-                            new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'operator'
-                            ), new Node\Expr\ClassConstFetch(
-                                new Node\Name($operation->operatorClassName->relative),
-                                'class',
-                            )),
-                            'call',
-                            [
-                                ...(static function (array $params): iterable {
-                                    foreach ($params as $param) {
-                                        yield new Arg(new Node\Expr\Variable($param->name));
-                                    }
-                                })($operation->parameters),
-                                ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),
-                            ],
-                        ),
-                    ),
-                ]),
+                Helper\Operation::methodSignature(
+                    $factory->method((new Convert($operation->name))->toCamel())->makePublic(),
+                    $operation,
+                )->addStmts(Helper\Operation::methodCallOperation($operation, $operationHydratorMap)),
             );
         }
 

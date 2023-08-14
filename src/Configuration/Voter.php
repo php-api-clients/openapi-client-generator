@@ -15,9 +15,9 @@ final readonly class Voter
      */
     public function __construct(
         #[MapFrom('listOperation')]
-        public ?array $listOperation,
+        public array|null $listOperation,
         #[MapFrom('streamOperation')]
-        public ?array $streamOperation,
+        public array|null $streamOperation,
     ) {
     }
 }

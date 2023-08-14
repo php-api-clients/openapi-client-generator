@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Operator;
+namespace ApiClients\Client\PetStore\Operator\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -13,9 +13,9 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final readonly class ListPets
+final readonly class List_
 {
-    public const OPERATION_ID = 'listPets';
+    public const OPERATION_ID = 'pets/list';
     public const OPERATION_MATCH = 'GET /pets';
     private const METHOD = 'GET';
     private const PATH = '/pets';
@@ -23,14 +23,14 @@ final readonly class ListPets
     {
     }
     /**
-     * @return \React\Promise\PromiseInterface<mixed>
-     **/
-    public function call(int $limit) : \React\Promise\PromiseInterface
+     * @return 
+     */
+    public function call(int $limit) : void
     {
-        $operation = new \ApiClients\Client\PetStore\Operation\ListPets($this->responseSchemaValidator, $this->hydrator, $limit);
+        $operation = new \ApiClients\Client\PetStore\Operation\Pets\List_($this->responseSchemaValidator, $this->hydrator, $limit);
         $request = $operation->createRequest();
-        return $this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : mixed {
-            return $operation->createResponse($response);
+        $this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : void {
+            $operation->createResponse($response);
         });
     }
 }

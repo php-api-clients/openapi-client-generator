@@ -88,7 +88,7 @@ final class ExampleData
     }
 
     /** @phpstan-ignore-next-line */
-    public static function scalarData(int $seed, string $type, ?string $format, ?string $pattern = null): Representation\ExampleData
+    public static function scalarData(int $seed, string $type, string|null $format, string|null $pattern = null): Representation\ExampleData
     {
         if ($type === 'int' || $type === '?int') {
             return new Representation\ExampleData($seed, new Node\Scalar\LNumber($seed));
@@ -159,9 +159,7 @@ final class ExampleData
         );
     }
 
-    /**
-     * @param array<mixed> $array
-     */
+    /** @param array<mixed> $array */
     private static function turnArrayIntoNode(array $array): Node\Expr
     {
         return new Node\Expr\FuncCall(

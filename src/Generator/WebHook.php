@@ -53,33 +53,33 @@ final class WebHook
         $class->addStmt($factory->property('hydrator')->setType('Hydrator\\WebHook' . $className)->makeReadonly()->makePrivate());
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
-            (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class)
+            (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class),
         )->addParam(
-            (new Param('hydrator'))->setType('Hydrator\\WebHook' . $className)
+            (new Param('hydrator'))->setType('Hydrator\\WebHook' . $className),
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    'requestSchemaValidator'
+                    'requestSchemaValidator',
                 ),
                 new Node\Expr\Variable('requestSchemaValidator'),
-            )
+            ),
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
-                    'hydrator'
+                    'hydrator',
                 ),
                 new Node\Expr\Variable('hydrator'),
-            )
+            ),
         );
         $class->addStmt($constructor);
 
         $resolveReturnTypes = [];
         $method             = $factory->method('resolve')->makePublic()->setReturnType('object')->addParam(
-            (new Param('headers'))->setType('array')
+            (new Param('headers'))->setType('array'),
         )->addParam(
-            (new Param('data'))->setType('array')
+            (new Param('data'))->setType('array'),
         );
         $gotoLabels         = 'actions_aaaaa';
         $tmts               = [];
@@ -89,8 +89,8 @@ final class WebHook
                 new Node\Name('\\' . RuntimeException::class),
                 [
                     new Arg(new Node\Scalar\String_('No action matching given headers and data')),
-                ]
-            )
+                ],
+            ),
         );
 
         foreach ($webHooks as $webHook) {
@@ -99,7 +99,7 @@ final class WebHook
                 $headers[] = new Node\Stmt\Expression(new Node\Expr\MethodCall(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
-                        'requestSchemaValidator'
+                        'requestSchemaValidator',
                     ),
                     'validate',
                     [
@@ -114,7 +114,7 @@ final class WebHook
                             )),
                             new Node\Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
                         ])),
-                    ]
+                    ],
                 ));
             }
 
@@ -132,7 +132,7 @@ final class WebHook
                                 new Node\Stmt\Expression(new Node\Expr\MethodCall(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'requestSchemaValidator'
+                                        'requestSchemaValidator',
                                     ),
                                     'validate',
                                     [
@@ -144,12 +144,12 @@ final class WebHook
                                             )),
                                             new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
                                         ])),
-                                    ]
+                                    ],
                                 )),
                                 new Node\Stmt\Return_(new Node\Expr\MethodCall(
                                     new Node\Expr\PropertyFetch(
                                         new Node\Expr\Variable('this'),
-                                        'hydrator'
+                                        'hydrator',
                                     ),
                                     'hydrateObject',
                                     [
@@ -158,7 +158,7 @@ final class WebHook
                                             'class',
                                         )),
                                         new Node\Arg(new Node\Expr\Variable('data')),
-                                    ]
+                                    ],
                                 )),
                             ], [
                                 new Node\Stmt\Catch_(
@@ -166,11 +166,11 @@ final class WebHook
                                     new Node\Expr\Variable('error'),
                                     [
                                         new Node\Stmt\Goto_($gotoLabels),
-                                    ]
+                                    ],
                                 ),
                             ]),
                         ],
-                    ]
+                    ],
                 );
             }
 

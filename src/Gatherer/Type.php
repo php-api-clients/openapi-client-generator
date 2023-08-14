@@ -186,7 +186,7 @@ final class Type
                 null,
                 null,
                 $arrayItems,
-                $nullable
+                $nullable,
             );
         }
 

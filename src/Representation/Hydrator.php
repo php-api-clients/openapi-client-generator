@@ -8,9 +8,7 @@ use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 
 final class Hydrator
 {
-    /**
-     * @param array<Schema> $schemas
-     */
+    /** @param array<Schema> $schemas */
     public function __construct(
         public readonly ClassString $className,
         public readonly string $methodName,

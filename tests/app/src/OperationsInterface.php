@@ -15,5 +15,6 @@ use React\Http;
 use ApiClients\Contracts;
 interface OperationsInterface
 {
-    public function fallback() : Operation\Fallback;
+    public function pets() : Operation\Pets;
+    public function showPetById(string $petId) : Schema\Operations\ShowPetById\Response\ApplicationJson\Ok;
 }

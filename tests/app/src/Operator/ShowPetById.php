@@ -23,14 +23,14 @@ final readonly class ShowPetById
     {
     }
     /**
-     * @return \React\Promise\PromiseInterface<mixed>
-     **/
-    public function call(string $petId) : \React\Promise\PromiseInterface
+     * @return 
+     */
+    public function call(string $petId) : void
     {
         $operation = new \ApiClients\Client\PetStore\Operation\ShowPetById($this->responseSchemaValidator, $this->hydrator, $petId);
         $request = $operation->createRequest();
-        return $this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : mixed {
-            return $operation->createResponse($response);
+        $this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : void {
+            $operation->createResponse($response);
         });
     }
 }

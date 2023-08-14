@@ -19,6 +19,17 @@ use function trim;
 
 final class Utils
 {
+    public static function cleanUpString(string $string): string
+    {
+        return str_replace(
+            ['{', '}', '-', '$', '+', '*', '.', ';', '=', ' ', '/', '\\', ';', ' '],
+            ['', '', '_', '_', '_', '_', '_', '_', '_', '_', '_', '_', '_', '_'],
+            self::fixKeyword(
+                $string,
+            ),
+        );
+    }
+
     public static function className(string $className): string
     {
         $className = str_replace(

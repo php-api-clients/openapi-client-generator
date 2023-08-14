@@ -19,7 +19,10 @@ final class Two
     public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
-    public function call(string $call, array $params, array $pathChunks)
+    /**
+     * @return iterable<(Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish)>
+     */
+    public function call(string $call, array $params, array $pathChunks) : iterable
     {
         $matched = false;
         if ($pathChunks[0] == '') {
@@ -29,7 +32,7 @@ final class Two
                     if (\array_key_exists(Router\Get\Pets::class, $this->router) == false) {
                         $this->router[Router\Get\Pets::class] = new Router\Get\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
-                    $this->router[Router\Get\Pets::class]->list_($params);
+                    return $this->router[Router\Get\Pets::class]->list_($params);
                 }
             }
         }

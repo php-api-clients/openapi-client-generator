@@ -16,6 +16,8 @@ use ApiClients\Contracts;
 final class Hydrators implements \EventSauce\ObjectHydrator\ObjectMapper
 {
     private ?Hydrator\Operation\Pets $operation🌀Pets = null;
+    private ?Hydrator\Operation\Pets\Gatos $operation🌀Pets🌀Gatos = null;
+    private ?Hydrator\Operation\Pets\Names $operation🌀Pets🌀Names = null;
     private ?Hydrator\Operation\Pets\PetId $operation🌀Pets🌀PetId = null;
     public function hydrateObject(string $className, array $payload) : object
     {
@@ -59,6 +61,20 @@ final class Hydrators implements \EventSauce\ObjectHydrator\ObjectMapper
             $this->operation🌀Pets = new Hydrator\Operation\Pets();
         }
         return $this->operation🌀Pets;
+    }
+    public function getObjectMapperOperation🌀Pets🌀Gatos() : Hydrator\Operation\Pets\Gatos
+    {
+        if ($this->operation🌀Pets🌀Gatos instanceof Hydrator\Operation\Pets\Gatos === false) {
+            $this->operation🌀Pets🌀Gatos = new Hydrator\Operation\Pets\Gatos();
+        }
+        return $this->operation🌀Pets🌀Gatos;
+    }
+    public function getObjectMapperOperation🌀Pets🌀Names() : Hydrator\Operation\Pets\Names
+    {
+        if ($this->operation🌀Pets🌀Names instanceof Hydrator\Operation\Pets\Names === false) {
+            $this->operation🌀Pets🌀Names = new Hydrator\Operation\Pets\Names();
+        }
+        return $this->operation🌀Pets🌀Names;
     }
     public function getObjectMapperOperation🌀Pets🌀PetId() : Hydrator\Operation\Pets\PetId
     {

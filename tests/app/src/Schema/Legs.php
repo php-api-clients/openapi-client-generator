@@ -15,10 +15,27 @@ use React\Http;
 use ApiClients\Contracts;
 final readonly class Legs
 {
-    public const SCHEMA_JSON = '{"required":["count","joints"],"type":"object","properties":{"count":{"type":"integer"},"joins":{"type":"integer"}}}';
+    public const SCHEMA_JSON = '{
+    "required": [
+        "count",
+        "joints"
+    ],
+    "type": "object",
+    "properties": {
+        "count": {
+            "type": "integer"
+        },
+        "joins": {
+            "type": "integer"
+        }
+    }
+}';
     public const SCHEMA_TITLE = '';
     public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{"count":5,"joins":5}';
+    public const SCHEMA_EXAMPLE_DATA = '{
+    "count": 5,
+    "joins": 5
+}';
     public function __construct(public int $count, public ?int $joins)
     {
     }

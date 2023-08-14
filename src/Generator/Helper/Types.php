@@ -6,6 +6,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
 use PhpParser\Node;
 
+use function array_key_exists;
 use function array_map;
 use function in_array;
 use function substr;
@@ -54,5 +55,47 @@ final class Types
             static fn (string $type): Node\Name => new Node\Name($type),
             self::normalizeRaw(...$types),
         );
+    }
+
+    /** @return iterable<string> */
+    public static function filterDuplicatesAndIncompatibleRawTypes(string ...$types): iterable
+    {
+        $keepVoid   = true;
+        $keepArray  = true;
+        $duplicates = [];
+
+        foreach ($types as $type) {
+            if ($type !== 'void') {
+                $keepVoid = false;
+            }
+
+            if ($type === 'iterable') {
+                $keepArray = false;
+            }
+
+            if ($type === 'void' || $type === 'array') {
+                continue;
+            }
+
+            if (array_key_exists($type, $duplicates)) {
+                continue;
+            }
+
+            yield $type;
+
+            $duplicates[$type] = true;
+        }
+
+        if ($keepArray) {
+            yield 'array';
+
+            return;
+        }
+
+        if (! $keepVoid) {
+            return;
+        }
+
+        yield 'void';
     }
 }

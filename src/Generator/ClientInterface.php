@@ -7,13 +7,18 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
+use PhpParser\Node\Name;
+use PhpParser\Node\UnionType;
 
+use function array_map;
 use function array_unique;
 use function count;
+use function explode;
 use function implode;
 use function trim;
 
@@ -45,11 +50,7 @@ final class ClientInterface
                             $left     = '';
                             $right    = '';
                             for ($i = 0; $i < $count; $i++) {
-                                $returnType = implode('|', [
-                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
-                                    ...array_unique($operations[$i]->returnType),
-                                ]);
-                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
+                                $returnType = \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getDocBlockResultTypeFromOperation($operations[$i]);
                                 if ($i !== $lastItem) {
                                     $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                                 } else {
@@ -64,7 +65,22 @@ final class ClientInterface
                         ' */',
                         '// phpcs:enable',
                     ])),
-                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([])),
+                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
+                    new UnionType(
+                        array_map(
+                            static fn (string $type): Name => new Name($type),
+                            array_unique(
+                                [
+                                    ...Types::filterDuplicatesAndIncompatibleRawTypes(...(static function (array $operations): iterable {
+                                        foreach ($operations as $operation) {
+                                            yield from explode('|', \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getResultTypeFromOperation($operation));
+                                        }
+                                    })($operations)),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
             );
         }
 

@@ -18,12 +18,14 @@ use PHPStan\PhpDocParser\Parser\PhpDocParser;
 use PHPStan\PhpDocParser\Parser\TokenIterator;
 use PHPStan\PhpDocParser\Parser\TypeParser;
 use ReflectionClass;
+use Rx\Observable;
 
 use function array_map;
 use function count;
 use function explode;
 use function implode;
 use function is_string;
+use function str_replace;
 use function strpos;
 use function ucfirst;
 
@@ -167,11 +169,13 @@ final class Operation
             return (string) $returnType;
         }
 
-        return implode(
-            '|',
-            array_map(
-                static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
-                explode('|', (string) $returnType),
+        return self::convertObservableIntoIterable(
+            implode(
+                '|',
+                array_map(
+                    static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
+                    explode('|', (string) $returnType),
+                ),
             ),
         );
     }
@@ -209,12 +213,19 @@ final class Operation
         $tokens     = new TokenIterator($lexer->tokenize($docComment));
         $phpDocNode = $phpDocParser->parse($tokens); // PhpDocNode
 
-        return implode(
-            '|',
-            array_map(
-                static fn (ReturnTagValueNode $returnTagValueNode): string => (string) $returnTagValueNode->type,
-                $phpDocNode->getReturnTagValues(),
+        return self::convertObservableIntoIterable(
+            implode(
+                '|',
+                array_map(
+                    static fn (ReturnTagValueNode $returnTagValueNode): string => (string) $returnTagValueNode->type,
+                    $phpDocNode->getReturnTagValues(),
+                ),
             ),
         );
+    }
+
+    private static function convertObservableIntoIterable(string $string): string
+    {
+        return str_replace('\\' . Observable::class, 'iterable', $string);
     }
 }

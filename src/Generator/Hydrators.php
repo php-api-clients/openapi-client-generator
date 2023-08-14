@@ -266,7 +266,7 @@ final class Hydrators
                                     new Node\Expr\Variable('this'),
                                     $hydrator->methodName,
                                 ),
-                                new Node\Expr\ConstFetch(new Node\Name($hydrator->className->relative)),
+                                new Node\Name($hydrator->className->relative),
                             ),
                             new Node\Expr\ConstFetch(new Node\Name('false')),
                         ),

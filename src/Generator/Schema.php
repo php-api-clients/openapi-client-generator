@@ -32,6 +32,7 @@ use function strlen;
 use function strtoupper;
 use function trim;
 
+use const JSON_PRETTY_PRINT;
 use const PHP_EOL;
 
 final class Schema
@@ -60,7 +61,7 @@ final class Schema
                 new Node\Const_(
                     'SCHEMA_JSON',
                     new Node\Scalar\String_(
-                        json_encode($schema->schema->getSerializableData()),
+                        json_encode($schema->schema->getSerializableData(), JSON_PRETTY_PRINT),
                     ),
                 ),
             ],
@@ -106,7 +107,7 @@ final class Schema
                 [
                     new Node\Const_(
                         'SCHEMA_EXAMPLE_DATA',
-                        $factory->val(json_encode($schema->example)),
+                        $factory->val(json_encode($schema->example, JSON_PRETTY_PRINT)),
                     ),
                 ],
                 Class_::MODIFIER_PUBLIC,

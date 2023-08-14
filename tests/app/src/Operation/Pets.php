@@ -33,4 +33,11 @@ final class Pets
         }
         return $this->operator[Operator\Pets\Create::class]->call($params);
     }
+    public function names(int $limit) : Schema\Operations\Pets\Names\Response\ApplicationJson\Ok
+    {
+        if (\array_key_exists(Operator\Pets\Names::class, $this->operator) == false) {
+            $this->operator[Operator\Pets\Names::class] = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
+        }
+        return $this->operator[Operator\Pets\Names::class]->call($limit);
+    }
 }

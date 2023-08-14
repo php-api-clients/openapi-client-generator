@@ -6,10 +6,14 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\OperationArray;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
+use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\Schema;
+use Jawira\CaseConverter\Convert;
+use NumberToWords\NumberToWords;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -34,6 +38,7 @@ use function array_unique;
 use function array_values;
 use function count;
 use function implode;
+use function is_array;
 use function is_int;
 use function is_string;
 use function rtrim;
@@ -272,77 +277,167 @@ final class Operation
                             );
                             continue;
                         }
-
-                        continue;
                     }
 
-                    $returnOrThrow = Node\Stmt\Return_::class;
-                    $isError       = $contentTypeSchema->code >= 400;
-                    if ($isError) {
-                        $returnOrThrow = Node\Stmt\Throw_::class;
-                        $throwableSchemaRegistry->add($contentTypeSchema->content->payload->className->relative);
-                    }
+                    $isArray = $contentTypeSchema->content->type === 'array' || ($contentTypeSchema->content->type !== 'union' && $contentTypeSchema->content->payload->isArray);
 
-                    $object = $isError ? $contentTypeSchema->content->payload->errorClassNameAliased->relative : $contentTypeSchema->content->payload->className->relative;
-                    if (! $isError) {
-                        $returnType[]    = ($contentTypeSchema->content->payload->isArray ? '\\' . Observable::class . '<' : '') . $object . ($contentTypeSchema->content->payload->isArray ? '>' : '');
-                        $returnTypeRaw[] = $contentTypeSchema->content->payload->isArray ? '\\' . Observable::class : $object;
-                    }
+                    $isError = $contentTypeSchema->code >= 400;
 
-                    $hydrate = new Node\Expr\MethodCall(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'hydrator',
-                        ),
-                        'hydrateObject',
-                        [
-                            new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($contentTypeSchema->content->payload->className->relative),
-                                'class',
-                            )),
-                            new Node\Arg(new Node\Expr\Variable('body')),
-                        ],
-                    );
+                    if ($contentTypeSchema->content->type === 'union' || $contentTypeSchema->content->type === 'array') {
+                        $gotoLabels = (new Convert(Utils::cleanUpString('items_' . $supportedContentType . '_' . NumberToWords::transformNumber('en', $contentTypeSchema->code) . '_aaaaa')))->toSnake();
+                        $sTmts      = [];
+                        $types      = [];
 
-                    if ($isError) {
-                        $hydrate = new Node\Expr\New_(
-                            new Node\Name($contentTypeSchema->content->payload->errorClassNameAliased->relative),
-                            [
-                                new Arg(
-                                    is_string($contentTypeSchema->code) ? new Node\Expr\Variable('code') : new Node\Scalar\LNumber($contentTypeSchema->code),
+                        $sTmts[] = new Node\Stmt\Expression(
+                            new Node\Expr\Assign(
+                                new Node\Expr\Variable('error'),
+                                new Node\Expr\New_(
+                                    new Node\Name('\\' . RuntimeException::class),
                                 ),
-                                new Arg(
-                                    $hydrate,
-                                ),
-                            ],
+                            ),
                         );
-                    }
 
-                    $validate = new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'responseSchemaValidator',
-                        ),
-                        'validate',
-                        [
-                            new Node\Arg(new Node\Expr\Variable($contentTypeSchema->content->payload->isArray ? 'bodyItem' : 'body')),
-                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
-                                new Arg(new Node\Expr\ClassConstFetch(
-                                    new Node\Name($contentTypeSchema->content->payload->className->relative),
-                                    'SCHEMA_JSON',
-                                )),
-                                new Arg(new Node\Expr\ClassConstFetch(
-                                    new Node\Name('\\' . Schema::class),
-                                    'class',
-                                )),
-                            ])),
-                        ],
-                    ));
+                        foreach (
+                            OperationArray::uniqueSchemas(...(
+                                is_array($contentTypeSchema->content->payload) ? $contentTypeSchema->content->payload : [$contentTypeSchema->content->payload]
+                            )) as $item
+                        ) {
+                            if ($item instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                                $sTmts[] = new Node\Stmt\TryCatch([
+                                    new Node\Stmt\Expression(new Node\Expr\MethodCall(
+                                        new Node\Expr\PropertyFetch(
+                                            new Node\Expr\Variable('this'),
+                                            'responseSchemaValidator',
+                                        ),
+                                        'validate',
+                                        [
+                                            new Node\Arg(new Node\Expr\Variable('body')),
+                                            new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
+                                                new Arg(new Node\Expr\ClassConstFetch(
+                                                    new Node\Name($item->className->relative),
+                                                    'SCHEMA_JSON',
+                                                )),
+                                                new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
+                                            ])),
+                                        ],
+                                    )),
+                                    new Node\Stmt\Return_(new Node\Expr\MethodCall(
+                                        new Node\Expr\PropertyFetch(
+                                            new Node\Expr\Variable('this'),
+                                            'hydrator',
+                                        ),
+                                        'hydrateObject',
+                                        [
+                                            new Node\Arg(new Node\Expr\ClassConstFetch(
+                                                new Node\Name($item->className->relative),
+                                                'class',
+                                            )),
+                                            new Node\Arg(new Node\Expr\Variable('body')),
+                                        ],
+                                    )),
+                                ], [
+                                    new Node\Stmt\Catch_(
+                                        [new Node\Name('\\' . Throwable::class)],
+                                        new Node\Expr\Variable('error'),
+                                        [
+                                            new Node\Stmt\Goto_($gotoLabels),
+                                        ],
+                                    ),
+                                ]);
+                                $sTmts[] = new Node\Stmt\Label($gotoLabels);
+                                $gotoLabels++;
+                                $types[] = $item->className->relative;
+                            } else {
+                                $sTmts[] = new Node\Stmt\If_(
+                                    new Node\Expr\FuncCall(
+                                        new Node\Name('\is_' . $item),
+                                        [
+                                            new Node\Arg(new Node\Expr\Variable('body')),
+                                        ],
+                                    ),
+                                    [
+                                        'stmts' => [
+                                            new Node\Stmt\Return_(
+                                                new Node\Expr\Variable('body'),
+                                            ),
+                                        ],
+                                    ],
+                                );
+                                $types[] = $item;
+                            }
+                        }
 
-                    $case = new Node\Stmt\Case_(
-                        is_string($contentTypeSchema->code) ? null : new Node\Scalar\LNumber($contentTypeSchema->code),
-                        [
-                            $contentTypeSchema->content->payload->isArray ? new Node\Stmt\Foreach_(
+                        $sTmts[] = new Node\Stmt\Throw_(new Node\Expr\Variable('error'));
+
+                        if (! $isError) {
+                            if ($contentTypeSchema->content->type === 'array') {
+                                $returnType[]    = '\\' . Observable::class . '<' . implode('|', $types) . '>';
+                                $returnTypeRaw[] = '\\' . Observable::class;
+                            } else {
+                                $returnType[] = $returnTypeRaw[] = implode('|', $types);
+                            }
+                        }
+
+                        $tmts = $contentTypeSchema->content->type === 'array' ? [
+                            new Node\Stmt\Return_(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\StaticCall(
+                                        new Node\Name('\\' . Observable::class),
+                                        'fromArray',
+                                        [
+                                            new Node\Arg(new Node\Expr\Variable('body')),
+                                            new Node\Arg(
+                                                new Node\Expr\New_(
+                                                    new Node\Name('\\' . ImmediateScheduler::class),
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                    'map',
+                                    [
+                                        new Arg(new Node\Expr\Closure([
+                                            'stmts' => $sTmts,
+                                            'params' => [new Node\Param(new Node\Expr\Variable('body'), null, new Node\Name('array'))],
+                                            'returnType' => new Node\UnionType(
+                                                array_map(static fn (string $name): Node\name => new Node\Name($name), $types),
+                                            ),
+                                        ])),
+                                    ],
+                                ),
+                            ),
+                        ] : $sTmts;
+                    } else {
+                        $returnOrThrow = Node\Stmt\Return_::class;
+                        if ($isError) {
+                            $returnOrThrow = Node\Stmt\Throw_::class;
+                            $throwableSchemaRegistry->add($contentTypeSchema->content->payload->className->relative);
+                        }
+
+                        $object = $isError ? $contentTypeSchema->content->payload->errorClassNameAliased->relative : $contentTypeSchema->content->payload->className->relative;
+                        if (! $isError) {
+                            $returnType[]    = ($isArray ? '\\' . Observable::class . '<' : '') . $object . ($isArray ? '>' : '');
+                            $returnTypeRaw[] = $isArray ? '\\' . Observable::class : $object;
+                        }
+
+                        $validate = OperationArray::validate($contentTypeSchema->content->payload->className->relative, $isArray);
+                        $hydrate  = OperationArray::hydrate($contentTypeSchema->content->payload->className->relative);
+
+                        if ($isError) {
+                            $hydrate = new Node\Expr\New_(
+                                new Node\Name($contentTypeSchema->content->payload->errorClassNameAliased->relative),
+                                [
+                                    new Arg(
+                                        is_string($contentTypeSchema->code) ? new Node\Expr\Variable('code') : new Node\Scalar\LNumber($contentTypeSchema->code),
+                                    ),
+                                    new Arg(
+                                        $hydrate,
+                                    ),
+                                ],
+                            );
+                        }
+
+                        $tmts = [
+                            $isArray ? new Node\Stmt\Foreach_(
                                 new Node\Expr\Variable('body'),
                                 new Node\Expr\Variable('bodyItem'),
                                 [
@@ -350,7 +445,7 @@ final class Operation
                                 ],
                             ) : $validate,
                             new $returnOrThrow(
-                                $contentTypeSchema->content->payload->isArray ? new Node\Expr\MethodCall(
+                                $isArray ? new Node\Expr\MethodCall(
                                     new Node\Expr\StaticCall(
                                         new Node\Name('\\' . Observable::class),
                                         'fromArray',
@@ -377,7 +472,12 @@ final class Operation
                                     ],
                                 ) : $hydrate,
                             ),
-                        ],
+                        ];
+                    }
+
+                    $case = new Node\Stmt\Case_(
+                        is_string($contentTypeSchema->code) ? null : new Node\Scalar\LNumber($contentTypeSchema->code),
+                        $tmts,
                     );
 
                     if (strlen($contentTypeSchema->description) > 0) {

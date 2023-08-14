@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "26d6c9f709fe9701b4415751a8d4ef2e",
+    "content-hash": "73ab1c69fd4ff4f9394fa62ecfa4c15c",
     "packages": [
         {
             "name": "amphp/amp",
@@ -228,8 +228,8 @@
             },
             "require": {
                 "api-clients/contracts": "^0.1",
-                "devizzent/cebe-php-openapi": "^1",
-                "eventsauce/object-hydrator": "^1.3.1",
+                "devizzent/cebe-php-openapi": "^1.0.1",
+                "eventsauce/object-hydrator": "^1.4.0",
                 "league/openapi-psr7-validator": "^0.21",
                 "php": "^8.2",
                 "react/async": "^4.1.0",

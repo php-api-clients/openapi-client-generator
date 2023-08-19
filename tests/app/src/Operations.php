@@ -23,6 +23,10 @@ final class Operations implements OperationsInterface
     {
         return new Operation\Pets($this->browser, $this->authentication, $this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators);
     }
+    public function petsList() : Operation\PetsList
+    {
+        return new Operation\PetsList($this->browser, $this->authentication, $this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators);
+    }
     public function showPetById(string $petId) : Schema\Operations\ShowPetById\Response\ApplicationJson\Ok
     {
         if (\array_key_exists(Operator\ShowPetById::class, $this->operator) == false) {

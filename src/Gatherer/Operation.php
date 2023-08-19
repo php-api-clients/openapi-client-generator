@@ -150,7 +150,7 @@ final class Operation
         }
 
         $name  = lcfirst(trim(Utils::basename($className), '\\'));
-        $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(Utils::dirname($className), '\\') : null;
+        $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(str_replace('\\', '', Utils::dirname($className)), '\\') : null;
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(
             ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),

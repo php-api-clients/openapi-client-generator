@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Tests\Client\PetStore\Operation;
+namespace ApiClients\Tests\Client\PetStore\Operation\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -14,9 +14,9 @@ use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
 /**
- * @covers \ApiClients\Client\PetStore\Operation\ShowPetById
+ * @covers \ApiClients\Client\PetStore\Operation\Pets\Names
  */
-final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
+final class NamesTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
 {
     /**
      * @test
@@ -29,10 +29,10 @@ final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCas
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/generated', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/names?limit=5', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->call(Operation\ShowPetById::OPERATION_MATCH, (static function (array $data) : array {
-            $data['petId'] = 'generated';
+        $result = $client->call(Operation\Pets\Names::OPERATION_MATCH, (static function (array $data) : array {
+            $data['limit'] = 5;
             return $data;
         })(array()));
     }
@@ -47,8 +47,8 @@ final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCas
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/generated', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/names?limit=5', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->operations()->showPetById('generated');
+        $result = $client->operations()->pets()->names(5);
     }
 }

@@ -8,6 +8,7 @@ use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ResultConverter;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
@@ -141,7 +142,12 @@ final class Operator
 
         $class->addStmt(
             $factory->method('call')->makePublic()->setReturnType(
-                $returnType,
+                new Node\UnionType(
+                    array_map(
+                        static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
+                        [...Types::filterDuplicatesAndIncompatibleRawTypes(...explode('|', (string) $returnType))],
+                    ),
+                ),
             )->setDocComment(
                 \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getDocBlockFromOperation($operation),
             )->addParams($callParams)->addStmts([
@@ -256,7 +262,7 @@ final class Operator
                         return new Node\UnionType(
                             array_map(
                                 static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
-                                explode('|', (string) $returnType),
+                                [...Types::filterDuplicatesAndIncompatibleRawTypes(...explode('|', (string) $returnType))],
                             ),
                         );
                     })($operation),

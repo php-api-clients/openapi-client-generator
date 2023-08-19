@@ -15,10 +15,22 @@ use React\Http;
 use ApiClients\Contracts;
 final readonly class Tails
 {
-    public const SCHEMA_JSON = '{"required":["count"],"type":"object","properties":{"count":{"type":"integer"}}}';
+    public const SCHEMA_JSON = '{
+    "required": [
+        "count"
+    ],
+    "type": "object",
+    "properties": {
+        "count": {
+            "type": "integer"
+        }
+    }
+}';
     public const SCHEMA_TITLE = '';
     public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{"count":5}';
+    public const SCHEMA_EXAMPLE_DATA = '{
+    "count": 5
+}';
     public function __construct(public int $count)
     {
     }

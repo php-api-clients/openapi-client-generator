@@ -23,14 +23,18 @@ final readonly class ShowPetById
     {
     }
     /**
-     * @return 
+     * @return (Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)
      */
-    public function call(string $petId) : void
+    public function call(string $petId) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {
         $operation = new \ApiClients\Client\PetStore\Operation\ShowPetById($this->responseSchemaValidator, $this->hydrator, $petId);
         $request = $operation->createRequest();
-        $this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : void {
-            $operation->createResponse($response);
-        });
+        $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array {
+            return $operation->createResponse($response);
+        }));
+        if ($result instanceof \Rx\Observable) {
+            $result = \WyriHaximus\React\awaitObservable($result);
+        }
+        return $result;
     }
 }

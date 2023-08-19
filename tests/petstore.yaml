@@ -70,6 +70,76 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /pets/gatos:
+    get:
+      summary: List all cats
+      operationId: pets/list/gatos
+      tags:
+        - cats
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            format: int32
+      responses:
+        200:
+          description: A paged array of cats
+          headers:
+            x-next:
+              description: A link to the next page of cats
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cat"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /pets/names:
+    get:
+      summary: List all pet names
+      operationId: pets/names
+      tags:
+        - cats
+      parameters:
+        - name: limit
+          in: query
+          description: How many items to return at one time (max 100)
+          required: false
+          schema:
+            type: integer
+            maximum: 100
+            format: int32
+      responses:
+        200:
+          description: A paged array of cats
+          headers:
+            x-next:
+              description: A link to the next page of cats
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /pets/{petId}:
     get:
       summary: Info for a specific pet
@@ -192,11 +262,6 @@ components:
             - $ref: "#/components/schemas/GreenEyes"
             - $ref: "#/components/schemas/YellowEyes"
             - $ref: "#/components/schemas/BlackEyes"
-    Pets:
-      type: array
-      maxItems: 100
-      items:
-        $ref: "#/components/schemas/Cat"
     Error:
       type: object
       required:

@@ -12,6 +12,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Methods\ChunkCount;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -25,6 +26,8 @@ use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Name;
+use PhpParser\Node\UnionType;
 use React\EventLoop\Loop;
 use React\Http\Browser;
 use ReflectionClass;
@@ -326,7 +329,7 @@ final class Client
                         array_map(
                             'trim',
                             array_unique(
-                                $returnTypes,
+                                [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypes)],
                             ),
                         ),
                     );
@@ -336,7 +339,7 @@ final class Client
                             'trim',
                             array_filter(
                                 array_unique(
-                                    $returnTypes,
+                                    [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypes)],
                                 ),
                                 static fn (string $type): bool => $type !== 'void',
                             ),
@@ -494,7 +497,6 @@ final class Client
                                     ],
                                 ),
                             ),
-//                            ...($returnTypesUnfilterred === 'void' ? [new Node\Stmt\Return_()] : []),
                         ],
                     ];
                 }
@@ -553,11 +555,7 @@ final class Client
                             $left     = '';
                             $right    = '';
                             for ($i = 0; $i < $count; $i++) {
-                                $returnType = implode('|', [
-                                    ...($operations[$i]->matchMethod === 'STREAM' ? ['iterable<string>'] : []),
-                                    ...array_unique($operations[$i]->returnType),
-                                ]);
-                                $returnType = ($operations[$i]->matchMethod === 'LIST' ? 'iterable<' . $returnType . '>' : $returnType);
+                                $returnType = Operation::getDocBlockResultTypeFromOperation($operations[$i]);
                                 if ($i !== $lastItem) {
                                     $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
                                 } else {
@@ -572,7 +570,22 @@ final class Client
                         ' */',
                         '// phpcs:enable',
                     ])),
-                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->addStmt(
+                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
+                    new UnionType(
+                        array_map(
+                            static fn (string $type): Name => new Name($type),
+                            array_unique(
+                                [
+                                    ...Types::filterDuplicatesAndIncompatibleRawTypes(...(static function (array $operations): iterable {
+                                        foreach ($operations as $operation) {
+                                            yield from explode('|', Operation::getResultTypeFromOperation($operation));
+                                        }
+                                    })($operations)),
+                                ],
+                            ),
+                        ),
+                    ),
+                )->addStmt(
                     new Node\Expr\Assign(
                         new Node\Expr\Array_([
                             new Node\Expr\ArrayItem(
@@ -743,6 +756,19 @@ final class Client
         return $operations;
     }
 
+    /** @param array<Representation\Path> $paths */
+    private static function operationsInThisThree(array $paths, int $level, Routers $routers): iterable
+    {
+        foreach ($paths as $path) {
+            yield from $path['operations'];
+            yield from self::operationsInThisThree(
+                $path['paths'], /** @phpstan-ignore-line */
+                $level + 1,
+                $routers,
+            );
+        }
+    }
+
     /**
      * @param array<Representation\Operation> $operations
      * @param array<Representation\Path>      $paths
@@ -760,7 +786,20 @@ final class Client
             $nonArgumentPathChunks[] = new Node\Expr\ArrayItem(new Node\Scalar\String_($pathChunk));
         }
 
+        $opsInTree = [
+            ...self::operationsInThisThree(
+                $paths,
+                $level,
+                $routers,
+            ),
+        ];
+
         $ifs = [];
+
+//        if (count($opsIntree) === 13) {
+//            $operations = [...$operations, ...$opsIntree];
+//        }
+
         foreach ($operations as $operation) {
             $ifs[] = [
                 new Node\Expr\BinaryOp\Equal(
@@ -774,6 +813,7 @@ final class Client
             ];
         }
 
+//        if (count($opsIntree) > 13) {
         foreach ($paths as $pathChunk => $path) {
             $ifs[] = [
                 new Node\Expr\BinaryOp\Equal(
@@ -784,13 +824,15 @@ final class Client
                     new Node\Scalar\String_($pathChunk),
                 ),
                 self::traverseOperations(
-                    $path['operations'],  /** @phpstan-ignore-line */
+                    $path['operations'], /** @phpstan-ignore-line */
                     $path['paths'], /** @phpstan-ignore-line */
                     $level + 1,
                     $routers,
                 ),
             ];
         }
+
+//        }
 
         if (count($ifs) === 0) {
             return [];
@@ -816,7 +858,17 @@ final class Client
     /** @return array<Node\Stmt> */
     private static function callOperation(Routers $routers, Representation\Operation $operation, Representation\Path $path): array
     {
-        $returnType = Operation::getResultTypeFromOperation($operation);
+        $returnType = implode(
+            '|',
+            [
+                ...Types::filterDuplicatesAndIncompatibleRawTypes(
+                    ...explode(
+                        '|',
+                        Operation::getResultTypeFromOperation($operation),
+                    ),
+                ),
+            ],
+        );
         $router     =  $routers->add(
             $operation->method,
             $operation->group,

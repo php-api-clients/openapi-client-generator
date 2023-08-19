@@ -15,10 +15,30 @@ use React\Http;
 use ApiClients\Contracts;
 final readonly class YellowEyes
 {
-    public const SCHEMA_JSON = '{"required":["count","type"],"type":"object","properties":{"count":{"type":"integer"},"type":{"enum":["snake"],"type":"string"}}}';
+    public const SCHEMA_JSON = '{
+    "required": [
+        "count",
+        "type"
+    ],
+    "type": "object",
+    "properties": {
+        "count": {
+            "type": "integer"
+        },
+        "type": {
+            "enum": [
+                "snake"
+            ],
+            "type": "string"
+        }
+    }
+}';
     public const SCHEMA_TITLE = '';
     public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{"count":5,"type":"snake"}';
+    public const SCHEMA_EXAMPLE_DATA = '{
+    "count": 5,
+    "type": "snake"
+}';
     public function __construct(public int $count, public string $type)
     {
     }

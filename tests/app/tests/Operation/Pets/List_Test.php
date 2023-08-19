@@ -13,6 +13,9 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
+/**
+ * @covers \ApiClients\Client\PetStore\Operation\Pets\List_
+ */
 final class List_Test extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
 {
     /**
@@ -20,7 +23,7 @@ final class List_Test extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
      */
     public function call_httpCode_default_responseContentType_application_json_zero()
     {
-        $response = new \React\Http\Message\Response(999, array('Content-Type' => 'application/json'), Schema\Error::SCHEMA_EXAMPLE_DATA);
+        $response = new \React\Http\Message\Response(999, array('Content-Type' => 'application/json'), json_encode(json_decode(Schema\Error::SCHEMA_EXAMPLE_DATA, true)));
         $auth = $this->prophesize(\ApiClients\Contracts\HTTP\Headers\AuthenticationInterface::class);
         $auth->authHeader(\Prophecy\Argument::any())->willReturn('Bearer beer')->shouldBeCalled();
         $browser = $this->prophesize(\React\Http\Browser::class);
@@ -38,7 +41,7 @@ final class List_Test extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
      */
     public function operations_httpCode_default_responseContentType_application_json_zero()
     {
-        $response = new \React\Http\Message\Response(999, array('Content-Type' => 'application/json'), Schema\Error::SCHEMA_EXAMPLE_DATA);
+        $response = new \React\Http\Message\Response(999, array('Content-Type' => 'application/json'), json_encode(json_decode(Schema\Error::SCHEMA_EXAMPLE_DATA, true)));
         $auth = $this->prophesize(\ApiClients\Contracts\HTTP\Headers\AuthenticationInterface::class);
         $auth->authHeader(\Prophecy\Argument::any())->willReturn('Bearer beer')->shouldBeCalled();
         $browser = $this->prophesize(\React\Http\Browser::class);

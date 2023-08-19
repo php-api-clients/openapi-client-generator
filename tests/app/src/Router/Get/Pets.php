@@ -23,9 +23,9 @@ final class Pets
     {
     }
     /**
-     * @return 
+     * @return iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)>
      */
-    public function list_(array $params) : void
+    public function list_(array $params) : iterable
     {
         $matched = true;
         $arguments = array();
@@ -38,6 +38,24 @@ final class Pets
             $this->hydrator[Hydrator\Operation\Pets::class] = $this->hydrators->getObjectMapperOperation🌀Pets();
         }
         $operator = new Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets::class]);
-        $operator->call($arguments['limit']);
+        return $operator->call($arguments['limit']);
+    }
+    /**
+     * @return iterable<string>
+     */
+    public function names(array $params) : iterable
+    {
+        $matched = true;
+        $arguments = array();
+        if (array_key_exists('limit', $params) === false) {
+            throw new \InvalidArgumentException('Missing mandatory field: limit');
+        }
+        $arguments['limit'] = $params['limit'];
+        unset($params['limit']);
+        if (\array_key_exists(Hydrator\Operation\Pets\Names::class, $this->hydrator) == false) {
+            $this->hydrator[Hydrator\Operation\Pets\Names::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀Names();
+        }
+        $operator = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Names::class]);
+        return $operator->call($arguments['limit']);
     }
 }

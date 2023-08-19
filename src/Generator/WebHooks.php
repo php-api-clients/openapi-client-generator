@@ -238,7 +238,7 @@ final class WebHooks
                                 new Node\Expr\Variable('this'),
                                 $eventSanitized,
                             ),
-                            new Node\Expr\ConstFetch(new Node\Name($eventClassname)),
+                            new Node\Name($eventClassname),
                         ),
                         new Node\Expr\ConstFetch(new Node\Name('false')),
                     ),

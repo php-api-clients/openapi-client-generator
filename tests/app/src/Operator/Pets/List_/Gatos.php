@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Operator\Pets;
+namespace ApiClients\Client\PetStore\Operator\Pets\List_;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -13,21 +13,21 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final readonly class List_
+final readonly class Gatos
 {
-    public const OPERATION_ID = 'pets/list';
-    public const OPERATION_MATCH = 'GET /pets';
+    public const OPERATION_ID = 'pets/list/gatos';
+    public const OPERATION_MATCH = 'GET /pets/gatos';
     private const METHOD = 'GET';
-    private const PATH = '/pets';
-    public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets $hydrator)
+    private const PATH = '/pets/gatos';
+    public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets\Gatos $hydrator)
     {
     }
     /**
-     * @return iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)>
+     * @return iterable<Schema\Cat>
      */
     public function call(int $limit) : iterable
     {
-        $operation = new \ApiClients\Client\PetStore\Operation\Pets\List_($this->responseSchemaValidator, $this->hydrator, $limit);
+        $operation = new \ApiClients\Client\PetStore\Operation\Pets\List_\Gatos($this->responseSchemaValidator, $this->hydrator, $limit);
         $request = $operation->createRequest();
         $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \Rx\Observable|array {
             return $operation->createResponse($response);

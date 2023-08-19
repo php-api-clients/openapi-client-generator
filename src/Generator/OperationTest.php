@@ -50,7 +50,13 @@ final class OperationTest
             new Node\Name(
                 '\\' . AsyncTestCase::class,
             ),
-        )->makeFinal();
+        )->makeFinal()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @covers ' . $operation->className->fullyQualified->source,
+                ' */',
+            ])),
+        );
 
         foreach ($operation->response as $contentTypeSchema) {
             $contentTypePayloads = $contentTypeSchema->content->payload;
@@ -199,11 +205,36 @@ final class OperationTest
     {
         $methodName = 'call_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof Representation\OperationResponse ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
         if ($response instanceof Representation\OperationResponse && $response->content->payload instanceof Representation\Schema) {
-            $responseSchemaFetch = new Node\Expr\ClassConstFetch(
+            $responseSchemaFetch = new Node\Expr\FuncCall(
                 new Node\Name(
-                    $response->content->payload->className->relative,
+                    'json_encode',
                 ),
-                'SCHEMA_EXAMPLE_DATA',
+                [
+                    new Arg(
+                        new Node\Expr\FuncCall(
+                            new Node\Name(
+                                'json_decode',
+                            ),
+                            [
+                                new Arg(
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name(
+                                            $response->content->payload->className->relative,
+                                        ),
+                                        'SCHEMA_EXAMPLE_DATA',
+                                    ),
+                                ),
+                                new Arg(
+                                    new Node\Expr\ConstFetch(
+                                        new Node\Name(
+                                            'true',
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
             );
         } elseif ($response instanceof Representation\OperationResponse) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
@@ -318,11 +349,36 @@ final class OperationTest
     {
         $methodName = 'operations_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof Representation\OperationResponse ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
         if ($response instanceof Representation\OperationResponse && $response->content->payload instanceof Representation\Schema) {
-            $responseSchemaFetch = new Node\Expr\ClassConstFetch(
+            $responseSchemaFetch = new Node\Expr\FuncCall(
                 new Node\Name(
-                    $response->content->payload->className->relative,
+                    'json_encode',
                 ),
-                'SCHEMA_EXAMPLE_DATA',
+                [
+                    new Arg(
+                        new Node\Expr\FuncCall(
+                            new Node\Name(
+                                'json_decode',
+                            ),
+                            [
+                                new Arg(
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name(
+                                            $response->content->payload->className->relative,
+                                        ),
+                                        'SCHEMA_EXAMPLE_DATA',
+                                    ),
+                                ),
+                                new Arg(
+                                    new Node\Expr\ConstFetch(
+                                        new Node\Name(
+                                            'true',
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
             );
         } elseif ($response instanceof Representation\OperationResponse) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
@@ -481,10 +537,8 @@ final class OperationTest
             ...(is_string($response->code) || $response->code < 400 || $contentTypePayload === null ? [] : [
                 new Node\Stmt\Expression(
                     new Node\Expr\StaticCall(
-                        new Node\Expr\ConstFetch(
-                            new Node\Name(
-                                'self',
-                            ),
+                        new Node\Name(
+                            'self',
                         ),
                         'expectException',
                         [
@@ -755,11 +809,36 @@ final class OperationTest
                                         '\\' . Argument::class,
                                     ),
                                     'any',
-                                ) : new Node\Expr\ClassConstFetch(
+                                ) : new Node\Expr\FuncCall(
                                     new Node\Name(
-                                        $request->schema->className->relative,
+                                        'json_encode',
                                     ),
-                                    'SCHEMA_EXAMPLE_DATA',
+                                    [
+                                        new Arg(
+                                            new Node\Expr\FuncCall(
+                                                new Node\Name(
+                                                    'json_decode',
+                                                ),
+                                                [
+                                                    new Arg(
+                                                        new Node\Expr\ClassConstFetch(
+                                                            new Node\Name(
+                                                                $request->schema->className->relative,
+                                                            ),
+                                                            'SCHEMA_EXAMPLE_DATA',
+                                                        ),
+                                                    ),
+                                                    new Arg(
+                                                        new Node\Expr\ConstFetch(
+                                                            new Node\Name(
+                                                                'true',
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
                                 ),
                             ),
                         ],

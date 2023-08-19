@@ -15,7 +15,9 @@ use React\Http;
 use ApiClients\Contracts;
 final readonly class Features
 {
-    public const SCHEMA_JSON = '{"type":"object"}';
+    public const SCHEMA_JSON = '{
+    "type": "object"
+}';
     public const SCHEMA_TITLE = '';
     public const SCHEMA_DESCRIPTION = '';
     public const SCHEMA_EXAMPLE_DATA = '[]';

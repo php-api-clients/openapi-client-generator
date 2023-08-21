@@ -19,12 +19,19 @@ final class Pets
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators)
     {
     }
-    public function list(int $limit) : Schema\Operations\Pets\List_\Response\ApplicationJson\Ok
+    public function list(int $perPage, int $page) : Schema\Operations\Pets\List_\Response\ApplicationJson\Ok
     {
         if (\array_key_exists(Operator\Pets\List_::class, $this->operator) == false) {
             $this->operator[Operator\Pets\List_::class] = new Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
         }
-        return $this->operator[Operator\Pets\List_::class]->call($limit);
+        return $this->operator[Operator\Pets\List_::class]->call($perPage, $page);
+    }
+    public function listListing(int $perPage, int $page) : Schema\Operations\Pets\List_\Response\ApplicationJson\Ok
+    {
+        if (\array_key_exists(Operator\Pets\ListListing::class, $this->operator) == false) {
+            $this->operator[Operator\Pets\ListListing::class] = new Operator\Pets\ListListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
+        }
+        return $this->operator[Operator\Pets\ListListing::class]->call($perPage, $page);
     }
     public function create(array $params) : \Psr\Http\Message\ResponseInterface
     {
@@ -33,11 +40,18 @@ final class Pets
         }
         return $this->operator[Operator\Pets\Create::class]->call($params);
     }
-    public function names(int $limit) : Schema\Operations\Pets\Names\Response\ApplicationJson\Ok
+    public function names(int $perPage, int $page) : Schema\Operations\Pets\Names\Response\ApplicationJson\Ok
     {
         if (\array_key_exists(Operator\Pets\Names::class, $this->operator) == false) {
             $this->operator[Operator\Pets\Names::class] = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
         }
-        return $this->operator[Operator\Pets\Names::class]->call($limit);
+        return $this->operator[Operator\Pets\Names::class]->call($perPage, $page);
+    }
+    public function namesListing(int $perPage, int $page) : Schema\Operations\Pets\Names\Response\ApplicationJson\Ok
+    {
+        if (\array_key_exists(Operator\Pets\NamesListing::class, $this->operator) == false) {
+            $this->operator[Operator\Pets\NamesListing::class] = new Operator\Pets\NamesListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
+        }
+        return $this->operator[Operator\Pets\NamesListing::class]->call($perPage, $page);
     }
 }

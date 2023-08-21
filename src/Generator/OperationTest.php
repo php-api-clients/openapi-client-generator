@@ -342,6 +342,14 @@ final class OperationTest
                     ),
                 ),
             ),
+            ...$operation->matchMethod === 'LIST' ?
+            [
+                new Node\Stmt\Foreach_(
+                    new Node\Expr\Variable('result'),
+                    new Node\Expr\Variable('item'),
+                ),
+            ] :
+            [],
         ]);
     }
 
@@ -519,6 +527,14 @@ final class OperationTest
                     }
                 })(...$response->headers),
             ] : []),
+            ...$operation->matchMethod === 'LIST' ?
+                [
+                    new Node\Stmt\Foreach_(
+                        new Node\Expr\Variable('result'),
+                        new Node\Expr\Variable('item'),
+                    ),
+                ] :
+                [],
         ]);
     }
 

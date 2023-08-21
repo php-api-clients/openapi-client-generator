@@ -28,16 +28,10 @@ final class Get
     public function showPetById(array $params) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {
         $matched = true;
-        $arguments = array();
-        if (array_key_exists('petId', $params) === false) {
-            throw new \InvalidArgumentException('Missing mandatory field: petId');
-        }
-        $arguments['petId'] = $params['petId'];
-        unset($params['petId']);
         if (\array_key_exists(Hydrator\Operation\Pets\PetId::class, $this->hydrator) == false) {
             $this->hydrator[Hydrator\Operation\Pets\PetId::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀PetId();
         }
         $operator = new Operator\ShowPetById($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\PetId::class]);
-        return $operator->call($arguments['petId']);
+        return $operator->call();
     }
 }

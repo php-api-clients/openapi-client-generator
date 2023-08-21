@@ -33,7 +33,7 @@ final class Three
                         if (\array_key_exists(Router\Get\PetsList::class, $this->router) == false) {
                             $this->router[Router\Get\PetsList::class] = new Router\Get\PetsList($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
-                        return $this->router[Router\Get\PetsList::class]->gatos($params);
+                        return $this->router[Router\Get\PetsList::class]->Gatos($params);
                     }
                 } elseif ($pathChunks[2] == 'names') {
                     if ($call == 'GET /pets/names') {
@@ -41,7 +41,7 @@ final class Three
                         if (\array_key_exists(Router\Get\Pets::class, $this->router) == false) {
                             $this->router[Router\Get\Pets::class] = new Router\Get\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
-                        return $this->router[Router\Get\Pets::class]->names($params);
+                        return $this->router[Router\Get\Pets::class]->Names($params);
                     }
                 } elseif ($pathChunks[2] == '{petId}') {
                     if ($call == 'GET /pets/{petId}') {
@@ -49,7 +49,7 @@ final class Three
                         if (\array_key_exists(Router\Get::class, $this->router) == false) {
                             $this->router[Router\Get::class] = new Router\Get($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
-                        return $this->router[Router\Get::class]->showPetById($params);
+                        return $this->router[Router\Get::class]->ShowPetById($params);
                     }
                 }
             }

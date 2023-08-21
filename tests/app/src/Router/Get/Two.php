@@ -32,7 +32,7 @@ final class Two
                     if (\array_key_exists(Router\Get\Pets::class, $this->router) == false) {
                         $this->router[Router\Get\Pets::class] = new Router\Get\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
-                    return $this->router[Router\Get\Pets::class]->list_($params);
+                    return $this->router[Router\Get\Pets::class]->List($params);
                 }
             }
         }

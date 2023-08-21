@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Router\Post;
+namespace ApiClients\Client\PetStore\Router\List;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -20,19 +20,19 @@ final class Two
     {
     }
     /**
-     * @return array{code: int}
+     * @return iterable<(Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish)>
      */
-    public function call(string $call, array $params, array $pathChunks) : array
+    public function call(string $call, array $params, array $pathChunks) : iterable
     {
         $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
-                if ($call == 'POST /pets') {
+                if ($call == 'LIST /pets') {
                     $matched = true;
-                    if (\array_key_exists(Router\Post\Pets::class, $this->router) == false) {
-                        $this->router[Router\Post\Pets::class] = new Router\Post\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
+                    if (\array_key_exists(Router\List\Pets::class, $this->router) == false) {
+                        $this->router[Router\List\Pets::class] = new Router\List\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
-                    return $this->router[Router\Post\Pets::class]->Create($params);
+                    return $this->router[Router\List\Pets::class]->ListListing($params);
                 }
             }
         }

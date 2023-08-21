@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Client\PetStore\Router\Get;
+namespace ApiClients\Client\PetStore\Router\List;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -25,7 +25,7 @@ final class Pets
     /**
      * @return iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)>
      */
-    public function list(array $params) : iterable
+    public function listListing(array $params) : iterable
     {
         $matched = true;
         $arguments = array();
@@ -42,13 +42,18 @@ final class Pets
         if (\array_key_exists(Hydrator\Operation\Pets::class, $this->hydrator) == false) {
             $this->hydrator[Hydrator\Operation\Pets::class] = $this->hydrators->getObjectMapperOperation🌀Pets();
         }
-        $operator = new Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets::class]);
-        return $operator->call($arguments['per_page'], $arguments['page']);
+        $arguments['page'] = 1;
+        do {
+            $operator = new Operator\Pets\ListListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets::class]);
+            $items = $operator->call($arguments['per_page'], $arguments['page']);
+            yield from $items;
+            $arguments['page']++;
+        } while (count($items) > 0);
     }
     /**
      * @return iterable<string>
      */
-    public function names(array $params) : iterable
+    public function namesListing(array $params) : iterable
     {
         $matched = true;
         $arguments = array();
@@ -65,7 +70,12 @@ final class Pets
         if (\array_key_exists(Hydrator\Operation\Pets\Names::class, $this->hydrator) == false) {
             $this->hydrator[Hydrator\Operation\Pets\Names::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀Names();
         }
-        $operator = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Names::class]);
-        return $operator->call($arguments['per_page'], $arguments['page']);
+        $arguments['page'] = 1;
+        do {
+            $operator = new Operator\Pets\NamesListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Names::class]);
+            $items = $operator->call($arguments['per_page'], $arguments['page']);
+            yield from $items;
+            $arguments['page']++;
+        } while (count($items) > 0);
     }
 }

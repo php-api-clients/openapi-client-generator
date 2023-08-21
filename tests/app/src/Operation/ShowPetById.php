@@ -19,19 +19,16 @@ final class ShowPetById
     public const OPERATION_MATCH = 'GET /pets/{petId}';
     private const METHOD = 'GET';
     private const PATH = '/pets/{petId}';
-    /**The id of the pet to retrieve **/
-    private string $petId;
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
     private readonly Hydrator\Operation\Pets\PetId $hydrator;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets\PetId $hydrator, string $petId)
+    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets\PetId $hydrator)
     {
-        $this->petId = $petId;
         $this->responseSchemaValidator = $responseSchemaValidator;
         $this->hydrator = $hydrator;
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{petId}'), array($this->petId), self::PATH));
+        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array(), array(), self::PATH));
     }
     /**
      * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish

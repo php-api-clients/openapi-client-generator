@@ -14,14 +14,8 @@ paths:
       tags:
         - pets
       parameters:
-        - name: limit
-          in: query
-          description: How many items to return at one time (max 100)
-          required: false
-          schema:
-            type: integer
-            maximum: 100
-            format: int32
+      - "$ref": "#/components/parameters/per-page"
+      - "$ref": "#/components/parameters/page"
       responses:
         200:
           description: A paged array of pets
@@ -77,14 +71,8 @@ paths:
       tags:
         - cats
       parameters:
-        - name: limit
-          in: query
-          description: How many items to return at one time (max 100)
-          required: false
-          schema:
-            type: integer
-            maximum: 100
-            format: int32
+        - "$ref": "#/components/parameters/per-page"
+        - "$ref": "#/components/parameters/page"
       responses:
         200:
           description: A paged array of cats
@@ -112,14 +100,8 @@ paths:
       tags:
         - cats
       parameters:
-        - name: limit
-          in: query
-          description: How many items to return at one time (max 100)
-          required: false
-          schema:
-            type: integer
-            maximum: 100
-            format: int32
+      - "$ref": "#/components/parameters/per-page"
+      - "$ref": "#/components/parameters/page"
       responses:
         200:
           description: A paged array of cats
@@ -146,13 +128,6 @@ paths:
       operationId: showPetById
       tags:
         - pets
-      parameters:
-        - name: petId
-          in: path
-          required: true
-          description: The id of the pet to retrieve
-          schema:
-            type: string
       responses:
         200:
           description: Expected response to a valid request
@@ -375,3 +350,18 @@ components:
           enum:
             - sky
             - boobies
+  parameters:
+    page:
+      name: page
+      description: Page number of the results to fetch.
+      in: query
+      schema:
+        type: integer
+        default: 1
+    per-page:
+      name: per_page
+      description: The number of results per page (max 100).
+      in: query
+      schema:
+        type: integer
+        default: 30

@@ -33,7 +33,7 @@ final class Client implements ClientInterface
     }
     // phpcs:disable
     /**
-     * @return ($call is Operation\Pets\List_::OPERATION_MATCH ? iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)> : ($call is Operation\Pets\Create::OPERATION_MATCH ? array{code: int} : ($call is Operation\Pets\List_\Gatos::OPERATION_MATCH ? iterable<Schema\Cat> : ($call is Operation\Pets\Names::OPERATION_MATCH ? iterable<string> : (Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish))))))
+     * @return ($call is Operation\Pets\List_::OPERATION_MATCH ? iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)> : ($call is Operation\Pets\ListListing::OPERATION_MATCH ? iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)> : ($call is Operation\Pets\Create::OPERATION_MATCH ? array{code: int} : ($call is Operation\Pets\List_\Gatos::OPERATION_MATCH ? iterable<Schema\Cat> : ($call is Operation\Pets\List_\GatosListing::OPERATION_MATCH ? iterable<Schema\Cat> : ($call is Operation\Pets\Names::OPERATION_MATCH ? iterable<string> : ($call is Operation\Pets\NamesListing::OPERATION_MATCH ? iterable<string> : (Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)))))))))
      */
     // phpcs:enable
     public function call(string $call, array $params = array()) : iterable|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
@@ -55,6 +55,20 @@ final class Client implements ClientInterface
                     $this->router[Router\Get\Three::class] = new Router\Get\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
                 return $this->router[Router\Get\Three::class]->call($call, $params, $pathChunks);
+            }
+        } elseif ($method === 'LIST') {
+            if ($pathChunksCount === 2) {
+                $matched = true;
+                if (\array_key_exists(Router\List\Two::class, $this->router) == false) {
+                    $this->router[Router\List\Two::class] = new Router\List\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                }
+                return $this->router[Router\List\Two::class]->call($call, $params, $pathChunks);
+            } elseif ($pathChunksCount === 3) {
+                $matched = true;
+                if (\array_key_exists(Router\List\Three::class, $this->router) == false) {
+                    $this->router[Router\List\Three::class] = new Router\List\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                }
+                return $this->router[Router\List\Three::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'POST') {
             if ($pathChunksCount === 2) {

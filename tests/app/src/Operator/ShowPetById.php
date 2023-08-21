@@ -25,9 +25,9 @@ final readonly class ShowPetById
     /**
      * @return (Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)
      */
-    public function call(string $petId) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
+    public function call() : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {
-        $operation = new \ApiClients\Client\PetStore\Operation\ShowPetById($this->responseSchemaValidator, $this->hydrator, $petId);
+        $operation = new \ApiClients\Client\PetStore\Operation\ShowPetById($this->responseSchemaValidator, $this->hydrator);
         $request = $operation->createRequest();
         $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array {
             return $operation->createResponse($response);

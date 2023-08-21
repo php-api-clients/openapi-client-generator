@@ -1,7 +1,7 @@
 <?php
 
 declare (strict_types=1);
-namespace ApiClients\Tests\Client\PetStore\Operation;
+namespace ApiClients\Tests\Client\PetStore\Operation\Pets;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Hydrator;
@@ -14,9 +14,9 @@ use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
 /**
- * @covers \ApiClients\Client\PetStore\Operation\ShowPetById
+ * @covers \ApiClients\Client\PetStore\Operation\Pets\NamesListing
  */
-final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
+final class NamesListingTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCase
 {
     /**
      * @test
@@ -29,11 +29,15 @@ final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCas
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/{petId}', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/names?per_page=8&page=1', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->call(Operation\ShowPetById::OPERATION_MATCH, (static function (array $data) : array {
+        $result = $client->call(Operation\Pets\NamesListing::OPERATION_MATCH, (static function (array $data) : array {
+            $data['per_page'] = 8;
+            $data['page'] = 1;
             return $data;
         })(array()));
+        foreach ($result as $item) {
+        }
     }
     /**
      * @test
@@ -46,8 +50,10 @@ final class ShowPetByIdTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCas
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/{petId}', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/names?per_page=8&page=1', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
-        $result = $client->operations()->showPetById();
+        $result = $client->operations()->pets()->namesListing(8, 1);
+        foreach ($result as $item) {
+        }
     }
 }

@@ -28,13 +28,9 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
 use PhpParser\Node\UnionType;
-use React\EventLoop\Loop;
 use React\Http\Browser;
 use ReflectionClass;
 use ReflectionParameter;
-use Rx\Observable;
-use Rx\Subject\Subject;
-use Throwable;
 
 use function array_filter;
 use function array_key_exists;
@@ -870,7 +866,7 @@ final class Client
             ],
         );
         $router     =  $routers->add(
-            $operation->method,
+            $operation->matchMethod,
             $operation->group,
             $operation->name,
             $returnType,
@@ -992,150 +988,48 @@ final class Client
                 ) : [
                     new Node\Stmt\Expression(
                         new Node\Expr\Assign(
-                            new Node\Expr\Variable('stream'),
-                            new Node\Expr\New_(
-                                new Node\Name('\\' . Subject::class),
+                            new Expr\ArrayDimFetch(
+                                new Expr\Variable('arguments'),
+                                new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
                             ),
+                            new Node\Scalar\LNumber($operation->metaData['listOperation']['initialValue']), /** @phpstan-ignore-line */
                         ),
                     ),
-                    new Node\Stmt\Expression(
-                        new Node\Expr\StaticCall(
-                            new Node\Name('\\' . Loop::class),
-                            'futureTick',
-                            [
-                                new Arg(
-                                    new Node\Expr\FuncCall(
-                                        new Node\Name('\React\Async\async'),
-                                        [
-                                            new Arg(
-                                                new Node\Expr\Closure([
-                                                    'stmts' => [
-                                                        new Node\Stmt\TryCatch([
-                                                            new Node\Stmt\Expression(
-                                                                new Node\Expr\Assign(
-                                                                    new Expr\ArrayDimFetch(
-                                                                        new Expr\Variable('arguments'),
-                                                                        new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
-                                                                    ),
-                                                                    new Node\Scalar\LNumber($operation->metaData['listOperation']['initialValue']), /** @phpstan-ignore-line */
-                                                                ),
-                                                            ),
-                                                            new Node\Stmt\Do_(
-                                                                new Node\Expr\BinaryOp\Greater(
-                                                                    new Node\Expr\Variable('itemCount'),
-                                                                    new Node\Scalar\LNumber(0),
-                                                                ),
-                                                                [
-                                                                    new Node\Stmt\Expression(
-                                                                        new Node\Expr\Assign(
-                                                                            new Node\Expr\Variable('itemCount'),
-                                                                            new Node\Scalar\LNumber(0),
-                                                                        ),
-                                                                    ),
-                                                                    ...self::makeCall(
-                                                                        $operation,
-                                                                        $path,
-                                                                        static fn (Expr $expr): Node\Stmt\Foreach_ => new Node\Stmt\Foreach_(
-                                                                            new Expr\FuncCall(
-                                                                                new Node\Name('\WyriHaximus\React\awaitObservable'),
-                                                                                [
-                                                                                    new Arg(
-                                                                                        new Expr\MethodCall(
-                                                                                            new Expr\StaticCall(
-                                                                                                new Node\Name('\\' . Observable::class),
-                                                                                                'fromPromise',
-                                                                                                [
-                                                                                                    new Arg($expr),
-                                                                                                ],
-                                                                                            ),
-                                                                                            'mergeAll',
-                                                                                        ),
-                                                                                    ),
-                                                                                ],
-                                                                            ),
-                                                                            new Expr\Variable('item'),
-                                                                            [
-                                                                                'stmts' => [
-                                                                                    new Node\Stmt\Expression(
-                                                                                        new Expr\MethodCall(
-                                                                                            new Node\Expr\Variable('stream'),
-                                                                                            'onNext',
-                                                                                            [
-                                                                                                new Arg(
-                                                                                                    new Expr\Variable('item'),
-                                                                                                ),
-                                                                                            ],
-                                                                                        ),
-                                                                                    ),
-                                                                                    new Node\Stmt\Expression(
-                                                                                        new Expr\PostInc(
-                                                                                            new Node\Expr\Variable('itemCount'),
-                                                                                        ),
-                                                                                    ),
-                                                                                ],
-                                                                            ],
-                                                                        ),
-                                                                    ),
-                                                                    new Node\Stmt\Expression(
-                                                                        new Expr\PostInc(
-                                                                            new Expr\ArrayDimFetch(
-                                                                                new Expr\Variable('arguments'),
-                                                                                new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
-                                                                            ),
-                                                                        ),
-                                                                    ),
-                                                                ],
-                                                            ),
-                                                            new Node\Stmt\Expression(
-                                                                new Expr\MethodCall(
-                                                                    new Node\Expr\Variable('stream'),
-                                                                    'onCompleted',
-                                                                ),
-                                                            ),
-                                                        ], [
-                                                            new Node\Stmt\Catch_(
-                                                                [
-                                                                    new Node\Name('\\' . Throwable::class),
-                                                                ],
-                                                                new Expr\Variable('throwable'),
-                                                                [
-                                                                    new Node\Stmt\Expression(
-                                                                        new Expr\MethodCall(
-                                                                            new Node\Expr\Variable('stream'),
-                                                                            'onError',
-                                                                            [
-                                                                                new Arg(
-                                                                                    new Expr\Variable('throwable'),
-                                                                                ),
-                                                                            ],
-                                                                        ),
-                                                                    ),
-                                                                ],
-                                                            ),
-                                                        ]),
-                                                    ],
-                                                    'uses' => [
-                                                        new Node\Expr\Variable('requestBodyData'),
-                                                        new Node\Expr\Variable('stream'),
-                                                    ],
-                                                    'returnType' => new Node\Name('void'),
-                                                ]),
-                                            ),
-                                        ],
+                    new Node\Stmt\Do_(
+                        new Node\Expr\BinaryOp\Greater(
+                            new Expr\FuncCall(
+                                new Name('count'),
+                                [
+                                    new Arg(new Node\Expr\Variable('items')),
+                                ],
+                            ),
+                            new Node\Scalar\LNumber(0),
+                        ),
+                        [
+                            ...self::makeCall(
+                                $operation,
+                                $path,
+                                static fn (Expr $expr): Node\Stmt\Expression => new Node\Stmt\Expression(
+                                    new Node\Expr\Assign(
+                                        new Expr\Variable('items'),
+                                        $expr,
                                     ),
                                 ),
-                            ],
-                        ),
-                    ),
-                    new Node\Stmt\Return_(
-                        new Expr\FuncCall(
-                            new Node\Name('\React\Promise\resolve'),
-                            [
-                                new Arg(
-                                    new Node\Expr\Variable('stream'),
+                            ),
+                            new Node\Stmt\Expression(
+                                new Expr\YieldFrom(
+                                    new Expr\Variable('items'),
                                 ),
-                            ],
-                        ),
+                            ),
+                            new Node\Stmt\Expression(
+                                new Expr\PostInc(
+                                    new Expr\ArrayDimFetch(
+                                        new Expr\Variable('arguments'),
+                                        new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
+                                    ),
+                                ),
+                            ),
+                        ],
                     ),
                 ]),
             ],
@@ -1222,7 +1116,7 @@ final class Client
                             'class',
                         ),
                     ),
-                    Utils::fixKeyword($router->method),
+                    (new Convert(Utils::fixKeyword($router->method)))->toPascal(),
                     [
                         new Arg(
                             new Node\Expr\Variable(
@@ -1232,7 +1126,6 @@ final class Client
                     ],
                 ),
             ),
-//            ...($returnType === 'void' ? [new Node\Stmt\Return_()] : []),
         ];
     }
 
@@ -1299,7 +1192,7 @@ final class Client
         $className = $routers->createClassName(Utils::fixKeyword($router->method), $router->group, '')->class;
         $factory   = new BuilderFactory();
         $stmt      = $factory->namespace(Utils::dirname($namespace . $className));
-        $class     = $factory->class(Utils::basename($className))->makeFinal()->addStmt(
+        $class     = $factory->class(Utils::basename($namespace . $className))->makeFinal()->addStmt(
             $factory->property('hydrator')->setType('array')->setDefault([])->makePrivate()->setDocComment(new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @var array<class-string, \\' . ObjectMapper::class . '>',
@@ -1311,7 +1204,9 @@ final class Client
 
         foreach ($router->methods as $method) {
             $class->addStmt(
-                $factory->method($method->name)->makePublic()->addParam(
+                $factory->method(
+                    (new Convert($method->name))->toCamel(),
+                )->makePublic()->addParam(
                     (new Param('params'))->setType('array'),
                 )->addStmts($method->nodes)->setReturnType(
                     $method->returnType,
@@ -1339,7 +1234,7 @@ final class Client
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(Utils::dirname($namespace . $chunkCount->className));
 
-        $class = $factory->class(Utils::basename($chunkCount->className))->makeFinal()->addStmt(
+        $class = $factory->class(Utils::basename($namespace . $chunkCount->className))->makeFinal()->addStmt(
             $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
         )->addStmt(
             $constructor,

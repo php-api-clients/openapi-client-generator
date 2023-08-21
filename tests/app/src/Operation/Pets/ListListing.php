@@ -13,10 +13,10 @@ use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
-final class List_
+final class ListListing
 {
     public const OPERATION_ID = 'pets/list';
-    public const OPERATION_MATCH = 'GET /pets';
+    public const OPERATION_MATCH = 'LIST /pets';
     private const METHOD = 'GET';
     private const PATH = '/pets';
     /**The number of results per page (max 100). **/

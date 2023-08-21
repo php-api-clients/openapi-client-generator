@@ -68,7 +68,7 @@ final class Operation
                 $parameter->schema->format,
                 $parameter->in,
                 $parameter->schema->default,
-                ExampleData::scalarData(strlen($parameter->name), $parameterType, $parameter->schema->format),
+                ExampleData::scalarData($parameter->name === 'page' ? 1 : strlen($parameter->name), $parameterType, $parameter->schema->format),
             );
         }
 

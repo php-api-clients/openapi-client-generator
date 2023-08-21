@@ -19,19 +19,22 @@ final class Names
     public const OPERATION_MATCH = 'GET /pets/names';
     private const METHOD = 'GET';
     private const PATH = '/pets/names';
-    /**How many items to return at one time (max 100) **/
-    private int $limit;
+    /**The number of results per page (max 100). **/
+    private int $perPage;
+    /**Page number of the results to fetch. **/
+    private int $page;
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
     private readonly Hydrator\Operation\Pets\Names $hydrator;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets\Names $hydrator, int $limit)
+    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Hydrator\Operation\Pets\Names $hydrator, int $perPage = 30, int $page = 1)
     {
-        $this->limit = $limit;
+        $this->perPage = $perPage;
+        $this->page = $page;
         $this->responseSchemaValidator = $responseSchemaValidator;
         $this->hydrator = $hydrator;
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{limit}'), array($this->limit), self::PATH . '?limit={limit}'));
+        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), self::PATH . '?per_page={per_page}&page={page}'));
     }
     /**
      * @return \Rx\Observable<string>

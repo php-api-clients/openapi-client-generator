@@ -26,7 +26,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
 use ApiClients\Tools\OpenApiClientGenerator\State\File as StateFile;
 use ApiClients\Tools\OpenApiClientGenerator\State\Files;
-use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Step;
+use ApiClients\Tools\OpenApiClientGenerator\Output\Status\Step;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\OpenApi;
 use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
@@ -76,7 +76,7 @@ final readonly class Generator
     private State $state;
     private string $currentSpecHash;
 
-    private StatusOutput $statusOutput;
+    private Output\Status $statusOutput;
 
     public function __construct(
         private Configuration $configuration,
@@ -84,7 +84,7 @@ final readonly class Generator
     ) {
         $this->forceGeneration = is_string(getenv('FORCE_GENERATION')) && strlen(getenv('FORCE_GENERATION')) > 0;
 
-        $this->statusOutput = new StatusOutput(
+        $this->statusOutput = new Output\Status(
             ! (new CiDetector())->isCiDetected(),
             new Step('hash_current_spec', 'Hashing current spec', false),
             new Step('loading_state', 'Loading state', false),

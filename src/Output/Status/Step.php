@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace ApiClients\Tools\OpenApiClientGenerator\StatusOutput;
+namespace ApiClients\Tools\OpenApiClientGenerator\Output\Status;
 
 final readonly class Step
 {

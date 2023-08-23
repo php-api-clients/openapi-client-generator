@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace ApiClients\Tools\OpenApiClientGenerator;
+namespace ApiClients\Tools\OpenApiClientGenerator\Output;
 
-use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\ANSI;
-use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Simple;
-use ApiClients\Tools\OpenApiClientGenerator\StatusOutput\Step;
+use ApiClients\Tools\OpenApiClientGenerator\Output\Status\ANSI;
+use ApiClients\Tools\OpenApiClientGenerator\Output\Status\Simple;
+use ApiClients\Tools\OpenApiClientGenerator\Output\Status\Step;
 
-final readonly class StatusOutput
+final readonly class Status
 {
     private ANSI|Simple $output;
 

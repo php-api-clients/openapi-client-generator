@@ -15,10 +15,6 @@ use React\Http;
 use ApiClients\Contracts;
 final class Pets
 {
-    /**
-     * @var array<class-string, \EventSauce\ObjectHydrator\ObjectMapper>
-     */
-    private array $hydrator = array();
     public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
@@ -38,10 +34,7 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        if (\array_key_exists(Hydrator\Operation\Pets::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets::class] = $this->hydrators->getObjectMapperOperation🌀Pets();
-        }
-        $operator = new Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets::class]);
+        $operator = new Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
     /**
@@ -60,10 +53,7 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        if (\array_key_exists(Hydrator\Operation\Pets\Names::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets\Names::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀Names();
-        }
-        $operator = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Names::class]);
+        $operator = new Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
 }

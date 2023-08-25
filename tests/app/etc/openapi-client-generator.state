@@ -204,7 +204,7 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Client.php",
-                "hash": "719d8221d11509ec31f017f2bd54cb1e"
+                "hash": "6ff122e2242b2a6e4485e102494cb16e"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Get\/Pets.php",
@@ -228,23 +228,23 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Get\/Two.php",
-                "hash": "a0e0ed35a37774016b138af026b36f77"
+                "hash": "b3dfb54492236d6acce0d855f5a9722c"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Get\/Three.php",
-                "hash": "fe90c28538f6f8e8e7844ffc1cee7d0c"
+                "hash": "010a712431902ce0cd62c76b442f3b2f"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/List\/Two.php",
-                "hash": "acfddb57c7bfe66131602af16078e64e"
+                "hash": "8c536f506e86e29020d73148d614efc2"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/List\/Three.php",
-                "hash": "25ba6590befb6bee1dbf71b48ddbb81b"
+                "hash": "ed2f78d6ad9c8fde60c41578f5c3e85f"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Post\/Two.php",
-                "hash": "609aaf14d32b8bc5bb9cef46fe7e3a93"
+                "hash": "50181ba1cfdb8b707f8a7bb47b0811ea"
             },
             {
                 "name": ".\/tests\/app\/src\/\/OperationsInterface.php",
@@ -285,6 +285,10 @@
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Get.php",
                 "hash": "0c8b86bc66e7540692ee4266e1c2ea95"
+            },
+            {
+                "name": ".\/tests\/app\/src\/\/Routers.php",
+                "hash": "981e3ed9c1d96ba38e608555aeb4681d"
             }
         ]
     },

@@ -22,6 +22,7 @@ final class Client implements ClientInterface
     private array $router = array();
     private readonly OperationsInterface $operations;
     private readonly Hydrators $hydrators;
+    private readonly Routers $routers;
     public function __construct(\ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, \React\Http\Browser $browser)
     {
         $this->authentication = $authentication;
@@ -30,6 +31,7 @@ final class Client implements ClientInterface
         $this->responseSchemaValidator = new \League\OpenAPIValidation\Schema\SchemaValidator(\League\OpenAPIValidation\Schema\SchemaValidator::VALIDATE_AS_RESPONSE);
         $this->hydrators = new Hydrators();
         $this->operations = new Operations(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+        $this->routers = new Routers(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
     }
     // phpcs:disable
     /**
@@ -44,31 +46,31 @@ final class Client implements ClientInterface
         if ($method === 'GET') {
             if ($pathChunksCount === 2) {
                 if (\array_key_exists(Router\Get\Two::class, $this->router) == false) {
-                    $this->router[Router\Get\Two::class] = new Router\Get\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                    $this->router[Router\Get\Two::class] = new Router\Get\Two(routers: $this->routers);
                 }
                 return $this->router[Router\Get\Two::class]->call($call, $params, $pathChunks);
             } elseif ($pathChunksCount === 3) {
                 if (\array_key_exists(Router\Get\Three::class, $this->router) == false) {
-                    $this->router[Router\Get\Three::class] = new Router\Get\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                    $this->router[Router\Get\Three::class] = new Router\Get\Three(routers: $this->routers);
                 }
                 return $this->router[Router\Get\Three::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'LIST') {
             if ($pathChunksCount === 2) {
                 if (\array_key_exists(Router\List\Two::class, $this->router) == false) {
-                    $this->router[Router\List\Two::class] = new Router\List\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                    $this->router[Router\List\Two::class] = new Router\List\Two(routers: $this->routers);
                 }
                 return $this->router[Router\List\Two::class]->call($call, $params, $pathChunks);
             } elseif ($pathChunksCount === 3) {
                 if (\array_key_exists(Router\List\Three::class, $this->router) == false) {
-                    $this->router[Router\List\Three::class] = new Router\List\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                    $this->router[Router\List\Three::class] = new Router\List\Three(routers: $this->routers);
                 }
                 return $this->router[Router\List\Three::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'POST') {
             if ($pathChunksCount === 2) {
                 if (\array_key_exists(Router\Post\Two::class, $this->router) == false) {
-                    $this->router[Router\Post\Two::class] = new Router\Post\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
+                    $this->router[Router\Post\Two::class] = new Router\Post\Two(routers: $this->routers);
                 }
                 return $this->router[Router\Post\Two::class]->call($call, $params, $pathChunks);
             }

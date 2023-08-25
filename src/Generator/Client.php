@@ -372,14 +372,6 @@ final class Client
                             new Node\Scalar\LNumber($chunkCount),
                         ),
                         [
-                            new Node\Stmt\Expression(
-                                new Node\Expr\Assign(
-                                    new Node\Expr\Variable('matched'),
-                                    new Expr\ConstFetch(
-                                        new Node\Name('true'),
-                                    ),
-                                ),
-                            ),
                             new Node\Stmt\If_(
                                 new Node\Expr\BinaryOp\Equal(
                                     new Node\Expr\FuncCall(
@@ -632,30 +624,11 @@ final class Client
                             ],
                         ),
                     ),
-                )->addStmt(
-                    new Node\Expr\Assign(
-                        new Node\Expr\Variable('matched'),
-                        new Expr\ConstFetch(
-                            new Node\Name('false'),
-                        ),
-                    ),
                 )->addStmt($operationsIf)->addStmt(
-                    new Node\Stmt\If_(
-                        new Expr\BinaryOp\Identical(
-                            new Node\Expr\Variable('matched'),
-                            new Expr\ConstFetch(
-                                new Node\Name('false'),
-                            ),
+                    new Node\Stmt\Throw_(
+                        new Node\Expr\New_(
+                            new Node\Name('\InvalidArgumentException'),
                         ),
-                        [
-                            'stmts' => [
-                                new Node\Stmt\Throw_(
-                                    new Node\Expr\New_(
-                                        new Node\Name('\InvalidArgumentException'),
-                                    ),
-                                ),
-                            ],
-                        ],
                     ),
                 ),
             );
@@ -872,14 +845,6 @@ final class Client
             $returnType,
             Operation::getDocBlockResultTypeFromOperation($operation),
             [
-                new Node\Stmt\Expression(
-                    new Node\Expr\Assign(
-                        new Node\Expr\Variable('matched'),
-                        new Expr\ConstFetch(
-                            new Node\Name('true'),
-                        ),
-                    ),
-                ),
                 ...(count($operation->parameters) > 0 ? [
                     new Node\Stmt\Expression(new Node\Expr\Assign(
                         new Node\Expr\Variable('arguments'),
@@ -1038,14 +1003,6 @@ final class Client
         $returnOrExpression = $returnType === 'void' ? Node\Stmt\Expression::class : Node\Stmt\Return_::class;
 
         return [
-            new Node\Stmt\Expression(
-                new Node\Expr\Assign(
-                    new Node\Expr\Variable('matched'),
-                    new Expr\ConstFetch(
-                        new Node\Name('true'),
-                    ),
-                ),
-            ),
             new Node\Stmt\If_(
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\FuncCall(
@@ -1250,30 +1207,11 @@ final class Client
                 'params' => 'array',
                 'pathChunks' => 'array',
             ]),
-        ])->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\Variable('matched'),
-                new Expr\ConstFetch(
-                    new Node\Name('false'),
+        ])->addStmts($chunkCount->nodes)->addStmt(
+            new Node\Stmt\Throw_(
+                new Node\Expr\New_(
+                    new Node\Name('\InvalidArgumentException'),
                 ),
-            ),
-        )->addStmts($chunkCount->nodes)->addStmt(
-            new Node\Stmt\If_(
-                new Expr\BinaryOp\Identical(
-                    new Node\Expr\Variable('matched'),
-                    new Expr\ConstFetch(
-                        new Node\Name('false'),
-                    ),
-                ),
-                [
-                    'stmts' => [
-                        new Node\Stmt\Throw_(
-                            new Node\Expr\New_(
-                                new Node\Name('\InvalidArgumentException'),
-                            ),
-                        ),
-                    ],
-                ],
             ),
         );
 

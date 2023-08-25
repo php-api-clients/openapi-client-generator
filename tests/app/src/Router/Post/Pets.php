@@ -27,7 +27,6 @@ final class Pets
      */
     public function create(array $params) : array
     {
-        $matched = true;
         if (\array_key_exists(Hydrator\Operation\Pets::class, $this->hydrator) == false) {
             $this->hydrator[Hydrator\Operation\Pets::class] = $this->hydrators->getObjectMapperOperation🌀Pets();
         }

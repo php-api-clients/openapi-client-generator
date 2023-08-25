@@ -24,11 +24,9 @@ final class Two
      */
     public function call(string $call, array $params, array $pathChunks) : array
     {
-        $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($call == 'POST /pets') {
-                    $matched = true;
                     if (\array_key_exists(Router\Post\Pets::class, $this->router) == false) {
                         $this->router[Router\Post\Pets::class] = new Router\Post\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
@@ -36,8 +34,6 @@ final class Two
                 }
             }
         }
-        if ($matched === false) {
-            throw new \InvalidArgumentException();
-        }
+        throw new \InvalidArgumentException();
     }
 }

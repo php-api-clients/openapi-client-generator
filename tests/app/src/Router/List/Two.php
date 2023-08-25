@@ -24,11 +24,9 @@ final class Two
      */
     public function call(string $call, array $params, array $pathChunks) : iterable
     {
-        $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($call == 'LIST /pets') {
-                    $matched = true;
                     if (\array_key_exists(Router\List\Pets::class, $this->router) == false) {
                         $this->router[Router\List\Pets::class] = new Router\List\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                     }
@@ -36,8 +34,6 @@ final class Two
                 }
             }
         }
-        if ($matched === false) {
-            throw new \InvalidArgumentException();
-        }
+        throw new \InvalidArgumentException();
     }
 }

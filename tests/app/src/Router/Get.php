@@ -15,10 +15,6 @@ use React\Http;
 use ApiClients\Contracts;
 final class Get
 {
-    /**
-     * @var array<class-string, \EventSauce\ObjectHydrator\ObjectMapper>
-     */
-    private array $hydrator = array();
     public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
@@ -27,10 +23,7 @@ final class Get
      */
     public function showPetById(array $params) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {
-        if (\array_key_exists(Hydrator\Operation\Pets\PetId::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets\PetId::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀PetId();
-        }
-        $operator = new Operator\ShowPetById($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\PetId::class]);
+        $operator = new Operator\ShowPetById($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀PetId());
         return $operator->call();
     }
 }

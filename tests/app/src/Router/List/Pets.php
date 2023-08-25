@@ -15,10 +15,6 @@ use React\Http;
 use ApiClients\Contracts;
 final class Pets
 {
-    /**
-     * @var array<class-string, \EventSauce\ObjectHydrator\ObjectMapper>
-     */
-    private array $hydrator = array();
     public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
@@ -38,12 +34,9 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        if (\array_key_exists(Hydrator\Operation\Pets::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets::class] = $this->hydrators->getObjectMapperOperation🌀Pets();
-        }
         $arguments['page'] = 1;
         do {
-            $operator = new Operator\Pets\ListListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets::class]);
+            $operator = new Operator\Pets\ListListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
             $items = $operator->call($arguments['per_page'], $arguments['page']);
             yield from $items;
             $arguments['page']++;
@@ -65,12 +58,9 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        if (\array_key_exists(Hydrator\Operation\Pets\Names::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets\Names::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀Names();
-        }
         $arguments['page'] = 1;
         do {
-            $operator = new Operator\Pets\NamesListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Names::class]);
+            $operator = new Operator\Pets\NamesListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
             $items = $operator->call($arguments['per_page'], $arguments['page']);
             yield from $items;
             $arguments['page']++;

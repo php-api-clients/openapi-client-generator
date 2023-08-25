@@ -15,10 +15,6 @@ use React\Http;
 use ApiClients\Contracts;
 final class PetsList
 {
-    /**
-     * @var array<class-string, \EventSauce\ObjectHydrator\ObjectMapper>
-     */
-    private array $hydrator = array();
     public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
@@ -38,12 +34,9 @@ final class PetsList
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        if (\array_key_exists(Hydrator\Operation\Pets\Gatos::class, $this->hydrator) == false) {
-            $this->hydrator[Hydrator\Operation\Pets\Gatos::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos();
-        }
         $arguments['page'] = 1;
         do {
-            $operator = new Operator\Pets\List_\GatosListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrator[Hydrator\Operation\Pets\Gatos::class]);
+            $operator = new Operator\Pets\List_\GatosListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos());
             $items = $operator->call($arguments['per_page'], $arguments['page']);
             yield from $items;
             $arguments['page']++;

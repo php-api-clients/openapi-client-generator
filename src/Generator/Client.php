@@ -16,7 +16,6 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
-use EventSauce\ObjectHydrator\ObjectMapper;
 use Jawira\CaseConverter\Convert;
 use NumberToWords\NumberToWords;
 use PhpParser\Builder\Method;
@@ -903,49 +902,6 @@ final class Client
                         }
                     })($operation->parameters),
                 ] : []),
-                /** @phpstan-ignore-next-line */
-                ...(count(array_filter((new ReflectionClass($operation->className->fullyQualified->source))->getConstructor()->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0 ? [
-                    new Node\Stmt\If_(
-                        new Node\Expr\BinaryOp\Equal(
-                            new Node\Expr\FuncCall(
-                                new Node\Name('\array_key_exists'),
-                                [
-                                    new Arg(new Node\Expr\ClassConstFetch(
-                                        new Node\Name($path->hydrator->className->relative),
-                                        'class',
-                                    )),
-                                    new Arg(new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'hydrator',
-                                    )),
-                                ],
-                            ),
-                            new Node\Expr\ConstFetch(new Node\Name('false')),
-                        ),
-                        [
-                            'stmts' => [
-                                new Node\Stmt\Expression(
-                                    new Node\Expr\Assign(
-                                        new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'hydrator',
-                                        ), new Node\Expr\ClassConstFetch(
-                                            new Node\Name($path->hydrator->className->relative),
-                                            'class',
-                                        )),
-                                        new Node\Expr\MethodCall(
-                                            new Node\Expr\PropertyFetch(
-                                                new Node\Expr\Variable('this'),
-                                                'hydrators',
-                                            ),
-                                            'getObjectMapper' . ucfirst($path->hydrator->methodName),
-                                        ),
-                                    ),
-                                ),
-                            ],
-                        ],
-                    ),
-                ] : []),
                 ...($operation->matchMethod !== 'LIST' ? self::makeCall(
                     $operation,
                     $path,
@@ -1115,13 +1071,15 @@ final class Client
                                 new Node\Expr\Variable('this'),
                                 'responseSchemaValidator',
                             )),
-                            new Arg(new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'hydrator',
-                            ), new Node\Expr\ClassConstFetch(
-                                new Node\Name($path->hydrator->className->relative),
-                                'class',
-                            ))),
+                            new Arg(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'hydrators',
+                                    ),
+                                    'getObjectMapper' . ucfirst($path->hydrator->methodName),
+                                ),
+                            ),
                         ] : []),
                     ],
                 ),
@@ -1150,12 +1108,6 @@ final class Client
         $factory   = new BuilderFactory();
         $stmt      = $factory->namespace(Utils::dirname($namespace . $className));
         $class     = $factory->class(Utils::basename($namespace . $className))->makeFinal()->addStmt(
-            $factory->property('hydrator')->setType('array')->setDefault([])->makePrivate()->setDocComment(new Doc(implode(PHP_EOL, [
-                '/**',
-                ' * @var array<class-string, \\' . ObjectMapper::class . '>',
-                ' */',
-            ]))),
-        )->addStmt(
             $constructor,
         );
 

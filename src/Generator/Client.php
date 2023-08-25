@@ -18,7 +18,6 @@ use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use Jawira\CaseConverter\Convert;
 use NumberToWords\NumberToWords;
-use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -90,6 +89,8 @@ final class Client
 
         $class->addStmt(
             $factory->property('hydrators')->setType('Hydrators')->makeReadonly()->makePrivate(),
+        )->addStmt(
+            $factory->property('routers')->setType('Routers')->makeReadonly()->makePrivate(),
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
                 (new Param('authentication'))->setType('\\' . AuthenticationInterface::class),
@@ -259,7 +260,71 @@ final class Client
                         ),
                     ),
                 ] : []),
-            ]),
+            ])->addStmt(
+                new Node\Stmt\Expression(
+                    new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'routers',
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('Routers'),
+                            [
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'browser',
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('browser'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'authentication',
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('authentication'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'requestSchemaValidator',
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('requestSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'responseSchemaValidator',
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('responseSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\PropertyFetch(
+                                        new Node\Expr\Variable('this'),
+                                        'hydrators',
+                                    ),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('hydrators'),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
         );
 
         $sortedOperations = [];
@@ -405,52 +470,12 @@ final class Client
                                                         new Arg(
                                                             new Node\Expr\PropertyFetch(
                                                                 new Node\Expr\Variable('this'),
-                                                                'browser',
+                                                                'routers',
                                                             ),
                                                             false,
                                                             false,
                                                             [],
-                                                            new Node\Identifier('browser'),
-                                                        ),
-                                                        new Arg(
-                                                            new Node\Expr\PropertyFetch(
-                                                                new Node\Expr\Variable('this'),
-                                                                'authentication',
-                                                            ),
-                                                            false,
-                                                            false,
-                                                            [],
-                                                            new Node\Identifier('authentication'),
-                                                        ),
-                                                        new Arg(
-                                                            new Node\Expr\PropertyFetch(
-                                                                new Node\Expr\Variable('this'),
-                                                                'requestSchemaValidator',
-                                                            ),
-                                                            false,
-                                                            false,
-                                                            [],
-                                                            new Node\Identifier('requestSchemaValidator'),
-                                                        ),
-                                                        new Arg(
-                                                            new Node\Expr\PropertyFetch(
-                                                                new Node\Expr\Variable('this'),
-                                                                'responseSchemaValidator',
-                                                            ),
-                                                            false,
-                                                            false,
-                                                            [],
-                                                            new Node\Identifier('responseSchemaValidator'),
-                                                        ),
-                                                        new Arg(
-                                                            new Node\Expr\PropertyFetch(
-                                                                new Node\Expr\Variable('this'),
-                                                                'hydrators',
-                                                            ),
-                                                            false,
-                                                            false,
-                                                            [],
-                                                            new Node\Identifier('hydrators'),
+                                                            new Node\Identifier('routers'),
                                                         ),
                                                     ],
                                                 ),
@@ -657,25 +682,12 @@ final class Client
 
         yield new File($pathPrefix, 'Client', $stmt->addStmt($class)->getNode());
 
-        $sharedConstructor = $factory->method('__construct')->makePublic()->addParam(
-            (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-        )->addParam(
-            (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-        )->addParam(
-            (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $configuration->namespace->source . '\\Hydrators'),
-        )->addParam(
-            (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
-        )->addParam(
-            (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
-        );
-
         foreach ($routers->get() as $router) {
             yield from self::createRouter(
                 $pathPrefix,
                 $configuration->namespace->source . '\\',
                 $router,
                 $routers,
-                $sharedConstructor,
             );
         }
 
@@ -689,9 +701,10 @@ final class Client
                 $pathPrefix,
                 $configuration->namespace->source . '\\',
                 $chunkCountClass,
-                $sharedConstructor,
             );
         }
+
+        yield from \ApiClients\Tools\OpenApiClientGenerator\Generator\Routers::generate($configuration, $pathPrefix, $routers);
     }
 
     /**
@@ -959,77 +972,16 @@ final class Client
         $returnOrExpression = $returnType === 'void' ? Node\Stmt\Expression::class : Node\Stmt\Return_::class;
 
         return [
-            new Node\Stmt\If_(
-                new Node\Expr\BinaryOp\Equal(
-                    new Node\Expr\FuncCall(
-                        new Node\Name('\array_key_exists'),
-                        [
-                            new Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($router->class),
-                                'class',
-                            )),
-                            new Arg(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'router',
-                            )),
-                        ],
-                    ),
-                    new Node\Expr\ConstFetch(new Node\Name('false')),
-                ),
-                [
-                    'stmts' => [
-                        new Node\Stmt\Expression(
-                            new Node\Expr\Assign(
-                                new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'router',
-                                ), new Node\Expr\ClassConstFetch(
-                                    new Node\Name($router->class),
-                                    'class',
-                                )),
-                                new Node\Expr\New_(
-                                    new Node\Name($router->class),
-                                    [
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'requestSchemaValidator',
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'responseSchemaValidator',
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'hydrators',
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'browser',
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'authentication',
-                                        )),
-                                    ],
-                                ),
-                            ),
-                        ),
-                    ],
-                ],
-            ),
             new $returnOrExpression(
                 new Expr\MethodCall(
-                    new Node\Expr\ArrayDimFetch(
+                    new Expr\MethodCall(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
-                            'router',
+                            'routers',
                         ),
-                        new Node\Expr\ClassConstFetch(
-                            new Node\Name($router->class),
-                            'class',
-                        ),
+                        $router->loopUpMethod,
                     ),
-                    (new Convert(Utils::fixKeyword($router->method)))->toPascal(),
+                    (new Convert(Utils::fixKeyword($router->method)))->toCamel(),
                     [
                         new Arg(
                             new Node\Expr\Variable(
@@ -1102,13 +1054,23 @@ final class Client
     }
 
     /** @return iterable<File> */
-    private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers, Method $constructor): iterable
+    private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers): iterable
     {
         $className = $routers->createClassName(Utils::fixKeyword($router->method), $router->group, '')->class;
         $factory   = new BuilderFactory();
         $stmt      = $factory->namespace(Utils::dirname($namespace . $className));
         $class     = $factory->class(Utils::basename($namespace . $className))->makeFinal()->addStmt(
-            $constructor,
+            $factory->method('__construct')->makePublic()->addParam(
+                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+            )->addParam(
+                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+            )->addParam(
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $namespace . 'Hydrators'),
+            )->addParam(
+                (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
+            )->addParam(
+                (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
+            ),
         );
 
         foreach ($router->methods as $method) {
@@ -1138,15 +1100,15 @@ final class Client
     }
 
     /** @return iterable<File> */
-    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount, Method $constructor): iterable
+    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount): iterable
     {
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(Utils::dirname($namespace . $chunkCount->className));
 
         $class = $factory->class(Utils::basename($namespace . $chunkCount->className))->makeFinal()->addStmt(
-            $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
-        )->addStmt(
-            $constructor,
+            $factory->method('__construct')->makePublic()->addParam(
+                (new PrivatePromotedPropertyAsParam('routers'))->setType('\\' . $namespace . 'Routers'),
+            ),
         );
 
         $callMethod = $factory->method('call')->makePublic()->addParams([

@@ -20,7 +20,7 @@ final readonly class Error
         render('<div>
             <div class="px-1 bg-red-600">ERROR</div>
             <em class="ml-1">
-              ' . $throwable->getMessage() . '
+              ' . $throwable . '
             </em>
         </div>');
 

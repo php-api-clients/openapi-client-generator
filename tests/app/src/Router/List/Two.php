@@ -15,8 +15,7 @@ use React\Http;
 use ApiClients\Contracts;
 final class Two
 {
-    private array $router = array();
-    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
+    public function __construct(private \ApiClients\Client\PetStore\Routers $routers)
     {
     }
     /**
@@ -27,10 +26,7 @@ final class Two
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($call == 'LIST /pets') {
-                    if (\array_key_exists(Router\List\Pets::class, $this->router) == false) {
-                        $this->router[Router\List\Pets::class] = new Router\List\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
-                    }
-                    return $this->router[Router\List\Pets::class]->ListListing($params);
+                    return $this->routers->router🔀List🔀Pets()->listListing($params);
                 }
             }
         }

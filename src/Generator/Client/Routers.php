@@ -10,7 +10,9 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass
 use Jawira\CaseConverter\Convert;
 use PhpParser\Node;
 
+use function lcfirst;
 use function rtrim;
+use function str_replace;
 
 final class Routers
 {
@@ -59,9 +61,18 @@ final class Routers
         string|null $group,
         string $name,
     ): Router {
+        $className = rtrim('Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
+
         return new Router(
-            rtrim('Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\'),
+            $className,
             (new Convert($name))->toCamel(),
+            str_replace(
+                '\\',
+                '🔀',
+                lcfirst(
+                    $className,
+                ),
+            ),
         );
     }
 }

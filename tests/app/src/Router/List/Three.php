@@ -24,12 +24,10 @@ final class Three
      */
     public function call(string $call, array $params, array $pathChunks) : iterable
     {
-        $matched = false;
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($pathChunks[2] == 'gatos') {
                     if ($call == 'LIST /pets/gatos') {
-                        $matched = true;
                         if (\array_key_exists(Router\List\PetsList::class, $this->router) == false) {
                             $this->router[Router\List\PetsList::class] = new Router\List\PetsList($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
@@ -37,7 +35,6 @@ final class Three
                     }
                 } elseif ($pathChunks[2] == 'names') {
                     if ($call == 'LIST /pets/names') {
-                        $matched = true;
                         if (\array_key_exists(Router\List\Pets::class, $this->router) == false) {
                             $this->router[Router\List\Pets::class] = new Router\List\Pets($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators, $this->browser, $this->authentication);
                         }
@@ -46,8 +43,6 @@ final class Three
                 }
             }
         }
-        if ($matched === false) {
-            throw new \InvalidArgumentException();
-        }
+        throw new \InvalidArgumentException();
     }
 }

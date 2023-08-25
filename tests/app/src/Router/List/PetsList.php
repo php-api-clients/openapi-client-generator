@@ -27,7 +27,6 @@ final class PetsList
      */
     public function gatosListing(array $params) : iterable
     {
-        $matched = true;
         $arguments = array();
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');

@@ -27,7 +27,6 @@ final class Get
      */
     public function showPetById(array $params) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {
-        $matched = true;
         if (\array_key_exists(Hydrator\Operation\Pets\PetId::class, $this->hydrator) == false) {
             $this->hydrator[Hydrator\Operation\Pets\PetId::class] = $this->hydrators->getObjectMapperOperation🌀Pets🌀PetId();
         }

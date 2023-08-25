@@ -27,7 +27,6 @@ final class Pets
      */
     public function list(array $params) : iterable
     {
-        $matched = true;
         $arguments = array();
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');
@@ -50,7 +49,6 @@ final class Pets
      */
     public function names(array $params) : iterable
     {
-        $matched = true;
         $arguments = array();
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');

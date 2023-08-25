@@ -41,16 +41,13 @@ final class Client implements ClientInterface
         [$method, $path] = explode(' ', $call);
         $pathChunks = explode('/', $path);
         $pathChunksCount = count($pathChunks);
-        $matched = false;
         if ($method === 'GET') {
             if ($pathChunksCount === 2) {
-                $matched = true;
                 if (\array_key_exists(Router\Get\Two::class, $this->router) == false) {
                     $this->router[Router\Get\Two::class] = new Router\Get\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
                 return $this->router[Router\Get\Two::class]->call($call, $params, $pathChunks);
             } elseif ($pathChunksCount === 3) {
-                $matched = true;
                 if (\array_key_exists(Router\Get\Three::class, $this->router) == false) {
                     $this->router[Router\Get\Three::class] = new Router\Get\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
@@ -58,13 +55,11 @@ final class Client implements ClientInterface
             }
         } elseif ($method === 'LIST') {
             if ($pathChunksCount === 2) {
-                $matched = true;
                 if (\array_key_exists(Router\List\Two::class, $this->router) == false) {
                     $this->router[Router\List\Two::class] = new Router\List\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
                 return $this->router[Router\List\Two::class]->call($call, $params, $pathChunks);
             } elseif ($pathChunksCount === 3) {
-                $matched = true;
                 if (\array_key_exists(Router\List\Three::class, $this->router) == false) {
                     $this->router[Router\List\Three::class] = new Router\List\Three(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
@@ -72,16 +67,13 @@ final class Client implements ClientInterface
             }
         } elseif ($method === 'POST') {
             if ($pathChunksCount === 2) {
-                $matched = true;
                 if (\array_key_exists(Router\Post\Two::class, $this->router) == false) {
                     $this->router[Router\Post\Two::class] = new Router\Post\Two(browser: $this->browser, authentication: $this->authentication, requestSchemaValidator: $this->requestSchemaValidator, responseSchemaValidator: $this->responseSchemaValidator, hydrators: $this->hydrators);
                 }
                 return $this->router[Router\Post\Two::class]->call($call, $params, $pathChunks);
             }
         }
-        if ($matched === false) {
-            throw new \InvalidArgumentException();
-        }
+        throw new \InvalidArgumentException();
     }
     public function operations() : OperationsInterface
     {

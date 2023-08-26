@@ -19,7 +19,7 @@ final class Pets
     {
     }
     /**
-     * @return iterable<(Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)>
+     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function listListing(array $params) : iterable
     {

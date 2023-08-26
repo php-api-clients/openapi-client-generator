@@ -23,7 +23,7 @@ final readonly class ShowPetById
     {
     }
     /**
-     * @return (Schema\Cat | Schema\Dog | Schema\Bird | Schema\Fish)
+     * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
      */
     public function call() : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
     {

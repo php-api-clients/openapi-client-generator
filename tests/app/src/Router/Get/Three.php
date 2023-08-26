@@ -19,7 +19,7 @@ final class Three
     {
     }
     /**
-     * @return iterable<Schema\Cat>|iterable<string>|(Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish)
+     * @return iterable<Schema\Cat>|iterable<string>|Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
      */
     public function call(string $call, array $params, array $pathChunks) : iterable|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
     {

@@ -19,7 +19,7 @@ final class Two
     {
     }
     /**
-     * @return array{code: int}
+     * @return array{code:int}
      */
     public function call(string $call, array $params, array $pathChunks) : array
     {

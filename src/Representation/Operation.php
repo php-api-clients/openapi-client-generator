@@ -21,6 +21,7 @@ final readonly class Operation
         public ClassString $className,
         public ClassString $classNameSanitized,
         public ClassString $operatorClassName,
+        public string $operatorLookUpMethod,
         public string $name,
         public string $nameCamel,
         public string|null $group,

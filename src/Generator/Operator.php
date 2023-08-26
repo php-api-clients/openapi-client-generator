@@ -69,30 +69,6 @@ final class Operator
                 ],
                 Class_::MODIFIER_PUBLIC,
             ),
-        )->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
-                        'METHOD',
-                        new Node\Scalar\String_(
-                            $operation->method,
-                        ),
-                    ),
-                ],
-                Class_::MODIFIER_PRIVATE,
-            ),
-        )->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
-                        'PATH',
-                        new Node\Scalar\String_(
-                            $operation->path, // Deal with the query
-                        ),
-                    ),
-                ],
-                Class_::MODIFIER_PRIVATE,
-            ),
         );
 
         $constructor = $factory->method('__construct')->makePublic();

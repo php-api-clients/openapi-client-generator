@@ -15,22 +15,21 @@ use React\Http;
 use ApiClients\Contracts;
 final class PetsList
 {
-    private array $operator = array();
-    public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Hydrators $hydrators)
+    public function __construct(private \ApiClients\Client\PetStore\Operators $operators)
     {
     }
-    public function gatos(int $perPage, int $page) : Schema\Cat
+    /**
+     * @return iterable<Schema\Cat>
+     */
+    public function gatos(int $perPage, int $page) : iterable
     {
-        if (\array_key_exists(Operator\Pets\List_\Gatos::class, $this->operator) == false) {
-            $this->operator[Operator\Pets\List_\Gatos::class] = new Operator\Pets\List_\Gatos($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos());
-        }
-        return $this->operator[Operator\Pets\List_\Gatos::class]->call($perPage, $page);
+        return $this->operators->pets👷List_👷Gatos()->call($perPage, $page);
     }
-    public function gatosListing(int $perPage, int $page) : Schema\Cat
+    /**
+     * @return iterable<Schema\Cat>
+     */
+    public function gatosListing(int $perPage, int $page) : iterable
     {
-        if (\array_key_exists(Operator\Pets\List_\GatosListing::class, $this->operator) == false) {
-            $this->operator[Operator\Pets\List_\GatosListing::class] = new Operator\Pets\List_\GatosListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos());
-        }
-        return $this->operator[Operator\Pets\List_\GatosListing::class]->call($perPage, $page);
+        return $this->operators->pets👷List_👷GatosListing()->call($perPage, $page);
     }
 }

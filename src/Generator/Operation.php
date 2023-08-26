@@ -324,7 +324,7 @@ final class Operation
                                     new Node\Stmt\Return_(new Node\Expr\MethodCall(
                                         new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'hydrator',
+                                            'hydrators',
                                         ),
                                         'hydrateObject',
                                         [

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
 use PhpParser\Builder;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -27,7 +26,6 @@ use function implode;
 use function is_string;
 use function str_replace;
 use function strpos;
-use function ucfirst;
 
 use const PHP_EOL;
 
@@ -54,107 +52,39 @@ final class Operation
 
     public static function methodReturnType(Builder\Method $method, Representation\Operation $operation): Builder\Method
     {
+        $docComment = ReflectionTypes::copyDocBlock($operation->operatorClassName->fullyQualified->source, 'call');
+
+        if ($docComment !== null) {
+            $method = $method->setDocComment($docComment);
+        }
+
         return $method->setReturnType(
-            new Node\UnionType(
-                Types::normalizeNodeName(...$operation->returnType),
-            ),
+            ReflectionTypes::copyReturnType($operation->operatorClassName->fullyQualified->source, 'call'),
         );
     }
 
-    /**
-     * @param array<string, Hydrator> $operationHydratorMap
-     *
-     * @return array<Node>
-     */
-    public static function methodCallOperation(Representation\Operation $operation, array $operationHydratorMap): array
+    public static function methodCallOperation(Representation\Operation $operation): Node\Stmt\Return_
     {
-        return [
-            new Node\Stmt\If_(
-                new Node\Expr\BinaryOp\Equal(
-                    new Node\Expr\FuncCall(
-                        new Node\Name('\array_key_exists'),
-                        [
-                            new Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($operation->operatorClassName->relative),
-                                'class',
-                            )),
-                            new Arg(new Node\Expr\PropertyFetch(
-                                new Node\Expr\Variable('this'),
-                                'operator',
-                            )),
-                        ],
+        return new Node\Stmt\Return_(
+            new Expr\MethodCall(
+                new Expr\MethodCall(
+                    new Node\Expr\PropertyFetch(
+                        new Node\Expr\Variable('this'),
+                        'operators',
                     ),
-                    new Node\Expr\ConstFetch(new Node\Name('false')),
+                    $operation->operatorLookUpMethod,
                 ),
+                'call',
                 [
-                    'stmts' => [
-                        new Node\Stmt\Expression(
-                            new Node\Expr\Assign(
-                                new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'operator',
-                                ), new Node\Expr\ClassConstFetch(
-                                    new Node\Name($operation->operatorClassName->relative),
-                                    'class',
-                                )),
-                                new Node\Expr\New_(
-                                    new Node\Name($operation->operatorClassName->relative),
-                                    [
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'browser',
-                                        )),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'authentication',
-                                        )),
-                                        ...(count($operation->requestBody) > 0 ? [
-                                            new Arg(new Node\Expr\PropertyFetch(
-                                                new Node\Expr\Variable('this'),
-                                                'requestSchemaValidator',
-                                            )),
-                                        ] : []),
-                                        new Arg(new Node\Expr\PropertyFetch(
-                                            new Node\Expr\Variable('this'),
-                                            'responseSchemaValidator',
-                                        )),
-                                        new Arg(
-                                            new Expr\MethodCall(
-                                                new Node\Expr\PropertyFetch(
-                                                    new Node\Expr\Variable('this'),
-                                                    'hydrators',
-                                                ),
-                                                'getObjectMapper' . ucfirst($operationHydratorMap[$operation->operationId]->methodName),
-                                            ),
-                                        ),
-                                    ],
-                                ),
-                            ),
-                        ),
-                    ],
+                    ...(static function (array $params): iterable {
+                        foreach ($params as $param) {
+                            yield new Arg(new Node\Expr\Variable($param->name));
+                        }
+                    })($operation->parameters),
+                    ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),
                 ],
             ),
-            new Node\Stmt\Return_(
-                new Expr\MethodCall(
-                    new Node\Expr\ArrayDimFetch(new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'operator',
-                    ), new Node\Expr\ClassConstFetch(
-                        new Node\Name($operation->operatorClassName->relative),
-                        'class',
-                    )),
-                    'call',
-                    [
-                        ...(static function (array $params): iterable {
-                            foreach ($params as $param) {
-                                yield new Arg(new Node\Expr\Variable($param->name));
-                            }
-                        })($operation->parameters),
-                        ...(count($operation->requestBody) > 0 ? [new Arg(new Node\Expr\Variable('params'))] : []),
-                    ],
-                ),
-            ),
-        ];
+        );
     }
 
     public static function getResultTypeFromOperation(Representation\Operation $operation): string

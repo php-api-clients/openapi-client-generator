@@ -156,6 +156,13 @@ final class Operation
             ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),
             ClassString::factory($baseNamespace, $classNameSanitized),
             ClassString::factory($baseNamespace, 'Operator\\' . Utils::fixKeyword($className)),
+            lcfirst(
+                str_replace(
+                    ['\\'],
+                    ['👷'],
+                    ClassString::factory($baseNamespace, Utils::fixKeyword($className))->relative,
+                ),
+            ),
             $name,
             (new Convert($name))->toCamel(),
             $group,

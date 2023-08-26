@@ -55,7 +55,7 @@ final class GatosListing
                             $error = new \RuntimeException();
                             try {
                                 $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Cat::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Cat::class, $body);
+                                return $this->hydrators->hydrateObject(Schema\Cat::class, $body);
                             } catch (\Throwable $error) {
                                 goto items_application_json_two_hundred_aaaaa;
                             }

@@ -17,8 +17,6 @@ final readonly class ListListing
 {
     public const OPERATION_ID = 'pets/list';
     public const OPERATION_MATCH = 'LIST /pets';
-    private const METHOD = 'GET';
-    private const PATH = '/pets';
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets $hydrator)
     {
     }

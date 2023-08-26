@@ -59,15 +59,7 @@ final class Client
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
 
-        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal()->addStmt(
-            $factory->property('authentication')->setType('\\' . AuthenticationInterface::class)->makeReadonly()->makePrivate(),
-        )->addStmt(
-            $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate(),
-        )->addStmt(
-            $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
-        )->addStmt(
-            $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
-        );
+        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal();
 
         if ($configuration->entryPoints->call) {
             $class->addStmt(
@@ -88,20 +80,10 @@ final class Client
         }
 
         $class->addStmt(
-            $factory->property('hydrators')->setType('Hydrators')->makeReadonly()->makePrivate(),
-        )->addStmt(
             $factory->property('routers')->setType('Routers')->makeReadonly()->makePrivate(),
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
                 (new Param('authentication'))->setType('\\' . AuthenticationInterface::class),
-            )->addStmt(
-                new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'authentication',
-                    ),
-                    new Node\Expr\Variable('authentication'),
-                ),
             )->addParam(
                 (new Param('browser'))->setType('\\' . Browser::class),
             )->addStmt((static function (Representation\Client $client): Node\Expr {
@@ -119,24 +101,21 @@ final class Client
                     );
                 }
 
-                return new Node\Expr\Assign(new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'browser',
-                ), new Node\Expr\MethodCall(
-                    $assignExpr,
-                    'withFollowRedirects',
-                    [
-                        new Arg(
-                            new Node\Expr\ConstFetch(new Node\Name('false')),
-                        ),
-                    ],
-                ));
+                return new Node\Expr\Assign(
+                    new Node\Expr\Variable('browser'),
+                    new Node\Expr\MethodCall(
+                        $assignExpr,
+                        'withFollowRedirects',
+                        [
+                            new Arg(
+                                new Node\Expr\ConstFetch(new Node\Name('false')),
+                            ),
+                        ],
+                    ),
+                );
             })($client))->addStmt(
                 new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'requestSchemaValidator',
-                    ),
+                    new Node\Expr\Variable('requestSchemaValidator'),
                     new Node\Expr\New_(
                         new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
                         [
@@ -149,10 +128,7 @@ final class Client
                 ),
             )->addStmt(
                 new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'responseSchemaValidator',
-                    ),
+                    new Node\Expr\Variable('responseSchemaValidator'),
                     new Node\Expr\New_(
                         new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
                         [
@@ -165,10 +141,7 @@ final class Client
                 ),
             )->addStmt(
                 new Node\Expr\Assign(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'hydrators',
-                    ),
+                    new Node\Expr\Variable('hydrators'),
                     new Node\Expr\New_(
                         new Node\Name('Hydrators'),
                         [],
@@ -185,50 +158,35 @@ final class Client
                             new Node\Name('Operations'),
                             [
                                 new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'browser',
-                                    ),
+                                    new Node\Expr\Variable('browser'),
                                     false,
                                     false,
                                     [],
                                     new Node\Identifier('browser'),
                                 ),
                                 new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'authentication',
-                                    ),
+                                    new Node\Expr\Variable('authentication'),
                                     false,
                                     false,
                                     [],
                                     new Node\Identifier('authentication'),
                                 ),
                                 new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'requestSchemaValidator',
-                                    ),
+                                    new Node\Expr\Variable('requestSchemaValidator'),
                                     false,
                                     false,
                                     [],
                                     new Node\Identifier('requestSchemaValidator'),
                                 ),
                                 new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'responseSchemaValidator',
-                                    ),
+                                    new Node\Expr\Variable('responseSchemaValidator'),
                                     false,
                                     false,
                                     [],
                                     new Node\Identifier('responseSchemaValidator'),
                                 ),
                                 new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'hydrators',
-                                    ),
+                                    new Node\Expr\Variable('hydrators'),
                                     false,
                                     false,
                                     [],

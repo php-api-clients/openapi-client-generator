@@ -17,8 +17,6 @@ final readonly class Create
 {
     public const OPERATION_ID = 'pets/create';
     public const OPERATION_MATCH = 'POST /pets';
-    private const METHOD = 'POST';
-    private const PATH = '/pets';
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets $hydrator)
     {
     }

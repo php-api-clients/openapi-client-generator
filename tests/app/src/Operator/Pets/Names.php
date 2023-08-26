@@ -17,8 +17,6 @@ final readonly class Names
 {
     public const OPERATION_ID = 'pets/names';
     public const OPERATION_MATCH = 'GET /pets/names';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/names';
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets\Names $hydrator)
     {
     }

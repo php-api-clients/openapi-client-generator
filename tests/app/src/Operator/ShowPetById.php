@@ -17,8 +17,6 @@ final readonly class ShowPetById
 {
     public const OPERATION_ID = 'showPetById';
     public const OPERATION_MATCH = 'GET /pets/{petId}';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/{petId}';
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets\PetId $hydrator)
     {
     }

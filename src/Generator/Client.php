@@ -158,6 +158,90 @@ final class Client
                             new Node\Name('Operations'),
                             [
                                 new Arg(
+                                    new Node\Expr\New_(
+                                        new Node\Name('Operators'),
+                                        [
+                                            new Arg(
+                                                new Node\Expr\Variable('browser'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('browser'),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\Variable('authentication'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('authentication'),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\Variable('requestSchemaValidator'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('requestSchemaValidator'),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\Variable('responseSchemaValidator'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('responseSchemaValidator'),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\Variable('hydrators'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('hydrators'),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ] : []),
+            ])->addStmts([
+                ...($configuration->entryPoints->webHooks ? [
+                    new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'webHooks',
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('WebHooks'),
+                            [
+                                new Arg(
+                                    new Node\Expr\Variable('requestSchemaValidator'),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('requestSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable('hydrators'),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('hydrator'),
+                                ),
+                            ],
+                        ),
+                    ),
+                ] : []),
+            ])->addStmt(
+                new Node\Stmt\Expression(
+                    new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'routers',
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('Routers'),
+                            [
+                                new Arg(
                                     new Node\Expr\Variable('browser'),
                                     false,
                                     false,
@@ -187,92 +271,6 @@ final class Client
                                 ),
                                 new Arg(
                                     new Node\Expr\Variable('hydrators'),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('hydrators'),
-                                ),
-                            ],
-                        ),
-                    ),
-                ] : []),
-            ])->addStmts([
-                ...($configuration->entryPoints->webHooks ? [
-                    new Node\Expr\Assign(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'webHooks',
-                        ),
-                        new Node\Expr\New_(
-                            new Node\Name('WebHooks'),
-                            [
-                                new Node\Arg(new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'requestSchemaValidator',
-                                )),
-                                new Node\Arg(new Node\Expr\PropertyFetch(
-                                    new Node\Expr\Variable('this'),
-                                    'hydrators',
-                                )),
-                            ],
-                        ),
-                    ),
-                ] : []),
-            ])->addStmt(
-                new Node\Stmt\Expression(
-                    new Node\Expr\Assign(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'routers',
-                        ),
-                        new Node\Expr\New_(
-                            new Node\Name('Routers'),
-                            [
-                                new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'browser',
-                                    ),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('browser'),
-                                ),
-                                new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'authentication',
-                                    ),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('authentication'),
-                                ),
-                                new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'requestSchemaValidator',
-                                    ),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('requestSchemaValidator'),
-                                ),
-                                new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'responseSchemaValidator',
-                                    ),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('responseSchemaValidator'),
-                                ),
-                                new Arg(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'hydrators',
-                                    ),
                                     false,
                                     false,
                                     [],
@@ -695,7 +693,11 @@ final class Client
         return $operations;
     }
 
-    /** @param array<Representation\Path> $paths */
+    /**
+     * @param array<Representation\Path> $paths
+     *
+     * @return iterable<Representation\Path>
+     */
     private static function operationsInThisThree(array $paths, int $level, Routers $routers): iterable
     {
         foreach ($paths as $path) {

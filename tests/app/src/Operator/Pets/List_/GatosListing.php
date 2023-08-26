@@ -17,8 +17,6 @@ final readonly class GatosListing
 {
     public const OPERATION_ID = 'pets/list/gatos';
     public const OPERATION_MATCH = 'LIST /pets/gatos';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/gatos';
     public function __construct(private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Hydrator\Operation\Pets\Gatos $hydrator)
     {
     }

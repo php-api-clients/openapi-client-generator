@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
-use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -18,7 +16,6 @@ use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Name;
-use React\Http\Browser;
 
 final class Operations
 {
@@ -37,52 +34,20 @@ final class Operations
             }
         }
 
-        $classReadonly = true;
-        $groups        = [];
+        $groups = [];
         foreach ($operations as $operation) {
             $groups[$operation->group][] = $operation;
-
-            if ($operation->group !== null) {
-                continue;
-            }
-
-            $classReadonly = false;
         }
 
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace($configuration->namespace->source);
 
-        $class = $factory->class('Operations')->makeFinal()->implement(new Name('OperationsInterface'));
-        if ($classReadonly) {
-            $class->makeReadonly();
-        } else {
-            $class->addStmt(
-                $factory->property('operator')->setType('array')->setDefault([])->makePrivate(),
-            );
-        }
-
-        $params = [];
-        foreach (
-            [
-                'browser' => '\\' . Browser::class,
-                'authentication' => '\\' . AuthenticationInterface::class,
-                'requestSchemaValidator' => '\League\OpenAPIValidation\Schema\SchemaValidator',
-                'responseSchemaValidator' => '\League\OpenAPIValidation\Schema\SchemaValidator',
-                'hydrators' => '\\' . $configuration->namespace->source . '\Hydrators',
-            ] as $name => $type
-        ) {
-            if ($classReadonly) {
-                $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type);
-
-                continue;
-            }
-
-            $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type);
-//            $params[] = (new PrivatePromotedPropertyAsParam($name))->setType($type)->makeReadonly();
-        }
+        $class = $factory->class('Operations')->makeFinal()->implement(new Name('OperationsInterface'))->makeReadonly();
 
         $class->addStmt(
-            $factory->method('__construct')->makePublic()->addParams($params),
+            $factory->method('__construct')->makePublic()->addParam(
+                (new PrivatePromotedPropertyAsParam('operators'))->setType('\\' . $configuration->namespace->source . '\Operators'),
+            ),
         );
 
         foreach ($groups as $group => $groupsOperations) {
@@ -92,7 +57,7 @@ final class Operations
                         Helper\Operation::methodSignature(
                             $factory->method((new Convert($groupsOperation->name))->toCamel())->makePublic(),
                             $groupsOperation,
-                        )->addStmts(Helper\Operation::methodCallOperation($groupsOperation, $operationHydratorMap)),
+                        )->addStmt(Helper\Operation::methodCallOperation($groupsOperation)),
                     );
                 }
 
@@ -110,31 +75,7 @@ final class Operations
                                 new Arg(
                                     new Expr\PropertyFetch(
                                         new Expr\Variable('this'),
-                                        'browser',
-                                    ),
-                                ),
-                                new Arg(
-                                    new Expr\PropertyFetch(
-                                        new Expr\Variable('this'),
-                                        'authentication',
-                                    ),
-                                ),
-                                new Arg(
-                                    new Expr\PropertyFetch(
-                                        new Expr\Variable('this'),
-                                        'requestSchemaValidator',
-                                    ),
-                                ),
-                                new Arg(
-                                    new Expr\PropertyFetch(
-                                        new Expr\Variable('this'),
-                                        'responseSchemaValidator',
-                                    ),
-                                ),
-                                new Arg(
-                                    new Expr\PropertyFetch(
-                                        new Expr\Variable('this'),
-                                        'hydrators',
+                                        'operators',
                                     ),
                                 ),
                             ],
@@ -148,40 +89,28 @@ final class Operations
                 $configuration->namespace,
                 'Operation\\' . $group,
                 $groupsOperations,
-                $operationHydratorMap,
                 $group,
             );
         }
 
+        yield from Operators::generate($configuration, $pathPrefix, $operations, $operationHydratorMap);
         yield new File($pathPrefix, 'Operations', $stmt->addStmt($class)->getNode());
     }
 
     /**
-     * @param array<string, Hydrator> $operationHydratorMap
      * @param array<Operation>        $operations
+     * @param array<string, Hydrator> $operationHydratorMap
      *
      * @return iterable<File>
      */
-    private static function generateOperationsGroup(string $pathPrefix, Configuration\Namespace_ $namespace, string $className, array $operations, array $operationHydratorMap, string $group): iterable
+    private static function generateOperationsGroup(string $pathPrefix, Configuration\Namespace_ $namespace, string $className, array $operations, string $group): iterable
     {
         $factory = new BuilderFactory();
         $stmt    = $factory->namespace(Utils::dirname($namespace->source . '\\' . $className));
 
         $class = $factory->class(Utils::basename($className))->makeFinal()->addStmt(
-            $factory->property('operator')->setType('array')->setDefault([])->makePrivate(),
-        );
-
-        $class->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
-            )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $namespace->source . '\Hydrators'),
+                (new PrivatePromotedPropertyAsParam('operators'))->setType('\\' . $namespace->source . '\Operators'),
             ),
         );
 
@@ -194,7 +123,7 @@ final class Operations
                 Helper\Operation::methodSignature(
                     $factory->method((new Convert($operation->name))->toCamel())->makePublic(),
                     $operation,
-                )->addStmts(Helper\Operation::methodCallOperation($operation, $operationHydratorMap)),
+                )->addStmt(Helper\Operation::methodCallOperation($operation)),
             );
         }
 

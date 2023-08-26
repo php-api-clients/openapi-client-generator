@@ -216,11 +216,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/List\/Pets.php",
-                "hash": "2275eaa5b79fe7e404e44307c7bd611e"
+                "hash": "b6c6f9ea32f2797e49f62da95b2aa273"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/List\/PetsList.php",
-                "hash": "24686950c441b8eda04aebbe3b2ffd24"
+                "hash": "ba00aad83ddbfccd10c10038ca0ecebd"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Router\/Post\/Pets.php",

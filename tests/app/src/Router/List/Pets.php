@@ -37,7 +37,7 @@ final class Pets
         $arguments['page'] = 1;
         do {
             $operator = new Operator\Pets\ListListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
-            $items = $operator->call($arguments['per_page'], $arguments['page']);
+            $items = [...$operator->call($arguments['per_page'], $arguments['page'])];
             yield from $items;
             $arguments['page']++;
         } while (count($items) > 0);
@@ -61,7 +61,7 @@ final class Pets
         $arguments['page'] = 1;
         do {
             $operator = new Operator\Pets\NamesListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
-            $items = $operator->call($arguments['per_page'], $arguments['page']);
+            $items = [...$operator->call($arguments['per_page'], $arguments['page'])];
             yield from $items;
             $arguments['page']++;
         } while (count($items) > 0);

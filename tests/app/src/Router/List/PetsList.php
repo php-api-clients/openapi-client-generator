@@ -37,7 +37,7 @@ final class PetsList
         $arguments['page'] = 1;
         do {
             $operator = new Operator\Pets\List_\GatosListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos());
-            $items = $operator->call($arguments['per_page'], $arguments['page']);
+            $items = [...$operator->call($arguments['per_page'], $arguments['page'])];
             yield from $items;
             $arguments['page']++;
         } while (count($items) > 0);

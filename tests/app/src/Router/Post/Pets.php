@@ -19,7 +19,7 @@ final class Pets
     {
     }
     /**
-     * @return array{code: int}
+     * @return array{code:int}
      */
     public function create(array $params) : array
     {

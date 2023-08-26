@@ -23,7 +23,7 @@ final readonly class Create
     {
     }
     /**
-     * @return array{code: int}
+     * @return array{code:int}
      */
     public function call(array $params) : array
     {

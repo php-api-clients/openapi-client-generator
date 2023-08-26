@@ -226,6 +226,6 @@ final class Operation
 
     private static function convertObservableIntoIterable(string $string): string
     {
-        return str_replace('\\' . Observable::class, 'iterable', $string);
+        return str_replace(['\\' . Observable::class, '(', ' ', ')'], ['iterable', '', '', ''], $string);
     }
 }

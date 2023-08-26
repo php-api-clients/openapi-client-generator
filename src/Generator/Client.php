@@ -904,7 +904,11 @@ final class Client
                                 static fn (Expr $expr): Node\Stmt\Expression => new Node\Stmt\Expression(
                                     new Node\Expr\Assign(
                                         new Expr\Variable('items'),
-                                        $expr,
+                                        new Expr\Array_([
+                                            new Expr\ArrayItem(value: $expr, unpack: true),
+                                        ], [
+                                            'kind' => Node\Expr\Array_::KIND_SHORT,
+                                        ]),
                                     ),
                                 ),
                             ),

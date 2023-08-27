@@ -29,7 +29,7 @@ final class Operators
     public static function generate(Configuration $configuration, string $pathPrefix, array $operations, array $operationHydratorMap): iterable
     {
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
+        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\') . '\\Internal');
 
         $class = $factory->class('Operators')->makeFinal()->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
@@ -41,7 +41,7 @@ final class Operators
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Hydrators')->makeReadonly(),
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Internal\\Hydrators')->makeReadonly(),
             ),
         );
 
@@ -111,6 +111,6 @@ final class Operators
             ]);
         }
 
-        yield new File($pathPrefix, 'Operators', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Internal\\Operators', $stmt->addStmt($class)->getNode());
     }
 }

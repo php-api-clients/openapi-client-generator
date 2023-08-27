@@ -22,7 +22,7 @@ final class Routers
     public static function generate(Configuration $configuration, string $pathPrefix, ClientRouters $routers): iterable
     {
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
+        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\') . '\\Internal');
 
         $class = $factory->class('Routers')->makeFinal()->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
@@ -34,7 +34,7 @@ final class Routers
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Hydrators')->makeReadonly(),
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Internal\\Hydrators')->makeReadonly(),
             ),
         );
 
@@ -132,6 +132,6 @@ final class Routers
             ]);
         }
 
-        yield new File($pathPrefix, 'Routers', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Internal\\Routers', $stmt->addStmt($class)->getNode());
     }
 }

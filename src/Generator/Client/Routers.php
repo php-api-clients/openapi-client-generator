@@ -61,7 +61,7 @@ final class Routers
         string|null $group,
         string $name,
     ): Router {
-        $className = rtrim('Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
+        $className = rtrim('Internal\\Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
 
         return new Router(
             $className,

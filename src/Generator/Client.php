@@ -80,7 +80,7 @@ final class Client
         }
 
         $class->addStmt(
-            $factory->property('routers')->setType('Routers')->makeReadonly()->makePrivate(),
+            $factory->property('routers')->setType('Internal\\Routers')->makeReadonly()->makePrivate(),
         )->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
                 (new Param('authentication'))->setType('\\' . AuthenticationInterface::class),
@@ -143,7 +143,7 @@ final class Client
                 new Node\Expr\Assign(
                     new Node\Expr\Variable('hydrators'),
                     new Node\Expr\New_(
-                        new Node\Name('Hydrators'),
+                        new Node\Name('Internal\\Hydrators'),
                         [],
                     ),
                 ),
@@ -159,7 +159,7 @@ final class Client
                             [
                                 new Arg(
                                     new Node\Expr\New_(
-                                        new Node\Name('Operators'),
+                                        new Node\Name('Internal\\Operators'),
                                         [
                                             new Arg(
                                                 new Node\Expr\Variable('browser'),
@@ -239,7 +239,7 @@ final class Client
                             'routers',
                         ),
                         new Node\Expr\New_(
-                            new Node\Name('Routers'),
+                            new Node\Name('Internal\\Routers'),
                             [
                                 new Arg(
                                     new Node\Expr\Variable('browser'),
@@ -374,7 +374,7 @@ final class Client
                         ),
                     );
                     $chunkCountClasses[]    = $cc = new ChunkCount(
-                        'Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert(NumberToWords::transformNumber('en', $chunkCount)))->toPascal(),
+                        'Internal\\Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert(NumberToWords::transformNumber('en', $chunkCount)))->toPascal(),
                         $returnTypes,
                         $docBlockReturnTypes,
                         self::traverseOperations(
@@ -1029,7 +1029,7 @@ final class Client
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('\\' . $namespace . 'Hydrators'),
+                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Internal\\Hydrators'),
             )->addParam(
                 (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
             )->addParam(
@@ -1071,7 +1071,7 @@ final class Client
 
         $class = $factory->class(Utils::basename($namespace . $chunkCount->className))->makeFinal()->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('routers'))->setType('\\' . $namespace . 'Routers'),
+                (new PrivatePromotedPropertyAsParam('routers'))->setType('\\' . $namespace . 'Internal\\Routers'),
             ),
         );
 

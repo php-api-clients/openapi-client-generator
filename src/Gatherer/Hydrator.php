@@ -20,7 +20,7 @@ final class Hydrator
         Schema ...$schemaClasses,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator {
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator(
-            ClassString::factory($baseNamespace, 'Hydrator\\' . $className),
+            ClassString::factory($baseNamespace, 'Internal\\Hydrator\\' . $className),
             str_replace(['\\', '/'], ['/', $nameSpaceSeperator], lcfirst($className)),
             $schemaClasses,
         );

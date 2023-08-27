@@ -4,18 +4,15 @@ declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Operation;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Hydrator;
+use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Operator;
 use ApiClients\Client\PetStore\Schema;
-use ApiClients\Client\PetStore\WebHook;
-use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
 final class Pets
 {
-    public function __construct(private \ApiClients\Client\PetStore\Operators $operators)
+    public function __construct(private Internal\Operators $operators)
     {
     }
     /**

@@ -42,11 +42,11 @@ final class WebHooks
 
         $class = $factory->class('WebHooks')->makeFinal()->implement('\\' . WebHooksInterface::class);
         $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
-        $class->addStmt($factory->property('hydrator')->setType('Hydrators')->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('hydrator')->setType('Internal\\Hydrators')->makeReadonly()->makePrivate());
 
         $constructor = $factory->method('__construct')->makePublic()->addParams([
             (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class),
-            (new Param('hydrator'))->setType('Hydrators'),
+            (new Param('hydrator'))->setType('Internal\\Hydrators'),
         ])->addStmts([
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(

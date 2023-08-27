@@ -139,7 +139,7 @@ final class Schema
                 $schemaClasses = [...self::getUnionTypeSchemas($property->type)];
 
                 if (count($schemaClasses) > 0) {
-                    $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+                    $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
 
                     yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
 
@@ -164,7 +164,7 @@ final class Schema
                             $iterableType  = self::buildUnionType($iterableType);
 
                             if (count($schemaClasses) > 0) {
-                                $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+                                $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
 
                                 yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
 

@@ -4,12 +4,9 @@ declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema;
 
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Hydrator;
+use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Operator;
 use ApiClients\Client\PetStore\Schema;
-use ApiClients\Client\PetStore\WebHook;
-use ApiClients\Client\PetStore\Router;
 use League\OpenAPIValidation;
 use React\Http;
 use ApiClients\Contracts;
@@ -147,7 +144,7 @@ final readonly class Cat
     "features": [],
     "eyes": null
 }';
-    public function __construct(public int $id, public string $name, public ?bool $indoor, public ?Schema\Cat\Features $features, #[\ApiClients\Client\PetStore\Attribute\CastUnionToType\Schema\Cat\Eyes] public Schema\RedEyes|Schema\BlueEyes|Schema\GreenEyes|Schema\YellowEyes|Schema\BlackEyes $eyes)
+    public function __construct(public int $id, public string $name, public ?bool $indoor, public ?Schema\Cat\Features $features, #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Schema\Cat\Eyes] public Schema\RedEyes|Schema\BlueEyes|Schema\GreenEyes|Schema\YellowEyes|Schema\BlackEyes $eyes)
     {
     }
 }

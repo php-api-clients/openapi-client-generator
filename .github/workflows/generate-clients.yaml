@@ -8,11 +8,11 @@ on:
   pull_request:
 jobs:
   generate-and-test-client:
-    name: Continuous Integration
+    name: Continuous Integration (${{ matrix.client }})
     strategy:
       fail-fast: false
       matrix:
-        client: ["miele", "one"]
+        client: ["miele", "one", "subsplit"]
     uses: ./.github/workflows/test-client.yaml
     with:
       name: ${{ matrix.client }}

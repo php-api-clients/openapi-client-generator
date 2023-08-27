@@ -9,7 +9,7 @@ on:
 jobs:
   generate-and-test-client:
     runs-on: ubuntu-latest
-    name: Generate and test client
+    name: Generate and test client (${{ inputs.name }})
     container:
       image: ghcr.io/wyrihaximusnet/php:8.2-nts-alpine-dev-root
     steps:
@@ -18,6 +18,11 @@ jobs:
           fetch-depth: '0'
           persist-credentials: 'false'
       - uses: "ramsey/composer-install@v2"
+      - run: |
+          mkdir -p example/generated-${{ inputs.name }}
+      - run: curl -o example/api.github.com.yaml https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
+      - run: curl -o example/patch-broken-spec-files.php https://raw.githubusercontent.com/php-api-clients/github-root/main/utils/patch-broken-spec-files.php
+      - run: php example/patch-broken-spec-files.php example/api.github.com.yaml
       - run: make generate-example-client-${{ inputs.name }}
       - name: Tar example files
         run: tar -czf example.tar ./example
@@ -27,7 +32,7 @@ jobs:
           name: example-${{ inputs.name }}-client
           path: ./example.tar
   supported-versions-matrix:
-    name: Supported Versions Matrix
+    name: Supported Versions Matrix (${{ inputs.name }})
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.supported-versions-matrix.outputs.version }}
@@ -39,7 +44,7 @@ jobs:
         with:
           upcomingReleases: true
   supported-checks-matrix:
-    name: Supported Checks Matrix
+    name: Supported Checks Matrix (${{ inputs.name }})
     runs-on: ubuntu-latest
     needs:
       - generate-and-test-client
@@ -47,6 +52,8 @@ jobs:
       check: ${{ steps.supported-checks-matrix.outputs.check }}
     steps:
       - uses: actions/checkout@v3
+      - run: |
+          mkdir -p example/generated-${{ inputs.name }}
       - name: Download Generated Client
         uses: actions/download-artifact@v3
         with:
@@ -61,7 +68,7 @@ jobs:
           printf "Checks found: %s\r\n" $(make task-list-ci)
           printf "::set-output name=check::%s" $(make task-list-ci)
   qa:
-    name: Run ${{ matrix.check }} on PHP ${{ matrix.php }} with ${{ matrix.composer }} dependency preference
+    name: Run ${{ matrix.check }} on PHP ${{ matrix.php }} with ${{ matrix.composer }} dependency preference (${{ inputs.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -80,6 +87,8 @@ jobs:
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE # Do this ourself because `actions/checkout@v3 doesn't succeed in doing this
+      - run: |
+          mkdir -p example/generated-${{ inputs.name }}
       - name: Download Generated Client
         uses: actions/download-artifact@v3
         with:

@@ -46,7 +46,7 @@ final class Operations
 
         $class->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('operators'))->setType('\\' . $configuration->namespace->source . '\Operators'),
+                (new PrivatePromotedPropertyAsParam('operators'))->setType('Internal\\Operators'),
             ),
         );
 
@@ -110,7 +110,7 @@ final class Operations
 
         $class = $factory->class(Utils::basename($className))->makeFinal()->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('operators'))->setType('\\' . $namespace->source . '\Operators'),
+                (new PrivatePromotedPropertyAsParam('operators'))->setType('Internal\Operators'),
             ),
         );
 

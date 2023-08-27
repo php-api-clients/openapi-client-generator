@@ -28,7 +28,7 @@ final class Hydrators
     {
         $knownScehmas = [];
         $factory      = new BuilderFactory();
-        $stmt         = $factory->namespace(trim($namespace, '\\'));
+        $stmt         = $factory->namespace(trim($namespace, '\\') . '\\Internal');
 
         $class = $factory->class('Hydrators')->makeFinal()->implement('\\' . ObjectMapper::class);
 
@@ -296,6 +296,6 @@ final class Hydrators
             );
         }
 
-        yield new File($pathPrefix, 'Hydrators', $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, 'Internal\\Hydrators', $stmt->addStmt($class)->getNode());
     }
 }

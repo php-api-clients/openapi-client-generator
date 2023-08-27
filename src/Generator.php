@@ -210,12 +210,9 @@ final readonly class Generator
                     }
                 })([
                     ltrim($namespace, '\\') . 'Error' => 'ErrorSchemas',
-                    ltrim($namespace, '\\') . 'Hydrator' => null,
+                    ltrim($namespace, '\\') . 'Internal' => null,
                     ltrim($namespace, '\\') . 'Operation' => null,
-                    ltrim($namespace, '\\') . 'Operator' => null,
                     ltrim($namespace, '\\') . 'Schema' => null,
-                    ltrim($namespace, '\\') . 'WebHook' => null,
-                    ltrim($namespace, '\\') . 'Router' => null,
                     'League\OpenAPIValidation' => null,
                     'React\Http' => null,
                     'ApiClients\Contracts' => null,

@@ -153,9 +153,9 @@ final class Operation
         $group = strlen(trim(trim(Utils::dirname($className), '\\'), '.')) > 0 ? trim(str_replace('\\', '', Utils::dirname($className)), '\\') : null;
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation(
-            ClassString::factory($baseNamespace, 'Operation\\' . Utils::fixKeyword($className)),
+            ClassString::factory($baseNamespace, 'Internal\\Operation\\' . Utils::fixKeyword($className)),
             ClassString::factory($baseNamespace, $classNameSanitized),
-            ClassString::factory($baseNamespace, 'Operator\\' . Utils::fixKeyword($className)),
+            ClassString::factory($baseNamespace, 'Internal\\Operator\\' . Utils::fixKeyword($className)),
             lcfirst(
                 str_replace(
                     ['\\'],

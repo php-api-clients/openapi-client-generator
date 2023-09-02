@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
+use ApiClients\Tools\OpenApiClient\Utils\Response\Header;
+use ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\OperationArray;
@@ -82,30 +84,6 @@ final class Operation
                 ],
                 Class_::MODIFIER_PUBLIC,
             ),
-        )->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
-                        'METHOD',
-                        new Node\Scalar\String_(
-                            $operation->method,
-                        ),
-                    ),
-                ],
-                Class_::MODIFIER_PRIVATE,
-            ),
-        )->addStmt(
-            new Node\Stmt\ClassConst(
-                [
-                    new Node\Const_(
-                        'PATH',
-                        new Node\Scalar\String_(
-                            $operation->path, // Deal with the query
-                        ),
-                    ),
-                ],
-                Class_::MODIFIER_PRIVATE,
-            ),
         );
         if (count($operation->requestBody) > 0) {
             $class->addStmt(
@@ -176,24 +154,19 @@ final class Operation
         }
 
         $requestParameters = [
-            new Node\Arg(new Node\Expr\ClassConstFetch(
-                new Node\Name('self'),
-                'METHOD',
-            )),
+            new Node\Arg(new Node\Scalar\String_($operation->method)),
             new Node\Arg(new Node\Expr\FuncCall(
                 new Node\Name('\str_replace'),
                 [
                     new Node\Arg(new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces)))),
                     new Node\Arg(new Node\Expr\Array_(array_map(static fn (Node\Expr\PropertyFetch $pf): Node\Expr\ArrayItem => new Node\Expr\ArrayItem($pf), array_values($requestReplaces)))),
                     new Node\Arg(count($query) > 0 ? new Node\Expr\BinaryOp\Concat(
-                        new Node\Expr\ClassConstFetch(
-                            new Node\Name('self'),
-                            'PATH',
+                        new Node\Scalar\String_(
+                            $operation->path, // Deal with the query
                         ),
                         new Node\Scalar\String_(rtrim('?' . implode('&', $query), '?')),
-                    ) : new Node\Expr\ClassConstFetch(
-                        new Node\Name('self'),
-                        'PATH',
+                    ) : new Node\Scalar\String_(
+                        $operation->path, // Deal with the query
                     )),
                 ],
             )),
@@ -324,7 +297,7 @@ final class Operation
                                     new Node\Stmt\Return_(new Node\Expr\MethodCall(
                                         new Node\Expr\PropertyFetch(
                                             new Node\Expr\Variable('this'),
-                                            'hydrators',
+                                            'hydrator',
                                         ),
                                         'hydrateObject',
                                         [
@@ -717,27 +690,44 @@ final class Operation
                 $returnType[]    = '\\' . Observable::class . '<string>';
                 $returnTypeRaw[] = '\\' . Observable::class;
             } else {
-                $arrayItems              = [];
-                $arrayItems['code: int'] = new Node\Expr\ArrayItem(
-                    new Node\Scalar\LNumber($empty->code),
-                    new Node\Scalar\String_('code'),
-                );
+                $arrayItems = [];
                 foreach ($empty->headers as $header) {
                     $arrayItems[strtolower($header->name) . ': string'] = new Node\Expr\ArrayItem(
-                        new Node\Expr\MethodCall(
-                            new Node\Expr\Variable('response'),
-                            'getHeaderLine',
+                        new Node\Expr\New_(
+                            new Node\Name('\\' . Header::class),
                             [
-                                new Arg(new Node\Scalar\String_($header->name)),
+                                new Arg(
+                                    new Node\Scalar\String_(strtolower($header->name)),
+                                ),
+                                new Arg(
+                                    new Node\Expr\MethodCall(
+                                        new Node\Expr\Variable('response'),
+                                        'getHeaderLine',
+                                        [
+                                            new Arg(new Node\Scalar\String_($header->name)),
+                                        ],
+                                    ),
+                                ),
                             ],
                         ),
-                        new Node\Scalar\String_(strtolower($header->name)),
                     );
                 }
 
-                $returnType[]    = 'array{' . implode(',', array_keys($arrayItems)) . '}';
-                $returnTypeRaw[] = 'array';
-                $empties[]       = new Node\Stmt\Return_(new Node\Expr\Array_(array_values($arrayItems)));
+//                'array{' . implode(',', array_keys($arrayItems)) . '}';
+                $returnType[] = $returnTypeRaw[] = '\\' . WithoutBody::class;
+                $empties[]    = new Node\Stmt\Return_(
+                    new Node\Expr\New_(
+                        new Node\Name('\\' . WithoutBody::class),
+                        [
+                            new Arg(
+                                new Node\Scalar\LNumber($empty->code),
+                            ),
+                            new Arg(
+                                new Node\Expr\Array_(array_values($arrayItems)),
+                            ),
+                        ],
+                    ),
+                );
             }
 
             $emptyCase = new Node\Stmt\Case_(

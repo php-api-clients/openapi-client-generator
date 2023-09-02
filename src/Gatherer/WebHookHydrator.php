@@ -26,7 +26,7 @@ final class WebHookHydrator
 
         return Hydrator::gather(
             $baseNamespace,
-            'Internal\\WebHook\\' . Utils::className($event),
+            'WebHook\\' . Utils::className($event),
             '🪝',
             ...$schemaClasses,
         );

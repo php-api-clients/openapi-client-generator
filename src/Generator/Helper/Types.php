@@ -34,10 +34,6 @@ final class Types
     {
         return array_map(
             static function (string $type): string {
-                if (substr($type, 0, 6) === 'array{') {
-                    return 'array';
-                }
-
                 if (in_array($type, self::SCALARS) || substr($type, 0, 1) === '\\') {
                     return $type;
                 }
@@ -61,8 +57,16 @@ final class Types
     public static function filterDuplicatesAndIncompatibleRawTypes(string ...$types): iterable
     {
         $keepVoid   = true;
-        $keepArray  = true;
+        $keepArray  = false;
         $duplicates = [];
+
+        foreach ($types as $type) {
+            if ($type !== 'array') {
+                continue;
+            }
+
+            $keepArray = true;
+        }
 
         foreach ($types as $type) {
             if ($type !== 'void') {

@@ -17,7 +17,6 @@ use PhpParser\Node\UnionType;
 
 use function array_map;
 use function array_unique;
-use function count;
 use function explode;
 use function implode;
 use function trim;
@@ -42,28 +41,28 @@ final class ClientInterface
             $class->addStmt(
                 $factory->method('call')->makePublic()->setDocComment(
                     new Doc(implode(PHP_EOL, [
-                        '// phpcs:disable',
+                        ...($configuration->qa?->phpcs ?  ['// phpcs:disable'] : []),
                         '/**',
-                        ' * @return ' . (static function (array $operations): string {
-                            $count    = count($operations);
-                            $lastItem = $count - 1;
-                            $left     = '';
-                            $right    = '';
-                            for ($i = 0; $i < $count; $i++) {
-                                $returnType = \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getDocBlockResultTypeFromOperation($operations[$i]);
-                                if ($i !== $lastItem) {
-                                    $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
-                                } else {
-                                    $left .= $returnType;
-                                }
-
-                                $right .= ')';
-                            }
-
-                            return $left . $right;
-                        })($operations),
+                    //                        ' * @return ' . (static function (array $operations): string {
+                    //                            $count    = count($operations);
+                    //                            $lastItem = $count - 1;
+                    //                            $left     = '';
+                    //                            $right    = '';
+                    //                            for ($i = 0; $i < $count; $i++) {
+                    //                                $returnType = \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getDocBlockResultTypeFromOperation($operations[$i]);
+                    //                                if ($i !== $lastItem) {
+                    //                                    $left .= '($call is "' . $operations[$i]->matchMethod . ' ' . $operations[$i]->path . '" ? ' . $returnType . ' : ';
+                    //                                } else {
+                    //                                    $left .= $returnType;
+                    //                                }
+                    //
+                    //                                $right .= ')';
+                    //                            }
+                    //
+                    //                            return $left . $right;
+                    //                        })($operations),
                         ' */',
-                        '// phpcs:enable',
+                        ...($configuration->qa?->phpcs ?  ['// phpcs:enabled'] : []),
                     ])),
                 )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
                     new UnionType(

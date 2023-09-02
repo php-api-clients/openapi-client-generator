@@ -16,7 +16,7 @@ final class Pets
     {
     }
     /**
-     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function listListing(array $params) : iterable
     {
@@ -40,7 +40,7 @@ final class Pets
         } while (count($items) > 0);
     }
     /**
-     * @return iterable<string>
+     * @return iterable<int,string>
      */
     public function namesListing(array $params) : iterable
     {

@@ -26,7 +26,7 @@ final readonly class Operations implements OperationsInterface
     /**
      * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
      */
-    public function showPetById() : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
+    public function showPetById() : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
     {
         return $this->operators->showPetById()->call();
     }

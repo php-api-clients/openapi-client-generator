@@ -16,9 +16,9 @@ final class Pets
     {
     }
     /**
-     * @return array{code:int}
+     * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
      */
-    public function create(array $params) : array
+    public function create(array $params) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
     {
         $operator = new Internal\Operator\Pets\Create($this->browser, $this->authentication, $this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
         return $operator->call($params);

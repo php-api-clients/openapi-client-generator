@@ -14,8 +14,6 @@ final class Gatos
 {
     public const OPERATION_ID = 'pets/list/gatos';
     public const OPERATION_MATCH = 'GET /pets/gatos';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/gatos';
     /**The number of results per page (max 100). **/
     private int $perPage;
     /**Page number of the results to fetch. **/
@@ -31,7 +29,7 @@ final class Gatos
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), self::PATH . '?per_page={per_page}&page={page}'));
+        return new \RingCentral\Psr7\Request('GET', \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), '/pets/gatos' . '?per_page={per_page}&page={page}'));
     }
     /**
      * @return \Rx\Observable<Schema\Cat>
@@ -52,7 +50,7 @@ final class Gatos
                             $error = new \RuntimeException();
                             try {
                                 $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Cat::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrators->hydrateObject(Schema\Cat::class, $body);
+                                return $this->hydrator->hydrateObject(Schema\Cat::class, $body);
                             } catch (\Throwable $error) {
                                 goto items_application_json_two_hundred_aaaaa;
                             }

@@ -1,6 +1,6 @@
 {
-  "name": "api-clients/{{ packageName }}",
-  "description": "Non-Blocking first {{ fullName }} client",
+  "name": "api-clients/petsore",
+  "description": "Non-Blocking first PetStore client",
   "license": "MIT",
   "authors": [
     {
@@ -10,11 +10,6 @@
   ],
   "require": {
     "php": "^8.2",
-{% if requires is iterable %}
-{% for require in requires %}
-    "{{ require.name }}": "{{ require.version }}",
-{% endfor %}
-{% endif %}
     "api-clients/contracts": "^0.1",
     "api-clients/openapi-client-utils": "dev-main",
     "devizzent/cebe-php-openapi": "^1",
@@ -26,39 +21,25 @@
     "wyrihaximus/react-awaitable-observable": "^1.0"
   },
   "require-dev": {
-{% if require-dev is iterable %}
-{% for require in requires-dev %}
-    "{{ require.name }}": "{{ require.version }}",
-{% endfor %}
-{% endif %}
     "wyrihaximus/async-test-utilities": "^7"
   },
   "autoload": {
     "psr-4": {
-      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+      "ApiClients\\Client\\PetStore\\": "src/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+      "ApiClients\\Client\\PetStore\\": "src/"
     }
   },
-{% if suggests is iterable and suggests|length > 0 %}
-"suggest": {
-{% for suggest in suggests %}
-"api-clients/{{ suggest.name }}": "{{ suggest.reason }}"{% if not loop.last %},{% endif %}
-{% endfor %}
-},
-{% endif %}
-{% if qa.phpstan.enabled is constant('true') and qa.phpstan.configFilePath is not constant('null') %}
   "extra": {
     "phpstan": {
       "includes": [
-        "{{ qa.phpstan.configFilePath }}"
+        "etc/phpstan-extension.neon"
       ]
     }
   },
-{% endif %}
   "config": {
     "sort-packages": true,
     "platform": {

@@ -7,6 +7,7 @@ namespace ApiClients\Tools\OpenApiClientGenerator;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Destination;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\EntryPoints;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Configuration\QA;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Schemas;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\State;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\SubSplit;
@@ -32,6 +33,7 @@ final readonly class Configuration
         public SubSplit|null $subSplit,
         public Schemas|null $schemas,
         public Voter|null $voter,
+        public QA|null $qa,
     ) {
     }
 }

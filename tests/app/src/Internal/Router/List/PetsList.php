@@ -16,7 +16,7 @@ final class PetsList
     {
     }
     /**
-     * @return iterable<Schema\Cat>
+     * @return iterable<int,Schema\Cat>
      */
     public function gatosListing(array $params) : iterable
     {

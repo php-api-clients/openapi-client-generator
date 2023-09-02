@@ -15,6 +15,11 @@ destination:
   root: app
   source: src
   test: tests
+templates:
+  dir: app-templates
+  variables:
+    fullName: PetStore
+    packageName: petsore
 schemas:
   allowDuplication: true
   useAliasesForDuplication: true
@@ -26,3 +31,9 @@ voter:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
   streamOperation:
     - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId
+qa:
+  phpcs:
+    enabled: true
+  phpstan:
+    enabled: true
+    configFilePath: etc/phpstan-extension.neon

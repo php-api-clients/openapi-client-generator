@@ -16,7 +16,7 @@ final class Three
     {
     }
     /**
-     * @return iterable<Schema\Cat>|iterable<string>
+     * @return iterable<int,Schema\Cat>|iterable<int,string>
      */
     public function call(string $call, array $params, array $pathChunks) : iterable
     {

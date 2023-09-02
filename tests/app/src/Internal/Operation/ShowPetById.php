@@ -14,8 +14,6 @@ final class ShowPetById
 {
     public const OPERATION_ID = 'showPetById';
     public const OPERATION_MATCH = 'GET /pets/{petId}';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/{petId}';
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
     private readonly Internal\Hydrator\Operation\Pets\PetId $hydrator;
     public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Internal\Hydrator\Operation\Pets\PetId $hydrator)
@@ -25,7 +23,7 @@ final class ShowPetById
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array(), array(), self::PATH));
+        return new \RingCentral\Psr7\Request('GET', \str_replace(array(), array(), '/pets/{petId}'));
     }
     /**
      * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
@@ -45,28 +43,28 @@ final class ShowPetById
                         $error = new \RuntimeException();
                         try {
                             $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Cat::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                            return $this->hydrators->hydrateObject(Schema\Cat::class, $body);
+                            return $this->hydrator->hydrateObject(Schema\Cat::class, $body);
                         } catch (\Throwable $error) {
                             goto items_application_json_two_hundred_aaaaa;
                         }
                         items_application_json_two_hundred_aaaaa:
                         try {
                             $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Dog::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                            return $this->hydrators->hydrateObject(Schema\Dog::class, $body);
+                            return $this->hydrator->hydrateObject(Schema\Dog::class, $body);
                         } catch (\Throwable $error) {
                             goto items_application_json_two_hundred_aaaab;
                         }
                         items_application_json_two_hundred_aaaab:
                         try {
                             $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Bird::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                            return $this->hydrators->hydrateObject(Schema\Bird::class, $body);
+                            return $this->hydrator->hydrateObject(Schema\Bird::class, $body);
                         } catch (\Throwable $error) {
                             goto items_application_json_two_hundred_aaaac;
                         }
                         items_application_json_two_hundred_aaaac:
                         try {
                             $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Fish::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                            return $this->hydrators->hydrateObject(Schema\Fish::class, $body);
+                            return $this->hydrator->hydrateObject(Schema\Fish::class, $body);
                         } catch (\Throwable $error) {
                             goto items_application_json_two_hundred_aaaad;
                         }

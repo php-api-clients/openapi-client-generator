@@ -19,6 +19,7 @@ use Throwable;
 use function array_shift;
 use function count;
 use function implode;
+use function sort;
 
 final class CastUnionToType
 {
@@ -111,9 +112,14 @@ final class CastUnionToType
                                                 '|',
                                                 [
                                                     ...(static function (Property ...$properties): iterable {
+                                                        $names = [];
                                                         foreach ($properties as $property) {
-                                                            yield $property->sourceName;
+                                                            $names[] = $property->sourceName;
                                                         }
+
+                                                        sort($names);
+
+                                                        return $names;
                                                     })(...$schema->properties),
                                                 ],
                                             ),

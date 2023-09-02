@@ -9,6 +9,8 @@ use ApiClients\Contracts\OpenAPI\WebHooksInterface;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration;
 use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Methods\ChunkCount;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan\ClientCallReturnTypes;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan\ClientCallReturnTypesTest;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
@@ -37,19 +39,22 @@ use function array_map;
 use function array_shift;
 use function array_unique;
 use function count;
+use function dirname;
 use function explode;
 use function implode;
+use function PHPStan\Testing\assertType;
 use function strlen;
 use function strpos;
 use function trim;
 use function ucfirst;
 
+use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 
 final class Client
 {
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, Representation\Client $client, Routers $routers): iterable
+    public static function generate(Configuration $configuration, string $pathPrefix, string $pathPrefixTests, Representation\Client $client, Routers $routers): iterable
     {
         $operations = [];
         foreach ($client->paths as $path) {
@@ -515,28 +520,28 @@ final class Client
             $class->addStmt(
                 $factory->method('call')->makePublic()->setDocComment(
                     new Doc(implode(PHP_EOL, [
-                        '// phpcs:disable',
+                        ...($configuration->qa?->phpcs ?  ['// phpcs:disable'] : []),
                         '/**',
-                        ' * @return ' . (static function (array $operations): string {
-                            $count    = count($operations);
-                            $lastItem = $count - 1;
-                            $left     = '';
-                            $right    = '';
-                            for ($i = 0; $i < $count; $i++) {
-                                $returnType = Operation::getDocBlockResultTypeFromOperation($operations[$i]);
-                                if ($i !== $lastItem) {
-                                    $left .= '($call is Operation\\' . $operations[$i]->classNameSanitized->relative . '::OPERATION_MATCH ? ' . $returnType . ' : ';
-                                } else {
-                                    $left .= $returnType;
-                                }
-
-                                $right .= ')';
-                            }
-
-                            return $left . $right;
-                        })($operations),
+                    //                        ' * @return ' . (static function (array $operations): string {
+                    //                            $count    = count($operations);
+                    //                            $lastItem = $count - 1;
+                    //                            $left     = '';
+                    //                            $right    = '';
+                    //                            for ($i = 0; $i < $count; $i++) {
+                    //                                $returnType = Operation::getDocBlockResultTypeFromOperation($operations[$i]);
+                    //                                if ($i !== $lastItem) {
+                    //                                    $left .= '($call is "' . $operations[$i]->matchMethod . ' ' . $operations[$i]->path . '" ? ' . $returnType . ' : ';
+                    //                                } else {
+                    //                                    $left .= $returnType;
+                    //                                }
+                    //
+                    //                                $right .= ')';
+                    //                            }
+                    //
+                    //                            return $left . $right;
+                    //                        })($operations),
                         ' */',
-                        '// phpcs:enable',
+                        ...($configuration->qa?->phpcs ?  ['// phpcs:enable'] : []),
                     ])),
                 )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
                     new UnionType(
@@ -661,6 +666,28 @@ final class Client
         }
 
         yield from \ApiClients\Tools\OpenApiClientGenerator\Generator\Routers::generate($configuration, $pathPrefix, $routers);
+
+        if (! $configuration->qa?->phpstan) {
+            return;
+        }
+
+        require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'phpstan-assertType-mock.php';
+        assertType('bool', true);
+
+        yield from ClientCallReturnTypes::generate($configuration, $pathPrefix, $client);
+        yield from ClientCallReturnTypesTest::generate($configuration, $pathPrefixTests, $client);
+
+        if ($configuration->qa->phpstan->configFilePath === null) {
+            return;
+        }
+
+        yield new File($pathPrefix, '../' . $configuration->qa->phpstan->configFilePath, implode(PHP_EOL, [
+            'services:',
+            '  - class: ' . $configuration->namespace->source . '\PHPStan\ClientCallReturnTypes',
+            '    tags:',
+            '      - phpstan.broker.dynamicMethodReturnTypeExtension',
+            '',
+        ]));
     }
 
     /**

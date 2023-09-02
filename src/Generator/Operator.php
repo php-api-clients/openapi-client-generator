@@ -225,14 +225,8 @@ final class Operator
                     'returnType' => (static function (Representation\Operation $operation): Node\UnionType|Node\Name {
                         /** @phpstan-ignore-next-line */
                         $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
-                        if ($returnType === null) {
+                        if ($returnType === null || (string) $returnType === 'void') {
                             return new Node\Name('void');
-                        }
-
-                        if ((string) $returnType === 'void') {
-                            return new Node\Name(
-                                (string) $returnType,
-                            );
                         }
 
                         return new Node\UnionType(

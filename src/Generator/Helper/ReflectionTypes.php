@@ -12,6 +12,8 @@ use ReflectionNamedType;
 use ReflectionType;
 use ReflectionUnionType;
 
+use function array_map;
+use function str_replace;
 use function strpos;
 
 final class ReflectionTypes
@@ -22,21 +24,34 @@ final class ReflectionTypes
         switch ($reflection::class) {
             //ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType
             case ReflectionNamedType::class:
-                return new Name(
+                return new Name(str_replace(
+                    'Traversable',
+                    'iterable',
                     (strpos((string) $reflection, '\\') !== false ? '\\' : '') . $reflection,
-                );
+                ));
 
                 break;
             case ReflectionUnionType::class:
                 return new Node\UnionType(
                     [
-                        ...(static function (ReflectionType ...$types): iterable {
+                        ...(static function (string ...$types): iterable {
                             foreach ($types as $type) {
-                                yield new Name(
-                                    (strpos((string) $type, '\\') !== false ? '\\' : '') . $type,
-                                );
+                                if ($type === 'array') {
+                                    continue;
+                                }
+
+                                yield new Name(str_replace(
+                                    'Traversable',
+                                    'iterable',
+                                    (strpos($type, '\\') !== false ? '\\' : '') . $type,
+                                ));
                             }
-                        })(...$reflection->getTypes()),
+                        })(...[
+                            ...Types::filterDuplicatesAndIncompatibleRawTypes(...array_map(
+                                static fn (ReflectionType $type): string => (string) $type,
+                                $reflection->getTypes(),
+                            )),
+                        ]),
                     ],
                 );
 

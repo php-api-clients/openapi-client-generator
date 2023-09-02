@@ -16,14 +16,14 @@ final class PetsList
     {
     }
     /**
-     * @return iterable<Schema\Cat>
+     * @return iterable<int,Schema\Cat>
      */
     public function gatos(int $perPage, int $page) : iterable
     {
         return $this->operators->pets👷List_👷Gatos()->call($perPage, $page);
     }
     /**
-     * @return iterable<Schema\Cat>
+     * @return iterable<int,Schema\Cat>
      */
     public function gatosListing(int $perPage, int $page) : iterable
     {

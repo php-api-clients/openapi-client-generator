@@ -13,7 +13,7 @@ jobs:
     container:
       image: ghcr.io/wyrihaximusnet/php:8.2-nts-alpine-dev-root
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: '0'
           persist-credentials: 'false'

@@ -18,13 +18,13 @@ final readonly class NamesListing
     {
     }
     /**
-     * @return iterable<string>
+     * @return iterable<int,string>
      */
     public function call(int $perPage = 30, int $page = 1) : iterable
     {
         $operation = new \ApiClients\Client\PetStore\Internal\Operation\Pets\NamesListing($this->responseSchemaValidator, $this->hydrator, $perPage, $page);
         $request = $operation->createRequest();
-        $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \Rx\Observable|array {
+        $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \Rx\Observable {
             return $operation->createResponse($response);
         }));
         if ($result instanceof \Rx\Observable) {

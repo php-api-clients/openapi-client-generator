@@ -16,35 +16,35 @@ final class Pets
     {
     }
     /**
-     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function list(int $perPage, int $page) : iterable
     {
         return $this->operators->pets👷List_()->call($perPage, $page);
     }
     /**
-     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function listListing(int $perPage, int $page) : iterable
     {
         return $this->operators->pets👷ListListing()->call($perPage, $page);
     }
     /**
-     * @return array{code:int}
+     * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
      */
-    public function create(array $params) : array
+    public function create(array $params) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
     {
         return $this->operators->pets👷Create()->call($params);
     }
     /**
-     * @return iterable<string>
+     * @return iterable<int,string>
      */
     public function names(int $perPage, int $page) : iterable
     {
         return $this->operators->pets👷Names()->call($perPage, $page);
     }
     /**
-     * @return iterable<string>
+     * @return iterable<int,string>
      */
     public function namesListing(int $perPage, int $page) : iterable
     {

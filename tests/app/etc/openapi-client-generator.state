@@ -4,11 +4,11 @@
         "files": [
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_.php",
-                "hash": "c520c2f0ff0936c2ba29a39e435b5f28"
+                "hash": "3335d838b36c19fa3df3a5611de1327b"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_.php",
-                "hash": "db5a45157ecec422ce19330c0498fe13"
+                "hash": "4ebf25c09b352c6bf1cb90ba82dc4cd6"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_Test.php",
@@ -16,11 +16,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/ListListing.php",
-                "hash": "17f17aa7bf998e158be5bbdea09a1663"
+                "hash": "0d9967a302ca7fb3d6caac3c64053973"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/ListListing.php",
-                "hash": "2c63dfcc725dd37b98b07d9652333ca0"
+                "hash": "c11b29843d4a000f2707d1c8fadcffef"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/ListListingTest.php",
@@ -28,11 +28,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Create.php",
-                "hash": "9c62dcb98ecfd7e7c1c24800e233af0a"
+                "hash": "7c8734f0d61928c3f40976535c41da3f"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Create.php",
-                "hash": "bd65b8b37923a642d6924766b01e212e"
+                "hash": "7558d10cb6b365376dbd1bd4772644bc"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/CreateTest.php",
@@ -40,11 +40,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_\/Gatos.php",
-                "hash": "8d589bf7297e74b697e9e62c056466b9"
+                "hash": "5f881cdd1eb2f8375929f7abfbd33c7d"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_\/Gatos.php",
-                "hash": "8ff4102b1deed87c589211b7e9c3d2f4"
+                "hash": "9a0e8b8f7719fccb70e7cc4e0832d268"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_\/GatosTest.php",
@@ -52,11 +52,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_\/GatosListing.php",
-                "hash": "fdea8c007fe7072c4bc4ae8c79fe609e"
+                "hash": "eafb9b140f372014143fd7d1b3e271f7"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_\/GatosListing.php",
-                "hash": "11a4db25d23f28b147cefa3436042ed8"
+                "hash": "ebd439f04cc01b4059112f4f08f6cd6c"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_\/GatosListingTest.php",
@@ -64,11 +64,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Names.php",
-                "hash": "bcdcc705445a5803e16b9bc6553701dd"
+                "hash": "b84ca3b1cab00b4be051ad86b73cbdd1"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Names.php",
-                "hash": "00fad21c38012a792a3e550b401c9891"
+                "hash": "1337e618e38f0a989814088eb4f9d09a"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/NamesTest.php",
@@ -76,11 +76,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/NamesListing.php",
-                "hash": "d6e405d66fa8b664f91b551974a0280c"
+                "hash": "c0b8d49169aae176984d12a0030ecd13"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/NamesListing.php",
-                "hash": "b1f0b2b5896403341c1163eb5a3d09d5"
+                "hash": "d9969b99380a63a7708871e4d87a040d"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/NamesListingTest.php",
@@ -88,11 +88,11 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operation\/ShowPetById.php",
-                "hash": "efb0c281bf9e0b91e88afa00a0bb4628"
+                "hash": "99cae2c0f875cde1a0f93475618a9c76"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operator\/ShowPetById.php",
-                "hash": "e0f9587266693670ee7a500927287376"
+                "hash": "abfb82c3aeca91bf33f6058ffdbe3eca"
             },
             {
                 "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/ShowPetByIdTest.php",
@@ -200,71 +200,83 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/ClientInterface.php",
-                "hash": "12883d3abf5ccbfdba4be51d0cd092ea"
+                "hash": "9b32fe8d0561625aaca2585bfbb27529"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Client.php",
-                "hash": "dec525ce049b33285761d36347cbc0ee"
+                "hash": "3d378f18ff2470116a67981cf84dc721"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Pets.php",
-                "hash": "d9b54a60718206d153f01f8741aebec6"
+                "hash": "c23546b09a87ba3a455be95bc5c2ce36"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/PetsList.php",
-                "hash": "2de1a4d9f16004193fbbd3395c919180"
+                "hash": "409c03c5e43887620f5f47c9177643c0"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get.php",
-                "hash": "5da596f090eb4bf6dba76eae7cf53096"
+                "hash": "68edf375bba9f6578afb8274e2b97de7"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Pets.php",
-                "hash": "651f29a1308fc8e21c6219bbce675888"
+                "hash": "b32884ea78f685b86aa1f5c464fc0aaf"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/PetsList.php",
-                "hash": "abcaf1114e4fa5b795ef3417adfbcc39"
+                "hash": "153e3322116d7b671682061f90f29487"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Post\/Pets.php",
-                "hash": "5271ec8b587344911a6019a31b0d5fe6"
+                "hash": "8ef945a4100cffc65825a02375b3f04f"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Two.php",
-                "hash": "c1d27734336ca9da314357976f84b3c1"
+                "hash": "7b7d4b9a968f14f380a92ae6313ce8f4"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Three.php",
-                "hash": "d1cf00580ddd63cb456f6daa199941ff"
+                "hash": "cfd9ac40faf59d186ef864c659a058dc"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Two.php",
-                "hash": "0ad946fda00f4e5b2fa03281ba5cf07b"
+                "hash": "38ce5494202d78c11ec1d99a3cd50121"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Three.php",
-                "hash": "bd635f15168763ab4de5e1eb161ed3cf"
+                "hash": "ea20389356bf4f898364bb2d942559cb"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Router\/Post\/Two.php",
-                "hash": "278185160910ced7d1a477d51e558302"
+                "hash": "bb74e1a2fe9780b2919d28071ff187cb"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Routers.php",
                 "hash": "27ae653029f6d54ef26c6b156366e3a3"
             },
             {
+                "name": ".\/tests\/app\/src\/\/PHPStan\/ClientCallReturnTypes.php",
+                "hash": "7df241311848c7ffaa377eb789cebb58"
+            },
+            {
+                "name": ".\/tests\/app\/tests\/\/Types\/ClientCallReturnTypes.php",
+                "hash": "f614aa6d327b69a2edd47d21ffbe163d"
+            },
+            {
+                "name": ".\/tests\/app\/src\/\/..\/etc\/phpstan-extension.neon",
+                "hash": "3d7b9f10231d14a80329ca810f476b3d"
+            },
+            {
                 "name": ".\/tests\/app\/src\/\/OperationsInterface.php",
-                "hash": "2186a89312e99b2ad5884dc51675a9d8"
+                "hash": "54d7fd0cc8f652ba8c5ca0f490e462a5"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Operation\/Pets.php",
-                "hash": "1d1bb80363ad7f54a6f312950dfde25c"
+                "hash": "928ce9f3f462bf874afa055342d8f165"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Operation\/PetsList.php",
-                "hash": "b000993bf5e1c2f8a705f8ae07f2f508"
+                "hash": "cbe84bf2d290017ccd0946101d58a7da"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Operators.php",
@@ -272,7 +284,7 @@
             },
             {
                 "name": ".\/tests\/app\/src\/\/Operations.php",
-                "hash": "5c1d8df5d9b95ffe1400781c8a32e362"
+                "hash": "91f162958d7ac8ac63feaccbb534eb45"
             },
             {
                 "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets.php",
@@ -300,7 +312,7 @@
         "files": [
             {
                 "name": "composer.json",
-                "hash": ""
+                "hash": "b5d01de7c1f443ef8e07eb69633cea43"
             },
             {
                 "name": "composer.lock",

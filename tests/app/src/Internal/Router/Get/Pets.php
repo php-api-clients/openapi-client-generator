@@ -16,7 +16,7 @@ final class Pets
     {
     }
     /**
-     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function list(array $params) : iterable
     {
@@ -35,7 +35,7 @@ final class Pets
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
     /**
-     * @return iterable<string>
+     * @return iterable<int,string>
      */
     public function names(array $params) : iterable
     {

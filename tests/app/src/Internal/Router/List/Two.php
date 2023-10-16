@@ -16,7 +16,7 @@ final class Two
     {
     }
     /**
-     * @return iterable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
      */
     public function call(string $call, array $params, array $pathChunks) : iterable
     {

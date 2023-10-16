@@ -16,9 +16,9 @@ final class Two
     {
     }
     /**
-     * @return array{code:int}
+     * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
      */
-    public function call(string $call, array $params, array $pathChunks) : array
+    public function call(string $call, array $params, array $pathChunks) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
     {
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {

@@ -61,6 +61,7 @@ use function Safe\unlink;
 use function str_replace;
 use function strlen;
 use function strpos;
+use function substr;
 use function trim;
 use function usleep;
 use function WyriHaximus\Twig\render;
@@ -195,7 +196,7 @@ final readonly class Generator
         $codePrinter   = new Standard();
 
         foreach ($this->all($configurationLocation) as $file) {
-            $fileName = $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $file->pathPrefix . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $file->fqcn) . '.php';
+            $fileName = $configurationLocation . $this->configuration->destination->root . DIRECTORY_SEPARATOR . $file->pathPrefix . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $file->fqcn) . (strpos($file->fqcn, '.') !== false ? '' : '.php');
             if ($file->contents instanceof Node\Stmt\Namespace_) {
                 array_unshift($file->contents->stmts, ...(static function (array $uses): iterable {
                     foreach ($uses as $use => $alias) {
@@ -246,7 +247,10 @@ final readonly class Generator
                 }
             }
 
-            include_once $fileName;
+            if (! (strpos($fileName, DIRECTORY_SEPARATOR . 'Types' . DIRECTORY_SEPARATOR) !== false) && substr($fileName, -4) === '.php') {
+                include_once $fileName;
+            }
+
             $existingFiles = array_filter(
                 $existingFiles,
                 static fn (string $file): bool => $file !== $fileName,
@@ -510,6 +514,7 @@ final readonly class Generator
         yield from Client::generate(
             $this->configuration,
             $this->configuration->destination->source . DIRECTORY_SEPARATOR,
+            $this->configuration->destination->test . DIRECTORY_SEPARATOR,
             $client,
             $routers,
         );
@@ -600,6 +605,7 @@ final readonly class Generator
                     'operations' => $operations,
                     'webHooks' => $webHooks,
                 ];
+                $vars['qa']        = $configuration->qa;
 
                 return $vars;
             })(
@@ -793,6 +799,7 @@ final readonly class Generator
         yield from Client::generate(
             $this->configuration,
             $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->source,
+            $this->configuration->subSplit->subSplitsDestination . DIRECTORY_SEPARATOR . $this->splitPathPrefix($this->configuration->subSplit->rootPackage, '') . $this->configuration->destination->test,
             $client,
             $routers,
         );
@@ -926,6 +933,7 @@ final readonly class Generator
                             }
                         })($this->configuration->subSplit->sectionPackage->name, ...$splits),
                     ],
+                    'qa' => $this->configuration->qa,
                 ],
             );
             $this->statusOutput->markStepDone('generating_templates_files_root_package');
@@ -950,6 +958,7 @@ final readonly class Generator
                             'version' => $this->configuration->subSplit->targetVersion,
                         ],
                     ],
+                    'qa' => $this->configuration->qa,
                 ],
             );
             $this->statusOutput->markStepDone('generating_templates_files_common_package');
@@ -981,6 +990,7 @@ final readonly class Generator
                                 'version' => $this->configuration->subSplit->targetVersion,
                             ],
                         ],
+                        'qa' => $this->configuration->qa,
                     ],
                 );
                 $this->statusOutput->advanceStep('generating_templates_files_subsplit_package');

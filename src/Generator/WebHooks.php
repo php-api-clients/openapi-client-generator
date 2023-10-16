@@ -225,7 +225,7 @@ final class WebHooks
         );
 
         foreach ($webHooks as $event => $hooks) {
-            $eventClassname = 'WebHook' . Utils::className($event);
+            $eventClassname = 'Internal\WebHook\\' . Utils::className($event);
             $eventSanitized = lcfirst((new Convert($event))->toPascal());
 
             $class->addStmt($factory->property($eventSanitized)->setType('?' . $eventClassname)->setDefault(null)->makePrivate());

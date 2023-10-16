@@ -42,7 +42,7 @@ final class WebHook
         $className = Utils::className($event);
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(ltrim($namespace . 'WebHook', '\\'));
+        $stmt    = $factory->namespace(ltrim($namespace . 'Internal\WebHook', '\\'));
 
         $class = $factory->class(ltrim($className, '\\'))->makeFinal()->implement('\\' . WebHookInterface::class)->setDocComment(new Doc(implode(PHP_EOL, [
             '/**',
@@ -50,12 +50,12 @@ final class WebHook
             ' */',
         ])));
         $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
-        $class->addStmt($factory->property('hydrator')->setType('Internal\\Hydrator\\WebHook' . $className)->makeReadonly()->makePrivate());
+        $class->addStmt($factory->property('hydrator')->setType('Internal\\Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
 
         $constructor = $factory->method('__construct')->makePublic()->addParam(
             (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class),
         )->addParam(
-            (new Param('hydrator'))->setType('Internal\\Hydrator\\WebHook' . $className),
+            (new Param('hydrator'))->setType('Internal\\Hydrator\\WebHook\\' . $className),
         )->addStmt(
             new Node\Expr\Assign(
                 new Node\Expr\PropertyFetch(

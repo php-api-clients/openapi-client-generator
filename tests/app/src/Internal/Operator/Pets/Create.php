@@ -18,13 +18,13 @@ final readonly class Create
     {
     }
     /**
-     * @return array{code:int}
+     * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
      */
-    public function call(array $params) : array
+    public function call(array $params) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
     {
         $operation = new \ApiClients\Client\PetStore\Internal\Operation\Pets\Create($this->requestSchemaValidator, $this->responseSchemaValidator, $this->hydrator);
         $request = $operation->createRequest($params);
-        $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : array {
+        $result = \React\Async\await($this->browser->request($request->getMethod(), (string) $request->getUri(), $request->withHeader('Authorization', $this->authentication->authHeader())->getHeaders(), (string) $request->getBody())->then(function (\Psr\Http\Message\ResponseInterface $response) use($operation) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody {
             return $operation->createResponse($response);
         }));
         if ($result instanceof \Rx\Observable) {

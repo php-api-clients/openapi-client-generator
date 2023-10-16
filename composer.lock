@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "73ab1c69fd4ff4f9394fa62ecfa4c15c",
+    "content-hash": "7aaac3c8e01680bf30983bab9575e7bb",
     "packages": [
         {
             "name": "amphp/amp",
@@ -218,12 +218,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-api-clients/github.git",
-                "reference": "b2a6f4beedbdfcb5c1ee4c418cb75cccbee5e609"
+                "reference": "334aa3eeb80e23c36f6e997df14e4377b56216b1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-api-clients/github/zipball/b2a6f4beedbdfcb5c1ee4c418cb75cccbee5e609",
-                "reference": "b2a6f4beedbdfcb5c1ee4c418cb75cccbee5e609",
+                "url": "https://api.github.com/repos/php-api-clients/github/zipball/334aa3eeb80e23c36f6e997df14e4377b56216b1",
+                "reference": "334aa3eeb80e23c36f6e997df14e4377b56216b1",
                 "shasum": ""
             },
             "require": {
@@ -261,7 +261,58 @@
                 "issues": "https://github.com/php-api-clients/github/issues",
                 "source": "https://github.com/php-api-clients/github/tree/v0.2.x"
             },
-            "time": "2023-07-30T16:16:07+00:00"
+            "time": "2023-08-31T16:35:59+00:00"
+        },
+        {
+            "name": "api-clients/openapi-client-utils",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-api-clients/openapi-client-utils.git",
+                "reference": "ff61fcf268b3ca092d4a988963a2b02f2118a88d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-api-clients/openapi-client-utils/zipball/ff61fcf268b3ca092d4a988963a2b02f2118a88d",
+                "reference": "ff61fcf268b3ca092d4a988963a2b02f2118a88d",
+                "shasum": ""
+            },
+            "require": {
+                "api-clients/contracts": "^0.1",
+                "php": "^8.2"
+            },
+            "require-dev": {
+                "wyrihaximus/async-test-utilities": "^7.1"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ApiClients\\Tools\\OpenApiClient\\Utils\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cees-Jan Kiewiet",
+                    "email": "ceesjank@gmail.com"
+                }
+            ],
+            "description": "Common utils for generated OpenAPI clients",
+            "support": {
+                "issues": "https://github.com/php-api-clients/openapi-client-utils/issues",
+                "source": "https://github.com/php-api-clients/openapi-client-utils/tree/main"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/WyriHaximus",
+                    "type": "github"
+                }
+            ],
+            "time": "2023-09-05T06:06:58+00:00"
         },
         {
             "name": "azjezz/psl",
@@ -2413,28 +2464,28 @@
         },
         {
             "name": "evenement/evenement",
-            "version": "v3.0.1",
+            "version": "v3.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/igorw/evenement.git",
-                "reference": "531bfb9d15f8aa57454f5f0285b18bec903b8fb7"
+                "reference": "0a16b0d71ab13284339abb99d9d2bd813640efbc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/igorw/evenement/zipball/531bfb9d15f8aa57454f5f0285b18bec903b8fb7",
-                "reference": "531bfb9d15f8aa57454f5f0285b18bec903b8fb7",
+                "url": "https://api.github.com/repos/igorw/evenement/zipball/0a16b0d71ab13284339abb99d9d2bd813640efbc",
+                "reference": "0a16b0d71ab13284339abb99d9d2bd813640efbc",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "^6.0"
+                "phpunit/phpunit": "^9 || ^6"
             },
             "type": "library",
             "autoload": {
-                "psr-0": {
-                    "Evenement": "src"
+                "psr-4": {
+                    "Evenement\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -2454,9 +2505,9 @@
             ],
             "support": {
                 "issues": "https://github.com/igorw/evenement/issues",
-                "source": "https://github.com/igorw/evenement/tree/master"
+                "source": "https://github.com/igorw/evenement/tree/v3.0.2"
             },
-            "time": "2017-07-23T21:35:13+00:00"
+            "time": "2023-08-08T05:53:35+00:00"
         },
         {
             "name": "eventsauce/object-hydrator",
@@ -7395,16 +7446,16 @@
         },
         {
             "name": "react/socket",
-            "version": "v1.13.0",
+            "version": "v1.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/reactphp/socket.git",
-                "reference": "cff482bbad5848ecbe8b57da57e4e213b03619aa"
+                "reference": "21591111d3ea62e31f2254280ca0656bc2b1bda6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/reactphp/socket/zipball/cff482bbad5848ecbe8b57da57e4e213b03619aa",
-                "reference": "cff482bbad5848ecbe8b57da57e4e213b03619aa",
+                "url": "https://api.github.com/repos/reactphp/socket/zipball/21591111d3ea62e31f2254280ca0656bc2b1bda6",
+                "reference": "21591111d3ea62e31f2254280ca0656bc2b1bda6",
                 "shasum": ""
             },
             "require": {
@@ -7419,7 +7470,7 @@
                 "phpunit/phpunit": "^9.5 || ^5.7 || ^4.8.35",
                 "react/async": "^4 || ^3 || ^2",
                 "react/promise-stream": "^1.4",
-                "react/promise-timer": "^1.9"
+                "react/promise-timer": "^1.10"
             },
             "type": "library",
             "autoload": {
@@ -7463,7 +7514,7 @@
             ],
             "support": {
                 "issues": "https://github.com/reactphp/socket/issues",
-                "source": "https://github.com/reactphp/socket/tree/v1.13.0"
+                "source": "https://github.com/reactphp/socket/tree/v1.14.0"
             },
             "funding": [
                 {
@@ -7471,7 +7522,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2023-06-07T10:28:34+00:00"
+            "time": "2023-08-25T13:48:09+00:00"
         },
         {
             "name": "react/stream",
@@ -12359,6 +12410,7 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "api-clients/github": 20,
+        "api-clients/openapi-client-utils": 20,
         "wyrihaximus/subsplit-tools": 20
     },
     "prefer-stable": false,

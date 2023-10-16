@@ -18,7 +18,7 @@ final class Get
     /**
      * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
      */
-    public function showPetById(array $params) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|array
+    public function showPetById(array $params) : \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
     {
         $operator = new Internal\Operator\ShowPetById($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀PetId());
         return $operator->call();

@@ -14,8 +14,6 @@ final class Names
 {
     public const OPERATION_ID = 'pets/names';
     public const OPERATION_MATCH = 'GET /pets/names';
-    private const METHOD = 'GET';
-    private const PATH = '/pets/names';
     /**The number of results per page (max 100). **/
     private int $perPage;
     /**Page number of the results to fetch. **/
@@ -31,7 +29,7 @@ final class Names
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), self::PATH . '?per_page={per_page}&page={page}'));
+        return new \RingCentral\Psr7\Request('GET', \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), '/pets/names' . '?per_page={per_page}&page={page}'));
     }
     /**
      * @return \Rx\Observable<string>

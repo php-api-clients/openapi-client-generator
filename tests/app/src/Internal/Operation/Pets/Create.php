@@ -14,8 +14,6 @@ final class Create
 {
     public const OPERATION_ID = 'pets/create';
     public const OPERATION_MATCH = 'POST /pets';
-    private const METHOD = 'POST';
-    private const PATH = '/pets';
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator;
     private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
     private readonly Internal\Hydrator\Operation\Pets $hydrator;
@@ -28,12 +26,12 @@ final class Create
     public function createRequest(array $data) : \Psr\Http\Message\RequestInterface
     {
         $this->requestSchemaValidator->validate($data, \cebe\openapi\Reader::readFromJson(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_JSON, \cebe\openapi\spec\Schema::class));
-        return new \RingCentral\Psr7\Request(self::METHOD, \str_replace(array(), array(), self::PATH), array('Content-Type' => 'application/json'), json_encode($data));
+        return new \RingCentral\Psr7\Request('POST', \str_replace(array(), array(), '/pets'), array('Content-Type' => 'application/json'), json_encode($data));
     }
     /**
-     * @return array{code: int}
+     * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
      */
-    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : array
+    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody
     {
         $code = $response->getStatusCode();
         [$contentType] = explode(';', $response->getHeaderLine('Content-Type'));
@@ -55,7 +53,7 @@ final class Create
              * Null response
              **/
             case 201:
-                return array('code' => 201);
+                return new \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody(201, array());
         }
         throw new \RuntimeException('Unable to find matching response code and content type');
     }

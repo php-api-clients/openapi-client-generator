@@ -12,6 +12,7 @@
         "php": "^8.2",
         "api-clients/contracts": "^0.1",
         "api-clients/github": "^0.2@dev",
+        "api-clients/openapi-client-utils": "dev-main",
         "ckr/arraymerger": "^3.0",
         "codeinc/http-reason-phrase-lookup": "^1.0",
         "delight-im/random": "^1.0",

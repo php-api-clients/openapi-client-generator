@@ -47,3 +47,9 @@ subSplit:
   sectionPackage:
     name: github-{{ section }}
     repository: git@github.com:php-api-clients/github-{{ section }}.git
+qa:
+  phpcs:
+    enabled: true
+  phpstan:
+    enabled: true
+    configFilePath: etc/phpstan-extension.neon

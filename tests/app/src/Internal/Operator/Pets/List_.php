@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operator\Pets;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -18,7 +19,7 @@ final readonly class List_
     {
     }
     /**
-     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
      */
     public function call(int $perPage = 30, int $page = 1) : iterable
     {

@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\PHPStan;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -33,10 +34,10 @@ final readonly class ClientCallReturnTypes implements \PHPStan\Type\DynamicMetho
         }
         $call = substr($this->printer->prettyPrintExpr($args[0]->value), 1, -1);
         if ($call === 'GET /pets') {
-            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\Bird|Schema\\Fish>');
+            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\HellHound|Schema\\Bird|Schema\\Fish|Schema\\Spider>');
         }
         if ($call === 'LIST /pets') {
-            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\Bird|Schema\\Fish>');
+            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\HellHound|Schema\\Bird|Schema\\Fish|Schema\\Spider>');
         }
         if ($call === 'POST /pets') {
             return $this->typeResolver->resolve('\\ApiClients\\Tools\\OpenApiClient\\Utils\\Response\\WithoutBody');
@@ -47,6 +48,15 @@ final readonly class ClientCallReturnTypes implements \PHPStan\Type\DynamicMetho
         if ($call === 'LIST /pets/gatos') {
             return $this->typeResolver->resolve('iterable<int,Schema\\Cat>');
         }
+        if ($call === 'GET /pets/kinds/walking') {
+            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\HellHound>');
+        }
+        if ($call === 'LIST /pets/kinds/walking') {
+            return $this->typeResolver->resolve('iterable<int,Schema\\Cat|Schema\\Dog|Schema\\HellHound>');
+        }
+        if ($call === 'GET /pets/groupedByType') {
+            return $this->typeResolver->resolve('Schema\\Operations\\Pets\\Grouped\\By\\Type\\Response\\ApplicationJson\\Ok');
+        }
         if ($call === 'GET /pets/names') {
             return $this->typeResolver->resolve('iterable<int,string>');
         }
@@ -54,7 +64,7 @@ final readonly class ClientCallReturnTypes implements \PHPStan\Type\DynamicMetho
             return $this->typeResolver->resolve('iterable<int,string>');
         }
         if ($call === 'GET /pets/{petId}') {
-            return $this->typeResolver->resolve('Schema\\Cat|Schema\\Dog|Schema\\Bird|Schema\\Fish');
+            return $this->typeResolver->resolve('Schema\\Cat|Schema\\Dog|Schema\\Bird|Schema\\Fish|Schema\\Spider');
         }
         return null;
     }

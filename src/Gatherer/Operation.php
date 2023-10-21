@@ -6,6 +6,8 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
@@ -45,11 +47,21 @@ final class Operation
         openAPIOperation $operation,
         ThrowableSchema $throwableSchemaRegistry,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation {
         $returnType = [];
         $parameters = [];
         $empties    = [];
         foreach ($operation->parameters as $parameter) {
+            $types = is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type];
+            if (count($parameter->schema->oneOf ?? []) > 0) {
+                $types = [];
+                foreach ($parameter->schema->oneOf as $oneOfSchema) {
+                    $types[] = $oneOfSchema->type;
+                }
+            }
+
             $parameterType = str_replace([
                 'integer',
                 'any',
@@ -58,7 +70,7 @@ final class Operation
                 'int',
                 'string|object',
                 'bool',
-            ], implode('|', is_array($parameter->schema->type) ? $parameter->schema->type : [$parameter->schema->type]));
+            ], implode('|', $types));
 
             $parameters[] = new Parameter(
                 (new Convert($parameter->name))->toCamel(),
@@ -82,7 +94,7 @@ final class Operation
                 );
                 $requestBody[]        = new OperationRequestBody(
                     $contentType,
-                    Schema::gather($baseNamespace, $requestBodyClassname, $requestBodyDetails->schema, $schemaRegistry),
+                    Schema::gather($baseNamespace, $requestBodyClassname, $requestBodyDetails->schema, $schemaRegistry, $contractRegistry, $compositSchemaRegistry),
                 );
             }
         }
@@ -115,6 +127,8 @@ final class Operation
                         $contentTypeMediaType->schema,
                         true,
                         $schemaRegistry,
+                        $contractRegistry,
+                        $compositSchemaRegistry,
                     ),
                 );
                 if ($isError) {
@@ -139,6 +153,8 @@ final class Operation
                     ),
                     $headerSpec->schema,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                 ), ExampleData::determiteType($headerSpec->example));
             }
 

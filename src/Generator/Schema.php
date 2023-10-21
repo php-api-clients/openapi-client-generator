@@ -6,7 +6,8 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema\CastUnionToType;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema\MultipleCastUnionToType;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema\SingleCastUnionToType;
 use ApiClients\Tools\OpenApiClientGenerator\PromotedPropertyAsParam;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -44,6 +45,8 @@ final class Schema
      */
     public static function generate(string $pathPrefix, Representation\Schema $schema, array $aliases): iterable
     {
+        $factory = new BuilderFactory();
+
         $className = $schema->className;
         if (count($aliases) > 0) {
             $className = ClassString::factory(
@@ -52,9 +55,6 @@ final class Schema
             );
             $aliases[] = $schema->className;
         }
-
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace($className->namespace->source);
 
         $schemaJson = new Node\Stmt\ClassConst(
             [
@@ -68,7 +68,11 @@ final class Schema
             Class_::MODIFIER_PUBLIC,
         );
 
-        $class = $factory->class($className->className)->makeReadonly();
+        $class = $factory->class($className->className)->makeReadonly()->implement(...(static function (Representation\Contract ...$contracts): iterable {
+            foreach ($contracts as $contract) {
+                yield $contract->className->relative;
+            }
+        })(...$schema->contracts));
 
         if (count($aliases) === 0) {
             $class = $class->makeFinal();
@@ -139,9 +143,9 @@ final class Schema
                 $schemaClasses = [...self::getUnionTypeSchemas($property->type)];
 
                 if (count($schemaClasses) > 0) {
-                    $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+                    $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\Single\\' . $schema->className->relative . '\\' . $property->name));
 
-                    yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
+                    yield from SingleCastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
 
                     $constructorParam->addAttribute(
                         new Node\Attribute(
@@ -164,9 +168,9 @@ final class Schema
                             $iterableType  = self::buildUnionType($iterableType);
 
                             if (count($schemaClasses) > 0) {
-                                $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\' . $schema->className->relative . '\\' . $property->name));
+                                $castToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\Single\\' . $schema->className->relative . '\\' . $property->name));
 
-                                yield from CastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
+                                yield from SingleCastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
 
                                 $constructorParam->addAttribute(
                                     new Node\Attribute(
@@ -180,7 +184,8 @@ final class Schema
                             $iterableType = $iterableType->payload;
                         }
 
-                        $constructDocBlock[] = '@param ' . ($property->nullable ? '?' : '') . 'array<' . $iterableType . '> $' . $property->name;
+                        $compiledTYpe        = ($property->nullable ? '?' : '') . 'array<' . $iterableType . '>';
+                        $constructDocBlock[] = '@param ' . $compiledTYpe . ' $' . $property->name;
                     }
 
                     if ($property->type->payload->payload instanceof Representation\Schema) {
@@ -195,6 +200,34 @@ final class Schema
                                 ],
                             ),
                         );
+                    }
+                } elseif (is_array($property->type->payload)) {
+                    $schemaClasses = [];
+                    foreach ($property->type->payload as $payloadType) {
+                        $schemaClasses = [...$schemaClasses, ...self::getUnionTypeSchemas($payloadType)];
+                    }
+
+                    if (count($schemaClasses) > 0) {
+                        $castToUnionToType      = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\Single\\' . $schema->className->relative . '\\' . $property->name));
+                        $arrayCastToUnionToType = ClassString::factory($schema->className->baseNamespaces, Utils::className('Internal\\Attribute\\CastUnionToType\\Multiple\\' . $schema->className->relative . '\\' . $property->name));
+
+                        yield from SingleCastUnionToType::generate($pathPrefix, $castToUnionToType, ...$schemaClasses);
+                        yield from MultipleCastUnionToType::generate($pathPrefix, $arrayCastToUnionToType, $castToUnionToType, ...$schemaClasses);
+
+                        $constructorParam->addAttribute(
+                            new Node\Attribute(
+                                new Node\Name($arrayCastToUnionToType->fullyQualified->source),
+                            ),
+                        );
+
+                        $compiledTYpe        = ($property->nullable ? '?' : '') . 'array<' . implode('|', array_unique([
+                            ...(static function (Representation\Schema ...$schemas): iterable {
+                                foreach ($schemas as $schema) {
+                                    yield $schema->className->fullyQualified->source;
+                                }
+                            })(...$schemaClasses),
+                        ])) . '>';
+                        $constructDocBlock[] = '@param ' . $compiledTYpe . ' $' . $property->name;
                     }
                 }
 
@@ -225,7 +258,7 @@ final class Schema
 
         $class->addStmt($constructor);
 
-        yield new File($pathPrefix, $className->relative, $stmt->addStmt($class)->getNode());
+        yield new File($pathPrefix, $className->relative, $factory->namespace($className->namespace->source)->addStmt($class)->getNode());
 
         foreach ($aliases as $alias) {
             $aliasTms   = $factory->namespace($alias->namespace->source);

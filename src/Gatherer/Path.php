@@ -7,6 +7,8 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Voter;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -23,6 +25,8 @@ final class Path
         string $path,
         PathItem $pathItem,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
         ThrowableSchema $throwableSchemaRegistry,
         Voter|null $voters,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Path {
@@ -45,6 +49,8 @@ final class Path
                 $operation,
                 $throwableSchemaRegistry,
                 $schemaRegistry,
+                $contractRegistry,
+                $compositSchemaRegistry,
             );
 
             if ($voters !== null && is_array($voters->listOperation)) {
@@ -75,6 +81,8 @@ final class Path
                         $operation,
                         $throwableSchemaRegistry,
                         $schemaRegistry,
+                        $contractRegistry,
+                        $compositSchemaRegistry,
                     );
                 }
             }
@@ -105,6 +113,8 @@ final class Path
                 $operation,
                 $throwableSchemaRegistry,
                 $schemaRegistry,
+                $contractRegistry,
+                $compositSchemaRegistry,
             );
         }
 

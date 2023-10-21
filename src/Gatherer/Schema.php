@@ -6,11 +6,15 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\ClassString;
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Representation\Contract;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\spec\Schema as baseSchema;
 
 use function array_key_exists;
+use function count;
 use function in_array;
 use function is_array;
 use function property_exists;
@@ -22,7 +26,20 @@ final class Schema
         string $className,
         baseSchema $schema,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema {
+        if (is_array($schema->allOf) && count($schema->allOf) > 0) {
+            return IntersectionSchema::gather(
+                $baseNamespace,
+                $className,
+                $schema,
+                $schemaRegistry,
+                $contractRegistry,
+                $compositSchemaRegistry,
+            );
+        }
+
         $className  = Utils::className($className);
         $isArray    = $schema->type === 'array';
         $properties = [];
@@ -33,19 +50,22 @@ final class Schema
         }
 
         foreach ($schema->properties as $propertyName => $property) {
-            $gatheredProperty = Property::gather(
+            $gatheredProperty = $properties[] = Property::gather(
                 $baseNamespace,
                 $className,
                 (string) $propertyName,
                 in_array(
-                    $propertyName,
+                    (string) $propertyName,
                     $schema->required ?? [],
                     false,
                 ),
                 $property,
                 $schemaRegistry,
+                $contractRegistry,
+                $compositSchemaRegistry,
             );
-            $properties[]     = $gatheredProperty;
+
+            $example[$gatheredProperty->sourceName] = $gatheredProperty->example->raw;
 
             foreach (['examples', 'example'] as $examplePropertyName) {
                 if (array_key_exists($gatheredProperty->sourceName, $example)) {
@@ -59,11 +79,29 @@ final class Schema
                 $example[$gatheredProperty->sourceName] = $schema->$examplePropertyName[$gatheredProperty->sourceName];
             }
 
-            $example[$gatheredProperty->sourceName] = $gatheredProperty->example->raw;
+            foreach ($property->enum ?? [] as $value) {
+                $example[$gatheredProperty->sourceName] = $value;
+                break;
+            }
+
+            if ($example[$gatheredProperty->sourceName] !== null || $schema->required) {
+                continue;
+            }
+
+            unset($example[$gatheredProperty->sourceName]);
         }
 
         return new \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema(
             ClassString::factory($baseNamespace, 'Schema\\' . $className),
+            [
+                new Contract(
+                    ClassString::factory(
+                        $baseNamespace,
+                        $contractRegistry->get($schema, 'Contract\\' . $className),
+                    ),
+                    $properties,
+                ),
+            ],
             ClassString::factory($baseNamespace, 'Error\\' . $className),
             ClassString::factory($baseNamespace, 'ErrorSchemas\\' . $className),
             $schema->title ?? '',

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Header;
 use cebe\openapi\spec\PathItem;
@@ -23,6 +25,8 @@ final class WebHook
         Namespace_ $baseNamespace,
         PathItem $webhook,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
     ): \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook {
         if ($webhook->post?->requestBody === null && ! property_exists($webhook->post->requestBody, 'content')) {
             throw new RuntimeException('Missing request body content to deal with');
@@ -44,6 +48,8 @@ final class WebHook
                 ),
                 $header->schema,
                 $schemaRegistry,
+                $contractRegistry,
+                $compositSchemaRegistry,
             ), ExampleData::determiteType($header->example));
         }
 
@@ -54,16 +60,18 @@ final class WebHook
             $webhook->post->operationId,
             $webhook->post->externalDocs->url ?? '',
             $headers,
-            iterator_to_array((static function (array $content, SchemaRegistry $schemaRegistry, Namespace_ $baseNamespace): iterable {
+            iterator_to_array((static function (array $content, SchemaRegistry $schemaRegistry, ContractRegistry $contractRegistry, CompositSchemaRegistry $compositSchemaRegistry, Namespace_ $baseNamespace): iterable {
                 foreach ($content as $type => $schema) {
                     yield $type => Schema::gather(
                         $baseNamespace,
                         $schemaRegistry->get($schema->schema, 'T' . time()),
                         $schema->schema,
                         $schemaRegistry,
+                        $contractRegistry,
+                        $compositSchemaRegistry,
                     );
                 }
-            })($webhook->post->requestBody->content, $schemaRegistry, $baseNamespace)),
+            })($webhook->post->requestBody->content, $schemaRegistry, $contractRegistry, $compositSchemaRegistry, $baseNamespace)),
         );
     }
 }

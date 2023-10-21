@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
 use ApiClients\Tools\OpenApiClientGenerator\Utils;
@@ -29,18 +31,29 @@ final class Type
         baseSchema $property,
         bool $required,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
     ): PropertyType {
         $type     = $property->type;
         $nullable = ! $required;
 
         if (is_array($property->allOf) && count($property->allOf) > 0) {
-            return self::gather(
-                $baseNamespace,
-                $className,
-                $propertyName,
-                $property->allOf[0],
-                $required,
-                $schemaRegistry,
+            return new PropertyType(
+                'object',
+                null,
+                null,
+                IntersectionSchema::gather(
+                    $baseNamespace,
+                    $schemaRegistry->get(
+                        $property,
+                        Utils::className($className . '\\' . $propertyName),
+                    ),
+                    $property,
+                    $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
+                ),
+                $nullable,
             );
         }
 
@@ -48,15 +61,17 @@ final class Type
             // Check if nullable
             if (
                 count($property->oneOf) === 2 &&
-                count(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
+                count(array_filter($property->oneOf, static fn (BaseSchema $schema): bool => $schema->type === 'null')) === 1
             ) {
                 return self::gather(
                     $baseNamespace,
                     $className,
                     $propertyName,
-                    current(array_filter($property->oneOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
+                    current(array_filter($property->oneOf, static fn (BaseSchema $schema): bool => $schema->type !== 'null')),
                     false,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                 );
             }
 
@@ -72,6 +87,8 @@ final class Type
                         array $properties,
                         bool $required,
                         SchemaRegistry $schemaRegistry,
+                        ContractRegistry $contractRegistry,
+                        CompositSchemaRegistry $compositSchemaRegistry,
                     ): iterable {
                         foreach ($properties as $index => $property) {
                             yield self::gather(
@@ -81,6 +98,8 @@ final class Type
                                 $property,
                                 $required,
                                 $schemaRegistry,
+                                $contractRegistry,
+                                $compositSchemaRegistry,
                             );
                         }
                     })(
@@ -90,6 +109,8 @@ final class Type
                         $property->oneOf,
                         $required,
                         $schemaRegistry,
+                        $contractRegistry,
+                        $compositSchemaRegistry,
                     ),
                 ],
                 $nullable,
@@ -100,15 +121,17 @@ final class Type
             // Check if nullable
             if (
                 count($property->anyOf) === 2 &&
-                count(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type === 'null')) === 1
+                count(array_filter($property->anyOf, static fn (BaseSchema $schema): bool => $schema->type === 'null')) === 1
             ) {
                 return self::gather(
                     $baseNamespace,
                     $className,
                     $propertyName,
-                    current(array_filter($property->anyOf, static fn (\cebe\openapi\spec\Schema $schema): bool => $schema->type !== 'null')),
+                    current(array_filter($property->anyOf, static fn (BaseSchema $schema): bool => $schema->type !== 'null')),
                     false,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                 );
             }
 
@@ -124,6 +147,8 @@ final class Type
                         array $properties,
                         bool $required,
                         SchemaRegistry $schemaRegistry,
+                        ContractRegistry $contractRegistry,
+                        CompositSchemaRegistry $compositSchemaRegistry,
                     ): iterable {
                         foreach ($properties as $index => $property) {
                             yield self::gather(
@@ -133,6 +158,8 @@ final class Type
                                 $property,
                                 $required,
                                 $schemaRegistry,
+                                $contractRegistry,
+                                $compositSchemaRegistry,
                             );
                         }
                     })(
@@ -142,6 +169,8 @@ final class Type
                         $property->anyOf,
                         $required,
                         $schemaRegistry,
+                        $contractRegistry,
+                        $compositSchemaRegistry,
                     ),
                 ],
                 $nullable,
@@ -178,6 +207,8 @@ final class Type
                     $property->items,
                     $required,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                 );
             }
 
@@ -231,6 +262,8 @@ final class Type
                     ),
                     $property,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                 ),
                 $nullable,
             );

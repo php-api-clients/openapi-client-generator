@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Tests\Client\PetStore\Internal\Operation\Pets\List_;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -26,7 +27,7 @@ final class GatosListingTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCa
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/gatos?per_page=8&page=1', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/gatos?page=1&per_page=8', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
         $result = $client->call(Internal\Operation\Pets\List_\GatosListing::OPERATION_MATCH, (static function (array $data) : array {
             $data['per_page'] = 8;
@@ -47,7 +48,7 @@ final class GatosListingTest extends \WyriHaximus\AsyncTestUtilities\AsyncTestCa
         $browser = $this->prophesize(\React\Http\Browser::class);
         $browser->withBase(\Prophecy\Argument::any())->willReturn($browser->reveal());
         $browser->withFollowRedirects(\Prophecy\Argument::any())->willReturn($browser->reveal());
-        $browser->request('GET', '/pets/gatos?per_page=8&page=1', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
+        $browser->request('GET', '/pets/gatos?page=1&per_page=8', \Prophecy\Argument::type('array'), \Prophecy\Argument::any())->willReturn(\React\Promise\resolve($response))->shouldBeCalled();
         $client = new \ApiClients\Client\PetStore\Client($auth->reveal(), $browser->reveal());
         $result = $client->operations()->petsList()->gatosListing(8, 1);
         foreach ($result as $item) {

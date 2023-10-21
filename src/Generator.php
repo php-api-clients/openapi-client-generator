@@ -10,6 +10,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Configuration\Templates;
 use ApiClients\Tools\OpenApiClientGenerator\Gatherer\WebHookHydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\ClientInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Contract;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Error;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrator;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Hydrators;
@@ -22,6 +23,8 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Schema;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHook;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\WebHooks;
 use ApiClients\Tools\OpenApiClientGenerator\Output\Status\Step;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
 use ApiClients\Tools\OpenApiClientGenerator\Representation\Path;
@@ -97,6 +100,7 @@ final readonly class Generator
             new Step('client_subsplit', 'Client: SubSplit across multiple package', false),
             new Step('generating_operations', 'Generating: Operations', true),
             new Step('gathering_unknown_schemas', 'Gathering: Unknown Schemas', true),
+            new Step('generating_contracts', 'Generating: Contracts', true),
             new Step('generating_schemas', 'Generating: Schemas', true),
             new Step('generating_clientinterface', 'Generating: ClientInterface', false),
             new Step('generating_client', 'Generating: Client', false),
@@ -210,6 +214,7 @@ final readonly class Generator
                         ]);
                     }
                 })([
+                    ltrim($namespace, '\\') . 'Contract' => null,
                     ltrim($namespace, '\\') . 'Error' => 'ErrorSchemas',
                     ltrim($namespace, '\\') . 'Internal' => null,
                     ltrim($namespace, '\\') . 'Operation' => null,
@@ -294,11 +299,17 @@ final readonly class Generator
     /** @return iterable<File> */
     private function all(string $configurationLocation): iterable
     {
-        $schemaRegistry          = new SchemaRegistry(
+        $schemaRegistry         = new SchemaRegistry(
             $this->configuration->namespace,
             $this->configuration->schemas->allowDuplication ?? false,
             $this->configuration->schemas->useAliasesForDuplication ?? false,
         );
+        $contractRegistry       = new ContractRegistry();
+        $compositSchemaRegistry = new CompositSchemaRegistry(
+            $this->configuration->namespace,
+        );
+
+        $contracts               = [];
         $schemas                 = [];
         $throwableSchemaRegistry = new ThrowableSchema();
         if (count($this->spec->components->schemas ?? []) > 0) {
@@ -322,7 +333,9 @@ final readonly class Generator
              */
             foreach ($this->spec->components->schemas as $name => $schema) {
                 assert($schema instanceof \cebe\openapi\spec\Schema);
-                $schemas[] = Gatherer\Schema::gather($this->configuration->namespace, Utils::className($name), $schema, $schemaRegistry);
+                $schema    = Gatherer\Schema::gather($this->configuration->namespace, Utils::className($name), $schema, $schemaRegistry, $contractRegistry, $compositSchemaRegistry);
+                $schemas[] = $schema;
+                $contracts = [...$contracts, ...$schema->contracts];
                 $this->statusOutput->advanceStep('gathering_schemas');
             }
         }
@@ -335,7 +348,7 @@ final readonly class Generator
             $this->statusOutput->itemForStep('gathering_webhooks', count($this->spec->webhooks));
             foreach ($this->spec->webhooks as $webHook) {
                 try {
-                    $webHookje = Gatherer\WebHook::gather($this->configuration->namespace, $webHook, $schemaRegistry);
+                    $webHookje = Gatherer\WebHook::gather($this->configuration->namespace, $webHook, $schemaRegistry, $contractRegistry, $compositSchemaRegistry);
                     if (! array_key_exists($webHookje->event, $webHooks)) {
                         $webHooks[$webHookje->event] = [];
                     }
@@ -372,6 +385,8 @@ final readonly class Generator
                     $path,
                     $pathItem,
                     $schemaRegistry,
+                    $contractRegistry,
+                    $compositSchemaRegistry,
                     $throwableSchemaRegistry,
                     $this->configuration->voter,
                 );
@@ -393,7 +408,7 @@ final readonly class Generator
             $this->statusOutput->markStepBusy('client_single');
 
             /** @phpstan-ignore-next-line */
-            yield from $this->oneClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            yield from $this->oneClient($configurationLocation, $schemaRegistry, $contractRegistry, $compositSchemaRegistry, $throwableSchemaRegistry, $contracts, $schemas, $paths, $webHooks);
 
             $this->statusOutput->markStepDone('client_single');
         } else {
@@ -405,13 +420,14 @@ final readonly class Generator
             $this->statusOutput->markStepBusy('client_subsplit');
 
             /** @phpstan-ignore-next-line */
-            yield from $this->subSplitClient($configurationLocation, $schemaRegistry, $throwableSchemaRegistry, $schemas, $paths, $webHooks);
+            yield from $this->subSplitClient($configurationLocation, $schemaRegistry, $contractRegistry, $compositSchemaRegistry, $throwableSchemaRegistry, $contracts, $schemas, $paths, $webHooks);
 
             $this->statusOutput->markStepDone('client_subsplit');
         }
     }
 
     /**
+     * @param array<Representation\Contract>                     $contracts
      * @param array<Representation\Schema>                       $schemas
      * @param array<Path>                                        $paths
      * @param array<class-string, array<Representation\WebHook>> $webHooks
@@ -421,7 +437,10 @@ final readonly class Generator
     private function oneClient(
         string $configurationLocation,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
         ThrowableSchema $throwableSchemaRegistry,
+        array $contracts,
         array $schemas,
         array $paths,
         array $webHooks,
@@ -469,12 +488,26 @@ final readonly class Generator
             $unknownSchemaCount += count($unknownSchemas);
             $this->statusOutput->itemForStep('gathering_unknown_schemas', $unknownSchemaCount);
             foreach ($unknownSchemas as $schema) {
-                $schemas[] = Gatherer\Schema::gather($this->configuration->namespace, $schema->className, $schema->schema, $schemaRegistry);
+                $schema    = Gatherer\Schema::gather($this->configuration->namespace, $schema->className, $schema->schema, $schemaRegistry, $contractRegistry, $compositSchemaRegistry);
+                $schemas[] = $schema;
+                $contracts = [...$contracts, ...$schema->contracts];
                 $this->statusOutput->advanceStep('gathering_unknown_schemas');
             }
         }
 
         $this->statusOutput->markStepDone('gathering_unknown_schemas');
+
+        $this->statusOutput->itemForStep('generating_contracts', count($contracts));
+        foreach ($contracts as $contract) {
+            yield from Contract::generate(
+                $this->configuration->destination->source . DIRECTORY_SEPARATOR,
+                $contract,
+            );
+
+            $this->statusOutput->advanceStep('generating_contracts');
+        }
+
+        $this->statusOutput->markStepDone('generating_contracts');
 
         $this->statusOutput->itemForStep('generating_schemas', count($schemas));
         foreach ($schemas as $schema) {
@@ -620,6 +653,7 @@ final readonly class Generator
     }
 
     /**
+     * @param array<Representation\Contract>                     $contracts
      * @param array<Representation\Schema>                       $schemas
      * @param array<Path>                                        $paths
      * @param array<class-string, array<Representation\WebHook>> $webHooks
@@ -629,7 +663,10 @@ final readonly class Generator
     private function subSplitClient(
         string $configurationLocation,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
         ThrowableSchema $throwableSchemaRegistry,
+        array $contracts,
         array $schemas,
         array $paths,
         array $webHooks,
@@ -718,12 +755,30 @@ final readonly class Generator
             $unknownSchemaCount += count($unknownSchemas);
             $this->statusOutput->itemForStep('gathering_unknown_schemas', $unknownSchemaCount);
             foreach ($unknownSchemas as $schema) {
-                $schemas[] = Gatherer\Schema::gather($this->configuration->namespace, $schema->className, $schema->schema, $schemaRegistry);
+                $schema    = Gatherer\Schema::gather($this->configuration->namespace, $schema->className, $schema->schema, $schemaRegistry, $contractRegistry, $compositSchemaRegistry);
+                $schemas[] = $schema;
+                $contracts = [...$contracts, ...$schema->contracts];
                 $this->statusOutput->advanceStep('gathering_unknown_schemas');
             }
         }
 
         $this->statusOutput->markStepDone('gathering_unknown_schemas');
+
+//        $contractCount = 0;
+//        while ($contractRegistry->hasContracts()) {
+//            $contracts      = [...$contractRegistry->contracts()];
+//            $contractCount += count($unknownSchemas);
+//            $this->statusOutput->itemForStep('generating_contracts', $contractCount);
+//            foreach ($contracts as $contract) {
+//                yield from Contract::generate(
+//                    $this->configuration->destination->source . DIRECTORY_SEPARATOR,
+//                    $contract,
+//                );
+//                $this->statusOutput->advanceStep('generating_contracts');
+//            }
+//        }
+//
+//        $this->statusOutput->markStepDone('generating_contracts');
 
         $sortedSchemas = [];
         foreach ($schemas as $schema) {

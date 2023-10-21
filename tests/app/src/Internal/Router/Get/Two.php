@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Router\Get;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -16,7 +17,7 @@ final class Two
     {
     }
     /**
-     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
      */
     public function call(string $call, array $params, array $pathChunks) : iterable
     {

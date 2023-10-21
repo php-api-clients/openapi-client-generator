@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operation\Pets;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -29,10 +30,10 @@ final class List_
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request('GET', \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), '/pets' . '?per_page={per_page}&page={page}'));
+        return new \RingCentral\Psr7\Request('GET', (string) (new \League\Uri\UriTemplate('/pets{?page,per_page}'))->expand(array('page' => $this->page, 'per_page' => $this->perPage)));
     }
     /**
-     * @return \Rx\Observable<Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish>
+     * @return \Rx\Observable<Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
      */
     public function createResponse(\Psr\Http\Message\ResponseInterface $response) : \Rx\Observable
     {
@@ -46,7 +47,7 @@ final class List_
                      * A paged array of pets
                      **/
                     case 200:
-                        return \Rx\Observable::fromArray($body, new \Rx\Scheduler\ImmediateScheduler())->map(function (array $body) : Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish {
+                        return \Rx\Observable::fromArray($body, new \Rx\Scheduler\ImmediateScheduler())->map(function (array $body) : Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider {
                             $error = new \RuntimeException();
                             try {
                                 $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Cat::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
@@ -63,19 +64,33 @@ final class List_
                             }
                             items_application_json_two_hundred_aaaab:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Bird::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Bird::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\HellHound::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
+                                return $this->hydrator->hydrateObject(Schema\HellHound::class, $body);
                             } catch (\Throwable $error) {
                                 goto items_application_json_two_hundred_aaaac;
                             }
                             items_application_json_two_hundred_aaaac:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Fish::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Fish::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Bird::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
+                                return $this->hydrator->hydrateObject(Schema\Bird::class, $body);
                             } catch (\Throwable $error) {
                                 goto items_application_json_two_hundred_aaaad;
                             }
                             items_application_json_two_hundred_aaaad:
+                            try {
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Fish::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
+                                return $this->hydrator->hydrateObject(Schema\Fish::class, $body);
+                            } catch (\Throwable $error) {
+                                goto items_application_json_two_hundred_aaaae;
+                            }
+                            items_application_json_two_hundred_aaaae:
+                            try {
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Spider::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
+                                return $this->hydrator->hydrateObject(Schema\Spider::class, $body);
+                            } catch (\Throwable $error) {
+                                goto items_application_json_two_hundred_aaaaf;
+                            }
+                            items_application_json_two_hundred_aaaaf:
                             throw $error;
                         });
                     /**

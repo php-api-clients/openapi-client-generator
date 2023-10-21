@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operation;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -23,12 +24,12 @@ final class ShowPetById
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request('GET', \str_replace(array(), array(), '/pets/{petId}'));
+        return new \RingCentral\Psr7\Request('GET', (string) (new \League\Uri\UriTemplate('/pets/{petId}'))->expand(array()));
     }
     /**
-     * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
+     * @return Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish|Schema\Spider
      */
-    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
+    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish|Schema\Spider
     {
         $code = $response->getStatusCode();
         [$contentType] = explode(';', $response->getHeaderLine('Content-Type'));
@@ -69,6 +70,13 @@ final class ShowPetById
                             goto items_application_json_two_hundred_aaaad;
                         }
                         items_application_json_two_hundred_aaaad:
+                        try {
+                            $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Spider::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
+                            return $this->hydrator->hydrateObject(Schema\Spider::class, $body);
+                        } catch (\Throwable $error) {
+                            goto items_application_json_two_hundred_aaaae;
+                        }
+                        items_application_json_two_hundred_aaaae:
                         throw $error;
                     /**
                      * unexpected error

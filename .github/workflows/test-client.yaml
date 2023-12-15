@@ -27,7 +27,7 @@ jobs:
       - name: Tar example files
         run: tar -czf example.tar ./example
       - name: Upload Generated Client
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: example-${{ inputs.name }}-client
           path: ./example.tar

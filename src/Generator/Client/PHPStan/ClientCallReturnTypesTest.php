@@ -15,6 +15,7 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
 use React\Http\Browser;
 
+use function str_replace;
 use function trim;
 
 final class ClientCallReturnTypesTest
@@ -87,7 +88,7 @@ final class ClientCallReturnTypesTest
                         [
                             new Arg(
                                 new Node\Scalar\String_(
-                                    Operation::getDocBlockResultTypeFromOperation($operation),
+                                    str_replace(',', ', ', Operation::getDocBlockResultTypeFromOperation($operation)),
                                 ),
                             ),
                             new Arg(

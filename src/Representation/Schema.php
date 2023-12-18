@@ -10,12 +10,15 @@ use cebe\openapi\spec\Schema as baseSchema;
 final class Schema
 {
     /**
+     * @param array<Contract> $contracts
      * @param array<mixed>    $example
      * @param array<Property> $properties
      * @param array<string>   $type
      */
     public function __construct(
         public readonly ClassString $className,
+        /** @var array<Contract> $contracts */
+        public readonly array $contracts,
         public readonly ClassString $errorClassName,
         public readonly ClassString $errorClassNameAliased,
         public readonly string $title,

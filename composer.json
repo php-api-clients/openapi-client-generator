@@ -21,6 +21,7 @@
         "jawira/case-converter": "^3.5",
         "kwn/number-to-words": "^2.6",
         "league/openapi-psr7-validator": "^0.21",
+        "league/uri": "^6.8 || ^7.3",
         "nikic/php-parser": "^4.15",
         "nunomaduro/termwind": "^1.15",
         "ondram/ci-detector": "^4.1",
@@ -55,10 +56,10 @@
     ],
     "config": {
         "allow-plugins": {
-            "wyrihaximus/composer-update-bin-autoload-path": true,
-            "infection/extension-installer": true,
             "dealerdirect/phpcodesniffer-composer-installer": true,
-            "ergebnis/composer-normalize": true
+            "ergebnis/composer-normalize": true,
+            "infection/extension-installer": true,
+            "wyrihaximus/composer-update-bin-autoload-path": true
         },
         "platform": {
             "php": "8.2.13"

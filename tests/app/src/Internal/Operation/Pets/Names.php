@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operation\Pets;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -29,7 +30,7 @@ final class Names
     }
     public function createRequest() : \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request('GET', \str_replace(array('{per_page}', '{page}'), array($this->perPage, $this->page), '/pets/names' . '?per_page={per_page}&page={page}'));
+        return new \RingCentral\Psr7\Request('GET', (string) (new \League\Uri\UriTemplate('/pets/names{?page,per_page}'))->expand(array('page' => $this->page, 'per_page' => $this->perPage)));
     }
     /**
      * @return \Rx\Observable<string>

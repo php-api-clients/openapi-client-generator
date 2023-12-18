@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -28,7 +29,7 @@ final class Client implements ClientInterface
     /**
      */
     // phpcs:enable
-    public function call(string $call, array $params = array()) : iterable|\ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
+    public function call(string $call, array $params = array()) : iterable|\ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody|\ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider
     {
         [$method, $path] = explode(' ', $call);
         $pathChunks = explode('/', $path);
@@ -44,6 +45,11 @@ final class Client implements ClientInterface
                     $this->router[Internal\Router\Get\Three::class] = new Internal\Router\Get\Three(routers: $this->routers);
                 }
                 return $this->router[Internal\Router\Get\Three::class]->call($call, $params, $pathChunks);
+            } elseif ($pathChunksCount === 4) {
+                if (\array_key_exists(Internal\Router\Get\Four::class, $this->router) == false) {
+                    $this->router[Internal\Router\Get\Four::class] = new Internal\Router\Get\Four(routers: $this->routers);
+                }
+                return $this->router[Internal\Router\Get\Four::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'LIST') {
             if ($pathChunksCount === 2) {
@@ -56,6 +62,11 @@ final class Client implements ClientInterface
                     $this->router[Internal\Router\List\Three::class] = new Internal\Router\List\Three(routers: $this->routers);
                 }
                 return $this->router[Internal\Router\List\Three::class]->call($call, $params, $pathChunks);
+            } elseif ($pathChunksCount === 4) {
+                if (\array_key_exists(Internal\Router\List\Four::class, $this->router) == false) {
+                    $this->router[Internal\Router\List\Four::class] = new Internal\Router\List\Four(routers: $this->routers);
+                }
+                return $this->router[Internal\Router\List\Four::class]->call($call, $params, $pathChunks);
             }
         } elseif ($method === 'POST') {
             if ($pathChunksCount === 2) {

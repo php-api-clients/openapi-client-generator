@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Router\Get;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -16,15 +17,19 @@ final class Three
     {
     }
     /**
-     * @return iterable<int,Schema\Cat>|iterable<int,string>|Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish
+     * @return iterable<int,Schema\Cat>|Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok|iterable<int,string>|Schema\Cat|Schema\Dog|Schema\Bird|Schema\Fish|Schema\Spider
      */
-    public function call(string $call, array $params, array $pathChunks) : iterable|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish
+    public function call(string $call, array $params, array $pathChunks) : iterable|\ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok|\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider
     {
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
                 if ($pathChunks[2] == 'gatos') {
                     if ($call == 'GET /pets/gatos') {
                         return $this->routers->internal🔀Router🔀Get🔀PetsList()->gatos($params);
+                    }
+                } elseif ($pathChunks[2] == 'groupedByType') {
+                    if ($call == 'GET /pets/groupedByType') {
+                        return $this->routers->internal🔀Router🔀Get🔀PetsGroupedBy()->type($params);
                     }
                 } elseif ($pathChunks[2] == 'names') {
                     if ($call == 'GET /pets/names') {

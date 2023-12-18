@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Gatherer;
 
 use ApiClients\Tools\OpenApiClientGenerator\Configuration\Namespace_;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\CompositSchema as CompositSchemaRegistry;
+use ApiClients\Tools\OpenApiClientGenerator\Registry\Contract as ContractRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
 use ApiClients\Tools\OpenApiClientGenerator\Representation;
 use cebe\openapi\spec\Schema as baseSchema;
@@ -13,6 +15,7 @@ use NumberToWords\NumberToWords;
 use PhpParser\Node;
 
 use function array_filter;
+use function array_key_exists;
 use function array_values;
 use function count;
 use function is_array;
@@ -30,6 +33,8 @@ final class Property
         bool $required,
         baseSchema $property,
         SchemaRegistry $schemaRegistry,
+        ContractRegistry $contractRegistry,
+        CompositSchemaRegistry $compositSchemaRegistry,
     ): Representation\Property {
         $enum        = [];
         $exampleData = null;
@@ -80,6 +85,8 @@ final class Property
             $property,
             $required,
             $schemaRegistry,
+            $contractRegistry,
+            $compositSchemaRegistry,
         );
 
         if ($property->type === 'array' && is_array($type->payload)) {
@@ -87,12 +94,24 @@ final class Property
             $arrayItemsNode = [];
 
             foreach ($type->payload as $index => $arrayItem) {
-                $arrayItemExampleData = ExampleData::gather($exampleData, $arrayItem, $propertyName . str_pad('', $index + 1, '_'));
+                $arrayItemExampleData = ExampleData::gather(
+                    $exampleData,
+                    $arrayItem->type === 'union' ? $arrayItem->payload[(array_key_exists($index, $arrayItem->payload) ? $index : 0)] : $arrayItem,
+                    $propertyName . str_pad('', $index + 1, '_'),
+                );
                 $arrayItemsRaw[]      = $arrayItemExampleData->raw;
                 $arrayItemsNode[]     = new Node\Expr\ArrayItem($arrayItemExampleData->node);
             }
 
             $exampleData = new Representation\ExampleData($arrayItemsRaw, new Node\Expr\Array_($arrayItemsNode));
+        } elseif ($type->type === 'union') {
+            foreach ($type->payload as $index => $arrayItem) {
+                $exampleData = ExampleData::gather(
+                    $arrayItem->payload instanceof Representation\PropertyType ? $exampleData : null,
+                    $arrayItem->payload instanceof Representation\PropertyType ? $arrayItem->payload : $arrayItem,
+                    $propertyName . str_pad('', $index + 1, '_'),
+                );
+            }
         } else {
             $exampleData = ExampleData::gather($exampleData, $type, $propertyName);
         }

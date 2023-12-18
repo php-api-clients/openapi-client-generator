@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operation\Pets;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -26,7 +27,7 @@ final class Create
     public function createRequest(array $data) : \Psr\Http\Message\RequestInterface
     {
         $this->requestSchemaValidator->validate($data, \cebe\openapi\Reader::readFromJson(Schema\Pets\Create\Request\ApplicationJson::SCHEMA_JSON, \cebe\openapi\spec\Schema::class));
-        return new \RingCentral\Psr7\Request('POST', \str_replace(array(), array(), '/pets'), array('Content-Type' => 'application/json'), json_encode($data));
+        return new \RingCentral\Psr7\Request('POST', (string) (new \League\Uri\UriTemplate('/pets'))->expand(array()), array('Content-Type' => 'application/json'), json_encode($data));
     }
     /**
      * @return \ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody

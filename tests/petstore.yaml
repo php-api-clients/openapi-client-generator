@@ -32,8 +32,10 @@ paths:
                   anyOf:
                     - $ref: "#/components/schemas/Cat"
                     - $ref: "#/components/schemas/Dog"
+                    - $ref: "#/components/schemas/HellHound"
                     - $ref: "#/components/schemas/Bird"
                     - $ref: "#/components/schemas/Fish"
+                    - $ref: "#/components/schemas/Spider"
         default:
           description: unexpected error
           content:
@@ -53,8 +55,10 @@ paths:
               oneOf:
                 - $ref: "#/components/schemas/Cat"
                 - $ref: "#/components/schemas/Dog"
+                - $ref: "#/components/schemas/HellHound"
                 - $ref: "#/components/schemas/Bird"
                 - $ref: "#/components/schemas/Fish"
+                - $ref: "#/components/schemas/Spider"
       responses:
         201:
           description: Null response
@@ -87,6 +91,78 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Cat"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /pets/kinds/walking:
+    get:
+      summary: List all cats
+      operationId: pets/kinds/walking
+      tags:
+        - cats
+      parameters:
+        - "$ref": "#/components/parameters/per-page"
+        - "$ref": "#/components/parameters/page"
+      responses:
+        200:
+          description: A paged array of cats
+          headers:
+            x-next:
+              description: A link to the next page of cats
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  oneOf:
+                    - $ref: "#/components/schemas/Cat"
+                    - $ref: "#/components/schemas/Dog"
+                    - $ref: "#/components/schemas/HellHound"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /pets/groupedByType:
+    get:
+      summary: List all pets
+      operationId: pets/grouped/by/type
+      tags:
+        - cats
+        - dogs
+      parameters:
+        - "$ref": "#/components/parameters/per-page"
+        - "$ref": "#/components/parameters/page"
+      responses:
+        200:
+          description: A shitty design choice to test a specific situation in the generator
+          headers:
+            x-next:
+              description: A link to the next page of cats
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - pets
+                properties:
+                  pets:
+                    type: array
+                    items:
+                      type: object
+                      oneOf:
+                        - $ref: "#/components/schemas/Cat"
+                        - $ref: "#/components/schemas/Dog"
+                        - $ref: "#/components/schemas/HellHound"
         default:
           description: unexpected error
           content:
@@ -139,6 +215,7 @@ paths:
                   - $ref: "#/components/schemas/Dog"
                   - $ref: "#/components/schemas/Bird"
                   - $ref: "#/components/schemas/Fish"
+                  - $ref: "#/components/schemas/Spider"
         default:
           description: unexpected error
           content:
@@ -152,11 +229,13 @@ components:
       required:
         - id
         - name
+        - indoor
+        - features
         - eyes
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         name:
           type: string
         indoor:
@@ -164,45 +243,104 @@ components:
         features:
           type: object
         eyes:
-          type: object
-          oneOf:
-            - $ref: "#/components/schemas/RedEyes"
-            - $ref: "#/components/schemas/BlueEyes"
-            - $ref: "#/components/schemas/GreenEyes"
-            - $ref: "#/components/schemas/YellowEyes"
-            - $ref: "#/components/schemas/BlackEyes"
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: object
+            anyOf:
+              - $ref: "#/components/schemas/RedEyes"
+              - $ref: "#/components/schemas/BlueEyes"
+              - $ref: "#/components/schemas/GreenEyes"
+              - $ref: "#/components/schemas/YellowEyes"
+              - $ref: "#/components/schemas/BlackEyes"
     Dog:
       type: object
       required:
         - id
         - name
+        - good-boy
         - eyes
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        good-boy:
+          type: bool
+        eyes:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/RedEyes"
+              - $ref: "#/components/schemas/BlueEyes"
+              - $ref: "#/components/schemas/GreenEyes"
+              - $ref: "#/components/schemas/YellowEyes"
+              - $ref: "#/components/schemas/BlackEyes"
+    HellHound:
+      type: object
+      required:
+        - id
+        - name
+        - bad-boy
       properties:
         id:
           type: integer
           format: int64
         name:
           type: string
-        good-boy:
+        bad-boy:
           type: bool
         eyes:
           type: object
-          oneOf:
+          allOf:
             - $ref: "#/components/schemas/RedEyes"
-            - $ref: "#/components/schemas/BlueEyes"
-            - $ref: "#/components/schemas/GreenEyes"
-            - $ref: "#/components/schemas/YellowEyes"
-            - $ref: "#/components/schemas/BlackEyes"
-    Bird:
+    Spider:
       type: object
       required:
         - id
         - name
         - eyes
+        - legs
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
+        name:
+          type: string
+        legs:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            type: string
+        eyes:
+          type: array
+          minItems: 8
+          maxItems: 8
+          items:
+            type: object
+            oneOf:
+              - $ref: "#/components/schemas/RedEyes"
+              - $ref: "#/components/schemas/BlueEyes"
+              - $ref: "#/components/schemas/GreenEyes"
+              - $ref: "#/components/schemas/YellowEyes"
+              - $ref: "#/components/schemas/BlackEyes"
+    Bird:
+      type: object
+      required:
+        - id
+        - name
+        - flies
+        - eyes
+      properties:
+        id:
+          type: string
+          format: uuid
         name:
           type: string4
         flies:
@@ -220,14 +358,18 @@ components:
       required:
         - id
         - name
+        - flat
+        - flies
         - eyes
       properties:
         id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         name:
           type: string
         flat:
+          type: bool
+        flies:
           type: bool
         eyes:
           type: object
@@ -290,15 +432,16 @@ components:
       required:
         - count
         - type
-      properties:
-        count:
-          type: integer
-        type:
-          type: string
-          enum:
-            - blood
-            - wine
-            - stale
+      allOf:
+        - $ref: "#/components/schemas/EyeCount"
+        - type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - blood
+                - wine
+                - stale
     GreenEyes:
       type: object
       required:
@@ -350,6 +493,13 @@ components:
           enum:
             - sky
             - boobies
+    EyeCount:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
   parameters:
     page:
       name: page

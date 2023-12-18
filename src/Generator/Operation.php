@@ -15,6 +15,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\Schema;
 use Jawira\CaseConverter\Convert;
+use League\Uri\UriTemplate;
 use NumberToWords\NumberToWords;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -34,7 +35,6 @@ use Rx\Scheduler\ImmediateScheduler;
 use Rx\Subject\Subject;
 use Throwable;
 
-use function array_keys;
 use function array_map;
 use function array_unique;
 use function array_values;
@@ -43,7 +43,7 @@ use function implode;
 use function is_array;
 use function is_int;
 use function is_string;
-use function rtrim;
+use function ksort;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -140,36 +140,66 @@ final class Operation
                 ),
             );
             if ($parameter->location === 'path' || $parameter->location === 'query') {
-                $requestReplaces['{' . $parameter->targetName . '}'] = new Node\Expr\PropertyFetch(
+                $propertyFetch                           = new Node\Expr\PropertyFetch(
                     new Node\Expr\Variable('this'),
                     $parameter->name,
                 );
+                $requestReplaces[$parameter->targetName] = $propertyFetch;
             }
 
             if ($parameter->location !== 'query') {
                 continue;
             }
 
-            $query[] = $parameter->targetName . '={' . $parameter->targetName . '}';
+            $query[$parameter->targetName] = $parameter->targetName . ($parameter->type === 'array' ? '*' : '');
         }
 
+        ksort($query);
+        ksort($requestReplaces);
+
         $requestParameters = [
-            new Node\Arg(new Node\Scalar\String_($operation->method)),
-            new Node\Arg(new Node\Expr\FuncCall(
-                new Node\Name('\str_replace'),
-                [
-                    new Node\Arg(new Node\Expr\Array_(array_map(static fn (string $key): Node\Expr\ArrayItem => new Node\Expr\ArrayItem(new Node\Scalar\String_($key)), array_keys($requestReplaces)))),
-                    new Node\Arg(new Node\Expr\Array_(array_map(static fn (Node\Expr\PropertyFetch $pf): Node\Expr\ArrayItem => new Node\Expr\ArrayItem($pf), array_values($requestReplaces)))),
-                    new Node\Arg(count($query) > 0 ? new Node\Expr\BinaryOp\Concat(
-                        new Node\Scalar\String_(
-                            $operation->path, // Deal with the query
+            new Node\Arg(
+                new Node\Scalar\String_($operation->method),
+            ),
+            new Node\Arg(
+                new Node\Expr\Cast\String_(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\New_(
+                            new Node\Name(
+                                '\\' . UriTemplate::class,
+                            ),
+                            [
+                                new Node\Arg(
+                                    count($query) > 0 ? new Node\Scalar\String_(
+                                        $operation->path . '{?' . implode(',', $query) . '}',
+                                    ) : new Node\Scalar\String_(
+                                        $operation->path, // Deal with the query
+                                    ),
+                                ),
+                            ],
                         ),
-                        new Node\Scalar\String_(rtrim('?' . implode('&', $query), '?')),
-                    ) : new Node\Scalar\String_(
-                        $operation->path, // Deal with the query
-                    )),
-                ],
-            )),
+                        new Node\Name(
+                            'expand',
+                        ),
+                        [
+                            new Arg(
+                                new Node\Expr\Array_(
+                                    [
+                                        ...(static function (array $requestReplaces): iterable {
+                                            foreach ($requestReplaces as $key => $valueRetreival) {
+                                                yield new Node\Expr\ArrayItem(
+                                                    $valueRetreival,
+                                                    new Node\Scalar\String_($key),
+                                                );
+                                            }
+                                        })($requestReplaces),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
         ];
 
         $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->makePublic();

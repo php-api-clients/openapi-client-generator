@@ -25,12 +25,16 @@ use React\Http\Message\Response;
 use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
 
 use function count;
+use function current;
 use function implode;
 use function is_array;
+use function is_bool;
 use function is_string;
+use function ksort;
 use function Safe\preg_replace;
 use function str_replace;
 use function strtolower;
+use function urlencode;
 
 use const PHP_EOL;
 
@@ -784,7 +788,7 @@ final class OperationTest
                                                     continue;
                                                 }
 
-                                                $items[] = $parameter->example->raw;
+                                                $items[] = is_bool($parameter->example->raw) ? (int) $parameter->example->raw : $parameter->example->raw;
                                             }
 
                                             return $items;
@@ -797,8 +801,25 @@ final class OperationTest
                                                 continue;
                                             }
 
-                                            $items[] = $parameter->targetName . '=' . $parameter->example->raw;
+                                            if (is_bool($parameter->example->raw)) {
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . (int) $parameter->example->raw;
+                                                continue;
+                                            }
+
+                                            if ($parameter->type === 'array') {
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . urlencode(current($parameter->example->raw));
+                                                continue;
+                                            }
+
+                                            if (is_string($parameter->example->raw)) {
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . urlencode($parameter->example->raw);
+                                                continue;
+                                            }
+
+                                            $items[$parameter->targetName] = $parameter->targetName . '=' . $parameter->example->raw;
                                         }
+
+                                        ksort($items);
 
                                         return count($items) > 0 ? '?' . implode('&', $items) : '';
                                     })($operation->parameters),

@@ -3,6 +3,7 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal;
 
+use ApiClients\Client\PetStore\Contract;
 use ApiClients\Client\PetStore\Error as ErrorSchemas;
 use ApiClients\Client\PetStore\Internal;
 use ApiClients\Client\PetStore\Operation;
@@ -17,6 +18,9 @@ final class Operators
     private ?Internal\Operator\Pets\Create $pets👷Create = null;
     private ?Internal\Operator\Pets\List_\Gatos $pets👷List_👷Gatos = null;
     private ?Internal\Operator\Pets\List_\GatosListing $pets👷List_👷GatosListing = null;
+    private ?Internal\Operator\Pets\Kinds\Walking $pets👷Kinds👷Walking = null;
+    private ?Internal\Operator\Pets\Kinds\WalkingListing $pets👷Kinds👷WalkingListing = null;
+    private ?Internal\Operator\Pets\Grouped\By\Type $pets👷Grouped👷By👷Type = null;
     private ?Internal\Operator\Pets\Names $pets👷Names = null;
     private ?Internal\Operator\Pets\NamesListing $pets👷NamesListing = null;
     private ?Internal\Operator\ShowPetById $showPetById = null;
@@ -57,6 +61,27 @@ final class Operators
             $this->pets👷List_👷GatosListing = new Internal\Operator\Pets\List_\GatosListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Gatos());
         }
         return $this->pets👷List_👷GatosListing;
+    }
+    public function pets👷Kinds👷Walking() : Internal\Operator\Pets\Kinds\Walking
+    {
+        if ($this->pets👷Kinds👷Walking instanceof Internal\Operator\Pets\Kinds\Walking === false) {
+            $this->pets👷Kinds👷Walking = new Internal\Operator\Pets\Kinds\Walking($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Kinds🌀Walking());
+        }
+        return $this->pets👷Kinds👷Walking;
+    }
+    public function pets👷Kinds👷WalkingListing() : Internal\Operator\Pets\Kinds\WalkingListing
+    {
+        if ($this->pets👷Kinds👷WalkingListing instanceof Internal\Operator\Pets\Kinds\WalkingListing === false) {
+            $this->pets👷Kinds👷WalkingListing = new Internal\Operator\Pets\Kinds\WalkingListing($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Kinds🌀Walking());
+        }
+        return $this->pets👷Kinds👷WalkingListing;
+    }
+    public function pets👷Grouped👷By👷Type() : Internal\Operator\Pets\Grouped\By\Type
+    {
+        if ($this->pets👷Grouped👷By👷Type instanceof Internal\Operator\Pets\Grouped\By\Type === false) {
+            $this->pets👷Grouped👷By👷Type = new Internal\Operator\Pets\Grouped\By\Type($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀GroupedByType());
+        }
+        return $this->pets👷Grouped👷By👷Type;
     }
     public function pets👷Names() : Internal\Operator\Pets\Names
     {

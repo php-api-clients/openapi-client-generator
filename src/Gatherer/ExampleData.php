@@ -14,18 +14,24 @@ use ReverseRegex\Generator\Scope;
 use ReverseRegex\Lexer;
 use ReverseRegex\Parser;
 
+use function explode;
 use function gettype;
 use function is_array;
 use function is_string;
 use function Safe\date;
 use function Safe\json_encode;
 use function strlen;
+use function strpos;
 
 final class ExampleData
 {
     public static function gather(mixed $exampleData, PropertyType $type, string $propertyName): Representation\ExampleData
     {
-        if ($type->type === 'array') {
+        if ($exampleData instanceof Representation\ExampleData) {
+            return $exampleData;
+        }
+
+        if ($type->type === 'array' || $type->type === 'union') {
             if ($type->payload instanceof Schema) {
                 $exampleData = ArrayMerger::doMerge(
                     $type->payload->example,
@@ -90,6 +96,12 @@ final class ExampleData
     /** @phpstan-ignore-next-line */
     public static function scalarData(int $seed, string $type, string|null $format, string|null $pattern = null): Representation\ExampleData
     {
+        if (strpos($type, '|') !== false) {
+            [$firstType] = explode('|', $type);
+
+            return self::scalarData($seed, $firstType, $format, $pattern);
+        }
+
         if ($type === 'int' || $type === '?int') {
             return new Representation\ExampleData($seed, new Node\Scalar\LNumber($seed));
         }
@@ -147,6 +159,23 @@ final class ExampleData
             }
 
             return new Representation\ExampleData('generated', new Node\Scalar\String_('generated'));
+        }
+
+        if ($type === 'array' || $type === '?array') {
+            $string = self::scalarData($seed, 'string', $format, $pattern);
+
+            return new Representation\ExampleData(
+                [
+                    $string->raw,
+                ],
+                new Node\Expr\Array_(
+                    [
+                        new Node\Expr\ArrayItem(
+                            $string->node,
+                        ),
+                    ],
+                ),
+            );
         }
 
         return new Representation\ExampleData(

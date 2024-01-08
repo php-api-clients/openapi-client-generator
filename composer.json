@@ -22,7 +22,7 @@
         "kwn/number-to-words": "^2.6",
         "league/openapi-psr7-validator": "^0.21",
         "league/uri": "^6.8 || ^7.3",
-        "nikic/php-parser": "^4.15",
+        "nikic/php-parser": "^4.15 || ^5.0",
         "nunomaduro/termwind": "^1.15",
         "ondram/ci-detector": "^4.1",
         "phpstan/phpdoc-parser": "^1.22",

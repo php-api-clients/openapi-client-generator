@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation;
 
 use ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\StreamOperation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
+use OpenAPITools\Representation\Namespaced\Operation;
 
 use function strpos;
 

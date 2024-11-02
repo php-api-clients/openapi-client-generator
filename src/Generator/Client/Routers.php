@@ -8,10 +8,11 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\Router;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClassMethod;
 use Jawira\CaseConverter\Convert;
+use OpenAPITools\Configuration\Package;
+use OpenAPITools\Utils\ClassString;
 use PhpParser\Node;
 
 use function lcfirst;
-use function rtrim;
 use function str_replace;
 
 final class Routers
@@ -21,6 +22,7 @@ final class Routers
 
     /** @param array<Node> $nodes */
     public function add(
+        Package $package,
         string $method,
         string|null $group,
         string $name,
@@ -34,7 +36,7 @@ final class Routers
             'docBlockReturnType' => $docBlockReturnType,
         ];
 
-        return $this->createClassName($method, $group, $name);
+        return $this->createClassName($package, $method, $group, $name);
     }
 
     /** @return iterable<RouterClass> */
@@ -57,11 +59,12 @@ final class Routers
     }
 
     public function createClassName(
+        Package $package,
         string $method,
         string|null $group,
         string $name,
     ): Router {
-        $className = rtrim('Internal\\Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
+        $className = ClassString::factory($package->namespace, 'Internal\\Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
 
         return new Router(
             $className,
@@ -70,7 +73,7 @@ final class Routers
                 '\\',
                 '🔀',
                 lcfirst(
-                    $className,
+                    $className->relative,
                 ),
             ),
         );

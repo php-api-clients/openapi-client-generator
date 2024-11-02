@@ -2,17 +2,15 @@
 
 declare(strict_types=1);
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
+namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Paths;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ResultConverter;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
-use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
@@ -32,8 +30,13 @@ use function strpos;
 
 final class Operator
 {
+    public function __construct(
+        private BuilderFactory $builderFactory,
+    ) {
+    }
+
     /** @return iterable<File> */
-    public static function generate(string $pathPrefix, Operation $operation, Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public function generate(Package $package, Namespaced\Operation $operation, Namespaced\Hydrator $hydrator): iterable
     {
         $bringHydratorAndResponseValidator = count(
             array_filter(
@@ -73,23 +76,23 @@ final class Operator
 
         $constructor = $factory->method('__construct')->makePublic();
         $constructor->addParam(
-            (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
+            $this->builderFactory->param('browser')->makePrivate()->setType('\\' . Browser::class),
         );
         $constructor->addParam(
-            (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
+            $this->builderFactory->param('authentication')->makePrivate()->setType('\\' . AuthenticationInterface::class),
         );
 
         if (count($operation->requestBody) > 0) {
             $constructor->addParam(
-                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                $this->builderFactory->param('requestSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             );
         }
 
         if ($bringHydratorAndResponseValidator) {
             $constructor->addParam(
-                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                $this->builderFactory->param('responseSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrator'))->setType($hydrator->className->relative),
+                $this->builderFactory->param('hydrator')->makePrivate()->setType($hydrator->className->fullyQualified->source),
             );
         }
 
@@ -114,7 +117,7 @@ final class Operator
             $callParams[] = $factory->param('params')->setType('array');
         }
 
-        $returnType = \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getResultTypeFromOperation($operation);
+        $returnType = Operation::getResultTypeFromOperation($operation);
 
         $class->addStmt(
             $factory->method('call')->makePublic()->setReturnType(
@@ -125,7 +128,7 @@ final class Operator
                     ),
                 ),
             )->setDocComment(
-                \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getDocBlockFromOperation($operation),
+                Operation::getDocBlockFromOperation($operation),
             )->addParams($callParams)->addStmts([
                 new Node\Stmt\Expression(new Node\Expr\Assign(
                     new Node\Expr\Variable('operation'),
@@ -169,10 +172,10 @@ final class Operator
             ]),
         );
 
-        yield new File($pathPrefix, $operation->operatorClassName->relative, $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, $operation->operatorClassName->relative, $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 
-    private static function callOperation(string $returnType, Operation $operation): Node\Expr\MethodCall
+    private static function callOperation(string $returnType, Namespaced\Operation $operation): Node\Expr\MethodCall
     {
         return new Node\Expr\MethodCall(
             new Node\Expr\MethodCall(
@@ -222,7 +225,7 @@ final class Operator
                     'uses' => [
                         new Node\Expr\Variable('operation'),
                     ],
-                    'returnType' => (static function (Representation\Operation $operation): Node\UnionType|Node\Name {
+                    'returnType' => (static function (Namespaced\Operation $operation): Node\UnionType|Node\Name {
                         /** @phpstan-ignore-next-line */
                         $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
                         if ($returnType === null || (string) $returnType === 'void') {

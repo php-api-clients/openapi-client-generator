@@ -25,6 +25,16 @@
         "nikic/php-parser": "^4.15",
         "nunomaduro/termwind": "^1.15",
         "ondram/ci-detector": "^4.1",
+        "openapi-tools/configuration": "dev-main",
+        "openapi-tools/contract": "dev-main",
+        "openapi-tools/gatherer": "dev-main",
+        "openapi-tools/generator": "dev-main",
+        "openapi-tools/generator-hydrator": "dev-main",
+        "openapi-tools/generator-schema": "dev-main",
+        "openapi-tools/generator-templates": "dev-main",
+        "openapi-tools/registry": "dev-main",
+        "openapi-tools/representation": "dev-main",
+        "openapi-tools/utils": "dev-main",
         "phpstan/phpdoc-parser": "^1.22",
         "pointybeard/reverse-regex": "1.0.0.3",
         "psr/http-message": "^1.1 || ^2 || ^3",
@@ -35,7 +45,6 @@
         "symfony/yaml": "^6.0",
         "twig/twig": "^3.5",
         "wyrihaximus/async-test-utilities": "^7.0",
-        "wyrihaximus/composer-update-bin-autoload-path": "^1",
         "wyrihaximus/react-awaitable-observable": "^1.0",
         "wyrihaximus/simple-twig": "^2.1",
         "wyrihaximus/subsplit-tools": "dev-main"
@@ -51,9 +60,6 @@
             "ApiClients\\Tests\\Tools\\OpenApiClientGenerator\\": "tests/unit/"
         }
     },
-    "bin": [
-        "bin/openapi-client-generator"
-    ],
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true,
@@ -63,13 +69,6 @@
         },
         "platform": {
             "php": "8.2.13"
-        }
-    },
-    "extra": {
-        "wyrihaximus": {
-            "bin-autoload-path-update": [
-                "bin/openapi-client-generator"
-            ]
         }
     },
     "scripts": {

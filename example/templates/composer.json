@@ -1,6 +1,6 @@
 {
-  "name": "api-clients/{{ packageName }}",
-  "description": "Non-Blocking first {{ fullName }} client",
+  "name": "api-clients/{{ package.name }}",
+  "description": "{{ package.metadata.description }}",
   "license": "MIT",
   "authors": [
     {
@@ -36,12 +36,12 @@
   },
   "autoload": {
     "psr-4": {
-      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+      "{{ package.namespace.source|trim('\\', 'left')|replace({'\\': '\\\\'}) }}\\": "{{ package.destination.source }}/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "{{ namespace|trim('\\', 'left')|replace({'\\': '\\\\'}) }}": "src/"
+      "{{ package.namespace.test|trim('\\', 'left')|replace({'\\': '\\\\'}) }}\\": "{{ package.destination.test }}/"
     }
   },
 {% if suggests is iterable and suggests|length > 0 %}

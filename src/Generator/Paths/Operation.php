@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
+namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Paths;
 
 use ApiClients\Tools\OpenApiClient\Utils\Response\Header;
 use ApiClients\Tools\OpenApiClient\Utils\Response\WithoutBody;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Contract\ContentType;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\OperationArray;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Hydrator;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use cebe\openapi\Reader;
 use cebe\openapi\spec\Schema;
 use Jawira\CaseConverter\Convert;
 use League\Uri\UriTemplate;
 use NumberToWords\NumberToWords;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
+use OpenAPITools\Utils\Utils;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
@@ -27,8 +27,8 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use React\Http\Browser;
+use React\Http\Message\Request;
 use React\Stream\ReadableStreamInterface;
-use RingCentral\Psr7\Request;
 use RuntimeException;
 use Rx\Observable;
 use Rx\Scheduler\ImmediateScheduler;
@@ -53,14 +53,23 @@ use const PHP_EOL;
 
 final class Operation
 {
+    /** @var array<ContentType> */
+    private array $contentTypes = [];
+
+    public function __construct(
+        private BuilderFactory $builderFactory,
+        ContentType ...$contentTypes,
+    ) {
+        $this->contentTypes = $contentTypes;
+    }
+
     /** @return iterable<File> */
-    public static function generate(string $pathPrefix, \ApiClients\Tools\OpenApiClientGenerator\Representation\Operation $operation, Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public function generate(Package $package, Namespaced\Operation $operation, Namespaced\Hydrator $hydrator): iterable
     {
         $noHydrator = true;
-        $factory    = new BuilderFactory();
-        $stmt       = $factory->namespace($operation->className->namespace->source);
+        $stmt       = $this->builderFactory->namespace($operation->className->namespace->source);
 
-        $class = $factory->class($operation->className->className)->makeFinal()->addStmt(
+        $class       = $this->builderFactory->class($operation->className->className)->makeFinal()->addStmt(
             new Node\Stmt\ClassConst(
                 [
                     new Node\Const_(
@@ -85,17 +94,11 @@ final class Operation
                 Class_::MODIFIER_PUBLIC,
             ),
         );
-        if (count($operation->requestBody) > 0) {
-            $class->addStmt(
-                $factory->property('requestSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
-            );
-        }
-
-        $constructor = $factory->method('__construct')->makePublic();
+        $constructor = $this->builderFactory->method('__construct')->makePublic();
 
         if (count($operation->requestBody) > 0) {
             $constructor->addParam(
-                (new Param('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                $this->builderFactory->param('requestSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -111,7 +114,7 @@ final class Operation
         $query             = [];
         $constructorParams = [];
         foreach ($operation->parameters as $parameter) {
-            $paramterStmt = $factory->property($parameter->name);
+            $paramterStmt = $this->builderFactory->property($parameter->name);
             $param        = new Param($parameter->name);
             if (strlen($parameter->description) > 0) {
                 $paramterStmt->setDocComment('/**' . $parameter->description . ' **/');
@@ -202,10 +205,10 @@ final class Operation
             ),
         ];
 
-        $createRequestMethod = $factory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->makePublic();
+        $createRequestMethod = $this->builderFactory->method('createRequest')->setReturnType('\\' . RequestInterface::class)->makePublic();
         if (count($operation->requestBody) > 0) {
             $createRequestMethod->addParam(
-                $factory->param('data')->setType('array'),
+                $this->builderFactory->param('data')->setType('array'),
             );
         }
 
@@ -223,7 +226,7 @@ final class Operation
                         new Node\Arg(new Node\Expr\Variable('data')),
                         new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\\' . Reader::class), 'readFromJson', [
                             new Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($requestBody->schema->className->relative),
+                                new Node\Name($requestBody->schema->className->fullyQualified->source),
                                 'SCHEMA_JSON',
                             )),
                             new Arg(new Node\Expr\ClassConstFetch(
@@ -252,7 +255,7 @@ final class Operation
         $returnTypeRaw = [];
         $cases         = [];
 
-        foreach ($configuration->contentType ?? [] as $contentType) {
+        foreach ($this->contentTypes ?? [] as $contentType) {
             foreach ($contentType::contentType() as $supportedContentType) {
                 $caseCases = [];
                 foreach ($operation->response as $contentTypeSchema) {
@@ -264,7 +267,7 @@ final class Operation
                         continue;
                     }
 
-                    if (! $contentTypeSchema->content->payload instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                    if (! $contentTypeSchema->content->payload instanceof \OpenAPITools\Representation\Namespaced\Schema) {
                         if ($contentTypeSchema->content->type === 'scalar') {
                             $returnType[] = $returnTypeRaw[] = $contentTypeSchema->content->payload;
 
@@ -305,7 +308,7 @@ final class Operation
                                 is_array($contentTypeSchema->content->payload) ? $contentTypeSchema->content->payload : [$contentTypeSchema->content->payload]
                             )) as $item
                         ) {
-                            if ($item instanceof \ApiClients\Tools\OpenApiClientGenerator\Representation\Schema) {
+                            if ($item instanceof \OpenAPITools\Representation\Namespaced\Schema) {
                                 $sTmts[] = new Node\Stmt\TryCatch([
                                     new Node\Stmt\Expression(new Node\Expr\MethodCall(
                                         new Node\Expr\PropertyFetch(
@@ -317,7 +320,7 @@ final class Operation
                                             new Node\Arg(new Node\Expr\Variable('body')),
                                             new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
                                                 new Arg(new Node\Expr\ClassConstFetch(
-                                                    new Node\Name($item->className->relative),
+                                                    new Node\Name($item->className->fullyQualified->source),
                                                     'SCHEMA_JSON',
                                                 )),
                                                 new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
@@ -332,7 +335,7 @@ final class Operation
                                         'hydrateObject',
                                         [
                                             new Node\Arg(new Node\Expr\ClassConstFetch(
-                                                new Node\Name($item->className->relative),
+                                                new Node\Name($item->className->fullyQualified->source),
                                                 'class',
                                             )),
                                             new Node\Arg(new Node\Expr\Variable('body')),
@@ -349,7 +352,7 @@ final class Operation
                                 ]);
                                 $sTmts[] = new Node\Stmt\Label($gotoLabels);
                                 $gotoLabels++;
-                                $types[] = $item->className->relative;
+                                $types[] = $item->className->fullyQualified->source;
                             } else {
                                 $sTmts[] = new Node\Stmt\If_(
                                     new Node\Expr\FuncCall(
@@ -413,21 +416,21 @@ final class Operation
                         $returnOrThrow = Node\Stmt\Return_::class;
                         if ($isError) {
                             $returnOrThrow = Node\Stmt\Throw_::class;
-                            $throwableSchemaRegistry->add($contentTypeSchema->content->payload->className->relative);
+//                            $throwableSchemaRegistry->add($contentTypeSchema->content->payload->className->fullyQualified->source);
                         }
 
-                        $object = $isError ? $contentTypeSchema->content->payload->errorClassNameAliased->relative : $contentTypeSchema->content->payload->className->relative;
+                        $object = $isError ? $contentTypeSchema->content->payload->errorClassNameAliased->fullyQualified->source : $contentTypeSchema->content->payload->className->fullyQualified->source;
                         if (! $isError) {
-                            $returnType[]    = ($isArray ? '\\' . Observable::class . '<' : '') . $object . ($isArray ? '>' : '');
+                            $returnType[]    = ($isArray ? '\\' . Observable::class . '<\\' : '') . $object . ($isArray ? '>' : '');
                             $returnTypeRaw[] = $isArray ? '\\' . Observable::class : $object;
                         }
 
-                        $validate = OperationArray::validate($contentTypeSchema->content->payload->className->relative, $isArray);
-                        $hydrate  = OperationArray::hydrate($contentTypeSchema->content->payload->className->relative);
+                        $validate = OperationArray::validate($contentTypeSchema->content->payload->className->fullyQualified->source, $isArray);
+                        $hydrate  = OperationArray::hydrate($contentTypeSchema->content->payload->className->fullyQualified->source);
 
                         if ($isError) {
                             $hydrate = new Node\Expr\New_(
-                                new Node\Name($contentTypeSchema->content->payload->errorClassNameAliased->relative),
+                                new Node\Name($contentTypeSchema->content->payload->errorClassName->fullyQualified->source),
                                 [
                                     new Arg(
                                         is_string($contentTypeSchema->code) ? new Node\Expr\Variable('code') : new Node\Scalar\LNumber($contentTypeSchema->code),
@@ -623,7 +626,7 @@ final class Operation
                                                                 ),
                                                             ],
                                                             'params' => [
-                                                                $factory->param('data')->setType('string')->getNode(),
+                                                                $this->builderFactory->param('data')->setType('string')->getNode(),
                                                             ],
                                                             'uses' => [
                                                                 new Node\Expr\ClosureUse(
@@ -685,7 +688,7 @@ final class Operation
                                                                 ),
                                                             ],
                                                             'params' => [
-                                                                $factory->param('error')->setType('\\' . Throwable::class)->getNode(),
+                                                                $this->builderFactory->param('error')->setType('\\' . Throwable::class)->getNode(),
                                                             ],
                                                             'uses' => [
                                                                 new Node\Expr\ClosureUse(
@@ -701,7 +704,7 @@ final class Operation
                                         ),
                                     ],
                                     'params' => [
-                                        $factory->param('response')->setType('\\' . ResponseInterface::class)->getNode(),
+                                        $this->builderFactory->param('response')->setType('\\' . ResponseInterface::class)->getNode(),
                                     ],
                                     'uses' => [
                                         new Node\Expr\ClosureUse(
@@ -771,7 +774,7 @@ final class Operation
             $casesWithoutContent[] = $emptyCase;
         }
 
-        $createResponseMethod = $factory->method('createResponse')->makePublic();
+        $createResponseMethod = $this->builderFactory->method('createResponse')->makePublic();
 
         if (count($cases) > 0 || count($casesWithoutContent) > 0) {
             $createResponseMethod->addStmt(
@@ -868,18 +871,12 @@ final class Operation
         }
 
         $createResponseMethod->addParam(
-            $factory->param('response')->setType('\\' . ResponseInterface::class),
+            $this->builderFactory->param('response')->setType('\\' . ResponseInterface::class),
         );
 
         if ($noHydrator === false) {
-            $class->addStmt(
-                $factory->property('responseSchemaValidator')->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly()->makePrivate(),
-            )->addStmt(
-                $factory->property('hydrator')->setType($hydrator->className->relative)->makeReadonly()->makePrivate(),
-            );
-
             $constructor->addParam(
-                (new Param('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                $this->builderFactory->param('responseSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -889,7 +886,7 @@ final class Operation
                     new Node\Expr\Variable('responseSchemaValidator'),
                 ),
             )->addParam(
-                (new Param('hydrator'))->setType($hydrator->className->relative),
+                $this->builderFactory->param('hydrator')->makePrivate()->setType($hydrator->className->fullyQualified->source),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -903,10 +900,10 @@ final class Operation
 
         if ($operation->matchMethod === 'STREAM') {
             $class->addStmt(
-                $factory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate(),
+                $this->builderFactory->property('browser')->setType('\\' . Browser::class)->makeReadonly()->makePrivate(),
             );
             $constructor->addParam(
-                (new Param('browser'))->setType('\\' . Browser::class),
+                $this->builderFactory->param('browser')->makePrivate()->setType('\\' . Browser::class),
             )->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\PropertyFetch(
@@ -924,6 +921,6 @@ final class Operation
         $class->addStmt($createRequestMethod);
         $class->addStmt($createResponseMethod);
 
-        yield new File($pathPrefix, $operation->className->relative, $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, $operation->className->relative, $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 }

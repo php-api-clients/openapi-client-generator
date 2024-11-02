@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers as ClientRouters;
-use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -19,30 +18,30 @@ use function trim;
 final class Routers
 {
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, ClientRouters $routers): iterable
+    public static function generate(Package $package, ClientRouters $routers): iterable
     {
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\') . '\\Internal');
+        $stmt    = $factory->namespace(trim($package->namespace->source, '\\') . '\\Internal');
 
         $class = $factory->class('Routers')->makeFinal()->addStmt(
             $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class)->makeReadonly(),
+                $factory->param('authentication')->makePrivate()->setType('\\' . AuthenticationInterface::class)->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class)->makeReadonly(),
+                $factory->param('browser')->makePrivate()->setType('\\' . Browser::class)->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
+                $factory->param('requestSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
+                $factory->param('responseSchemaValidator')->makePrivate()->setType('\League\OpenAPIValidation\Schema\SchemaValidator')->makeReadonly(),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Internal\\Hydrators')->makeReadonly(),
+                $factory->param('hydrators')->makePrivate()->setType('Hydrators')->makeReadonly(),
             ),
         );
 
         foreach ($routers->get() as $group) {
-            $router = $routers->createClassName($group->method, $group->group, '');
+            $router = $routers->createClassName($package, $group->method, $group->group, '');
             $class->addStmts([
-                $factory->property($router->loopUpMethod)->setType('?' . $router->class)->setDefault(null)->makePrivate(),
-                $factory->method($router->loopUpMethod)->setReturnType($router->class)->makePublic()->addStmts([
+                $factory->property($router->loopUpMethod)->setType('?' . $router->class->fullyQualified->source)->setDefault(null)->makePrivate(),
+                $factory->method($router->loopUpMethod)->setReturnType($router->class->fullyQualified->source)->makePublic()->addStmts([
                     new Node\Stmt\If_(
                         new Node\Expr\BinaryOp\Identical(
                             new Node\Expr\Instanceof_(
@@ -50,7 +49,7 @@ final class Routers
                                     new Node\Expr\Variable('this'),
                                     $router->loopUpMethod,
                                 ),
-                                new Node\Name($router->class),
+                                new Node\Name($router->class->fullyQualified->source),
                             ),
                             new Node\Expr\ConstFetch(new Node\Name('false')),
                         ),
@@ -63,7 +62,7 @@ final class Routers
                                             $router->loopUpMethod,
                                         ),
                                         new Node\Expr\New_(
-                                            new Node\Name($router->class),
+                                            new Node\Name($router->class->fullyQualified->source),
                                             [
                                                 new Arg(
                                                     new Node\Expr\PropertyFetch(
@@ -132,6 +131,6 @@ final class Routers
             ]);
         }
 
-        yield new File($pathPrefix, 'Internal\\Routers', $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, 'Internal\\Routers', $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 }

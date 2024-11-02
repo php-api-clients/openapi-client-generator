@@ -4,26 +4,28 @@ declare(strict_types=1);
 
 namespace ApiClients\Tests\Tools\OpenApiClientGenerator\Generator\Helper;
 
-use ApiClients\Tools\OpenApiClientGenerator\Generator;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
 use PhpParser\Node;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use WyriHaximus\TestUtilities\TestCase;
 
 use function array_map;
 
 final class TypesTest extends TestCase
 {
-    private const SCALARS = [
+    private const array SCALARS = [
         'string',
         'int',
         'float',
         'bool',
     ];
 
-    /** @return iterable<array<string>, array{docBlock: array<string>, raw: array<string>}> */
-    public function types(): iterable
+    /** @return iterable<string, array{array<string>, array{docBlock: list<string>, raw: list<string>}}> */
+    public static function types(): iterable
     {
         foreach (self::SCALARS as $scalar) {
-            yield [
+            yield $scalar => [
                 [$scalar],
                 [
                     'docBlock' => [$scalar],
@@ -32,7 +34,7 @@ final class TypesTest extends TestCase
             ];
         }
 
-        yield [
+        yield 'simple-user' => [
             ['SimpleUser'],
             [
                 'docBlock' => ['Schema\SimpleUser'],
@@ -40,7 +42,7 @@ final class TypesTest extends TestCase
             ],
         ];
 
-        yield [
+        yield 'leading-slash' => [
             ['\SimpleUser'],
             [
                 'docBlock' => ['\SimpleUser'],
@@ -50,48 +52,45 @@ final class TypesTest extends TestCase
     }
 
     /**
-     * @param array<string>                  $input
-     * @param array{docBlock: array<string>} $output
-     *
-     * @test
-     * @dataProvider types
+     * @param array<string>                                    $input
+     * @param array{docBlock: list<string>, raw: list<string>} $output
      */
+    #[Test]
+    #[DataProvider('types')]
     public function normalizeDocBlock(array $input, array $output): void
     {
         self::assertEquals(
-            Generator\Helper\Types::normalizeDocBlock(...$input),
+            Types::normalizeDocBlock(...$input),
             $output['docBlock'],
         );
     }
 
     /**
-     * @param array<string>             $input
-     * @param array{raw: array<string>} $output
-     *
-     * @test
-     * @dataProvider types
+     * @param array<string>                                    $input
+     * @param array{docBlock: list<string>, raw: list<string>} $output
      */
+    #[Test]
+    #[DataProvider('types')]
     public function normalizeRaw(array $input, array $output): void
     {
         self::assertEquals(
-            Generator\Helper\Types::normalizeRaw(...$input),
+            Types::normalizeRaw(...$input),
             $output['raw'],
         );
     }
 
     /**
-     * @param array<string>             $input
-     * @param array{raw: array<string>} $output
-     *
-     * @test
-     * @dataProvider types
+     * @param array<string>                                    $input
+     * @param array{docBlock: list<string>, raw: list<string>} $output
      */
+    #[Test]
+    #[DataProvider('types')]
     public function normalizeNodeName(array $input, array $output): void
     {
         self::assertEquals(
             array_map(
                 static fn (Node\Name $type): string => $type->toString(),
-                Generator\Helper\Types::normalizeNodeName(...$input),
+                Types::normalizeNodeName(...$input),
             ),
             $output['raw'],
         );

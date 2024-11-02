@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use cebe\openapi\spec\Schema as cebeSchema;
+use OpenAPITools\Representation\Namespaced\Property\Type;
+use OpenAPITools\Representation\Namespaced\Schema;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 
@@ -57,8 +57,8 @@ final class OperationArray
         ));
     }
 
-    /** @return iterable<Schema> */
-    public static function uniqueSchemas(string|Schema|PropertyType ...$propertyTypes): iterable
+    /** @return iterable<Schema|string> */
+    public static function uniqueSchemas(string|Schema|Type ...$propertyTypes): iterable
     {
         $schemas = [];
 
@@ -74,7 +74,7 @@ final class OperationArray
             }
 
             foreach (
-                static::uniqueSchemas(...is_array($propertyType->payload) ? $propertyType->payload : [$propertyType->payload]) as $nestedPropertyType
+                self::uniqueSchemas(...is_array($propertyType->payload) ? $propertyType->payload : [$propertyType->payload]) as $nestedPropertyType
             ) {
                 $schemas[$nestedPropertyType instanceof Schema ? $nestedPropertyType->className->fullyQualified->source : $nestedPropertyType] = $nestedPropertyType;
             }

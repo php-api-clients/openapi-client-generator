@@ -5,188 +5,165 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\OpenAPI\WebHookInterface;
-use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\Schema as SchemaRegistry;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ConfigurationPackage;
+use cebe\openapi\Reader;
+use cebe\openapi\spec\Schema as BaseSchema;
 use League\OpenAPIValidation\Schema\SchemaValidator;
-use PhpParser\Builder\Param;
+use OpenAPITools\Contract\FileGenerator;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\ClassString;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
-use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use RuntimeException;
 use Throwable;
 
-use function array_unique;
-use function count;
-use function implode;
-use function ltrim;
-use function strtolower;
+use function array_map;
+use function array_values;
 
-use const PHP_EOL;
-
-final class WebHook
+/**
+ * Emits one class per webhook event, resolving a delivery to its payload object.
+ *
+ * A spec declares a webhook per event variant, so an event covers several
+ * payload schemas. Each is tried in turn: validate the delivery against that
+ * variant's schema, and on success hand it to the event's hydrator. Hydration
+ * is delegated rather than inlined, so the payload schemas and their hydrators
+ * stay the ones already generated for every other schema in the package.
+ */
+final readonly class WebHook implements FileGenerator
 {
-    /**
-     * @param class-string $event
-     *
-     * @return iterable<File>
-     */
-    public static function generate(
-        string $pathPrefix,
-        string $namespace,
-        string $event,
-        SchemaRegistry $schemaRegistry,
-        \ApiClients\Tools\OpenApiClientGenerator\Representation\WebHook ...$webHooks,
-    ): iterable {
-        $className = Utils::className($event);
+    public function __construct(private BuilderFactory $builderFactory)
+    {
+    }
 
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(ltrim($namespace . 'Internal\WebHook', '\\'));
+    /** @return iterable<File> */
+    public function generate(Package $package, Namespaced\Representation $representation): iterable
+    {
+        $package = ConfigurationPackage::unwrap($package);
 
-        $class = $factory->class(ltrim($className, '\\'))->makeFinal()->implement('\\' . WebHookInterface::class)->setDocComment(new Doc(implode(PHP_EOL, [
-            '/**',
-            ' * @internal',
-            ' */',
-        ])));
-        $class->addStmt($factory->property('requestSchemaValidator')->setType('\\' . SchemaValidator::class)->makeReadonly()->makePrivate());
-        $class->addStmt($factory->property('hydrator')->setType('Internal\\Hydrator\\WebHook\\' . $className)->makeReadonly()->makePrivate());
+        foreach ($representation->webHooks as $webHookEvent) {
+            yield $this->generateEvent($package, $webHookEvent);
+        }
+    }
 
-        $constructor = $factory->method('__construct')->makePublic()->addParam(
-            (new Param('requestSchemaValidator'))->setType('\\' . SchemaValidator::class),
-        )->addParam(
-            (new Param('hydrator'))->setType('Internal\\Hydrator\\WebHook\\' . $className),
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'requestSchemaValidator',
-                ),
-                new Node\Expr\Variable('requestSchemaValidator'),
-            ),
-        )->addStmt(
-            new Node\Expr\Assign(
-                new Node\Expr\PropertyFetch(
-                    new Node\Expr\Variable('this'),
-                    'hydrator',
-                ),
-                new Node\Expr\Variable('hydrator'),
-            ),
-        );
-        $class->addStmt($constructor);
+    private function generateEvent(\OpenAPITools\Configuration\Package $package, Namespaced\WebHookEvent $webHookEvent): File
+    {
+        $className = ClassString::factory($package->namespace, 'Internal\\WebHook\\' . $webHookEvent->event);
 
-        $resolveReturnTypes = [];
-        $method             = $factory->method('resolve')->makePublic()->setReturnType('object')->addParam(
-            (new Param('headers'))->setType('array'),
-        )->addParam(
-            (new Param('data'))->setType('array'),
-        );
-        $gotoLabels         = 'actions_aaaaa';
-        $tmts               = [];
-        $tmts[]             = new Node\Expr\Assign(
-            new Node\Expr\Variable('error'),
-            new Node\Expr\New_(
-                new Node\Name('\\' . RuntimeException::class),
-                [
-                    new Arg(new Node\Scalar\String_('No action matching given headers and data')),
-                ],
-            ),
-        );
-
-        foreach ($webHooks as $webHook) {
-            $headers = [];
-            foreach ($webHook->headers as $header) {
-                $headers[] = new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'requestSchemaValidator',
-                    ),
-                    'validate',
-                    [
-                        new Node\Arg(new Node\Expr\ArrayDimFetch(
-                            new Node\Expr\Variable('headers'),
-                            new Node\Scalar\String_(strtolower($header->name)),
-                        )),
-                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
-                            new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name($header->schema->className->relative),
-                                'SCHEMA_JSON',
-                            )),
-                            new Node\Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
-                        ])),
-                    ],
-                ));
+        /** @var array<Namespaced\Schema> $payloads */
+        $payloads = [];
+        foreach ($webHookEvent->webHooks as $webHook) {
+            foreach ($webHook->schema as $schema) {
+                $payloads[$schema->className->fullyQualified->source] = $schema;
             }
+        }
 
-            foreach ($webHook->schema as $contentTYpe => $schema) {
-                $resolveReturnTypes[] = $schema->className->relative;
-                $tmts[]               = new Node\Stmt\If_(
-                    new Node\Expr\BinaryOp\Equal(
-                        new Node\Expr\ArrayDimFetch(new Node\Expr\Variable('headers'), new Node\Scalar\String_('content-type')),
-                        new Node\Scalar\String_($contentTYpe),
-                    ),
+        $payloads = array_values($payloads);
+
+        $resolve = $this->builderFactory->method('resolve')->makePublic()->addParams([
+            $this->builderFactory->param('headers')->setType('array'),
+            $this->builderFactory->param('data')->setType('array'),
+        ])->setReturnType(
+            new Node\UnionType(
+                array_map(
+                    static fn (Namespaced\Schema $schema): Node\Name => new Node\Name($schema->className->fullyQualified->source),
+                    $payloads,
+                ),
+            ),
+        );
+
+        /**
+         * Seeded so the method still throws something meaningful when the event
+         * has no variants at all; every attempt below replaces it with the
+         * reason that attempt was rejected.
+         */
+        $resolve->addStmt(
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable('error'),
+                    new Node\Expr\New_(new Node\Name('\\' . RuntimeException::class), [
+                        new Arg(new Node\Scalar\String_('No webhook matching given headers and data')),
+                    ]),
+                ),
+            ),
+        );
+
+        foreach ($payloads as $payload) {
+            $resolve->addStmt(
+                new Node\Stmt\TryCatch(
                     [
-                        'stmts' => [
-                            new Node\Stmt\TryCatch([
-                                ...$headers,
-                                new Node\Stmt\Expression(new Node\Expr\MethodCall(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'requestSchemaValidator',
-                                    ),
-                                    'validate',
-                                    [
-                                        new Node\Arg(new Node\Expr\Variable('data')),
-                                        new Node\Arg(new Node\Expr\StaticCall(new Node\Name('\cebe\openapi\Reader'), 'readFromJson', [
-                                            new Arg(new Node\Expr\ClassConstFetch(
-                                                new Node\Name($schema->className->relative),
-                                                'SCHEMA_JSON',
-                                            )),
-                                            new Arg(new Node\Scalar\String_('\cebe\openapi\spec\Schema')),
-                                        ])),
-                                    ],
-                                )),
-                                new Node\Stmt\Return_(new Node\Expr\MethodCall(
-                                    new Node\Expr\PropertyFetch(
-                                        new Node\Expr\Variable('this'),
-                                        'hydrator',
-                                    ),
-                                    'hydrateObject',
-                                    [
-                                        new Node\Arg(new Node\Expr\ClassConstFetch(
-                                            new Node\Name($schema->className->relative),
+                        new Node\Stmt\Expression(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), 'requestSchemaValidator'),
+                                'validate',
+                                [
+                                    new Arg(new Node\Expr\Variable('data')),
+                                    new Arg(new Node\Expr\StaticCall(new Node\Name('\\' . Reader::class), 'readFromJson', [
+                                        new Arg(new Node\Expr\ClassConstFetch(
+                                            new Node\Name($payload->className->fullyQualified->source),
+                                            'SCHEMA_JSON',
+                                        )),
+                                        new Arg(new Node\Expr\ClassConstFetch(
+                                            new Node\Name('\\' . BaseSchema::class),
                                             'class',
                                         )),
-                                        new Node\Arg(new Node\Expr\Variable('data')),
-                                    ],
-                                )),
-                            ], [
-                                new Node\Stmt\Catch_(
-                                    [new Node\Name('\\' . Throwable::class)],
-                                    new Node\Expr\Variable('error'),
-                                    [
-                                        new Node\Stmt\Goto_($gotoLabels),
-                                    ],
-                                ),
-                            ]),
-                        ],
+                                    ])),
+                                ],
+                            ),
+                        ),
+                        new Node\Stmt\Return_(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\PropertyFetch(new Node\Expr\Variable('this'), 'hydrator'),
+                                'hydrateObject',
+                                [
+                                    new Arg(new Node\Expr\ClassConstFetch(
+                                        new Node\Name($payload->className->fullyQualified->source),
+                                        'class',
+                                    )),
+                                    new Arg(new Node\Expr\Variable('data')),
+                                ],
+                            ),
+                        ),
                     ],
-                );
-            }
-
-            $tmts[] = new Node\Stmt\Label($gotoLabels);
-            $gotoLabels++;
+                    [
+                        new Node\Stmt\Catch_(
+                            [new Node\Name('\\' . Throwable::class)],
+                            new Node\Expr\Variable('throwable'),
+                            [
+                                new Node\Stmt\Expression(
+                                    new Node\Expr\Assign(
+                                        new Node\Expr\Variable('error'),
+                                        new Node\Expr\Variable('throwable'),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            );
         }
 
-        $tmts[] = new Node\Stmt\Throw_(new Node\Expr\Variable('error'));
+        $resolve->addStmt(new Node\Stmt\Expression(new Node\Expr\Throw_(new Node\Expr\Variable('error'))));
 
-        if (count($resolveReturnTypes) > 0) {
-            $method->setReturnType(implode('|', array_unique($resolveReturnTypes)));
-        }
+        $class = $this->builderFactory->class($className->className)
+            ->makeFinal()
+            ->implement('\\' . WebHookInterface::class)
+            ->addStmt(
+                $this->builderFactory->method('__construct')->makePublic()->addParam(
+                    $this->builderFactory->param('requestSchemaValidator')->makePrivate()->makeReadonly()->setType('\\' . SchemaValidator::class),
+                )->addParam(
+                    $this->builderFactory->param('hydrator')->makePrivate()->makeReadonly()->setType($webHookEvent->hydrator->className->fullyQualified->source),
+                ),
+            )
+            ->addStmt($resolve);
 
-        $method->addStmts($tmts);
-        $class->addStmt($method);
-
-        yield new File($pathPrefix, 'Internal\\WebHook\\' . $className, $stmt->addStmt($class)->getNode());
+        return new File(
+            $package->destination->source,
+            $className->relative,
+            $this->builderFactory->namespace($className->namespace->source)->addStmt($class)->getNode(),
+            File::DO_LOAD_ON_WRITE,
+        );
     }
 }

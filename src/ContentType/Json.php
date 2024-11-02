@@ -8,6 +8,7 @@ use ApiClients\Tools\OpenApiClientGenerator\Contract\ContentType;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\FuncCall;
 
 final class Json implements ContentType
 {
@@ -18,7 +19,7 @@ final class Json implements ContentType
         yield 'application/scim+json';
     }
 
-    public static function parse(Expr $expr): Expr
+    public static function parse(Expr $expr): FuncCall
     {
         return new Node\Expr\FuncCall(
             new Node\Name('json_decode'),

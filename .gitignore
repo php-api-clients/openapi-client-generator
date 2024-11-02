@@ -1,9 +1,11 @@
 etc/qa/.phpcs.cache
 etc/qa/.phpunit.result.cache
-bin/openapi-client-generator
 example/etc
+example/generated
 example/generated-github
 example/generated-github-subsplit
 example/generated-miele
 tests/test-app
 vendor
+var/*
+!var/.gitkeep

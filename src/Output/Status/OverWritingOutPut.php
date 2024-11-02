@@ -10,6 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use function count;
 use function explode;
 use function implode;
+use function is_scalar;
 use function is_string;
 use function sprintf;
 
@@ -24,25 +25,22 @@ final class OverWritingOutPut implements OutputInterface
     ) {
     }
 
-    /**
-     * @param iterable<string>|string $messages
-     *
-     * @phpstan-ignore-next-line
-     */
     public function write(iterable|string $messages, bool $newline = false, int $options = 0): void
     {
         $this->output->write($messages, $newline, $options);
     }
 
-    /**
-     * @param iterable<string>|string $messages
-     *
-     * @phpstan-ignore-next-line
-     */
     public function writeln(iterable|string $messages, int $options = 0): void
     {
-        if (! is_string($messages)) {
-            $messages = implode(PHP_EOL, [...$messages]);
+        if (is_string($messages)) {
+            $messageString = $messages;
+        } else {
+            $parts = [];
+            foreach ($messages as $message) {
+                $parts[] = is_string($message) ? $message : (is_scalar($message) ? (string) $message : '');
+            }
+
+            $messageString = implode(PHP_EOL, $parts);
         }
 
         if ($this->previousLinecount > 0) {
@@ -50,9 +48,9 @@ final class OverWritingOutPut implements OutputInterface
             $this->output->write("\x1b[0J");
         }
 
-        $this->previousLinecount = count(explode(PHP_EOL, $messages));
+        $this->previousLinecount = count(explode(PHP_EOL, $messageString));
 
-        $this->output->writeln($messages, $options);
+        $this->output->writeln($messageString, $options);
     }
 
     public function setVerbosity(int $level): void

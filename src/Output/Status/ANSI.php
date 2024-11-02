@@ -114,34 +114,17 @@ final class ANSI
     public function advanceStep(string $key): void
     {
         $this->stepProgress[$key]++;
-        $percentage = 100 / $this->itemsCountForStep[$key] * $this->stepProgress[$key];
-        /** @phpstan-ignore-next-line */
-        switch (true) {
-            case $percentage <= 12.5:
-                $this->stepsStatus[$key] = '🌑';
-                break;
-            case $percentage > 12.5 && $percentage <= 25:
-                $this->stepsStatus[$key] = '🌒';
-                break;
-            case $percentage > 25 && $percentage <= 37.5:
-                $this->stepsStatus[$key] = '🌓';
-                break;
-            case $percentage > 37.5 && $percentage <= 50:
-                $this->stepsStatus[$key] = '🌔';
-                break;
-            case $percentage > 50 && $percentage <= 62.5:
-                $this->stepsStatus[$key] = '🌕';
-                break;
-            case $percentage > 62.5 && $percentage <= 75:
-                $this->stepsStatus[$key] = '🌖';
-                break;
-            case $percentage > 75 && $percentage <= 87.5:
-                $this->stepsStatus[$key] = '🌗';
-                break;
-            case $percentage > 87.5:
-                $this->stepsStatus[$key] = '🌘';
-                break;
-        }
+        $percentage              = 100 / $this->itemsCountForStep[$key] * $this->stepProgress[$key];
+        $this->stepsStatus[$key] = match (true) {
+            $percentage <= 12.5 => '🌑',
+            $percentage <= 25 => '🌒',
+            $percentage <= 37.5 => '🌓',
+            $percentage <= 50 => '🌔',
+            $percentage <= 62.5 => '🌕',
+            $percentage <= 75 => '🌖',
+            $percentage <= 87.5 => '🌗',
+            default => '🌘',
+        };
 
         $this->maybeRender();
     }

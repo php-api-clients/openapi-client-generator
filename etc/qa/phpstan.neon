@@ -1,16 +1,51 @@
 parameters:
+	level: max
+	paths:
+		- ../../etc
+		- ../../src
+		- ../../tests
 	excludePaths:
-		- ../../tests/app/*
-		- ../../tests/test-app/*
-	ignoreErrors:
-		- '#cebe\\openapi\\spec\\Reference#'
-		- '#Call to function in_array\(\) requires parameter \#3 to be true.#'
-		- '#with a nullable type declaration.#'
-		- '#Casting class ReflectionType to string is deprecated.#'
+		analyseAndScan:
+			- ../../tests/app
+			- ../../tests/test-app
+			- ../../src/phpstan-assertType-mock.php
+	stubFiles:
+		- stubs/prophecy.stub.php
 	ergebnis:
 		noExtends:
 			classesAllowedToBeExtended:
-			    - ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\AbstractListOperation
-			    - PhpParser\Builder\Param
-includes:
-	- ../../vendor/wyrihaximus/async-test-utilities/rules.neon
+				- ApiClients\Tools\OpenApiClientGenerator\Contract\Voter\AbstractListOperation
+	ignoreErrors:
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/Contract/*
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/Output/*
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/State/*
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/SectionGenerator/*
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/Voter/*
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/ConfigurationFactory.php
+		-
+			identifier: shipmonk.deadMethod
+			path: ../../src/Generator/Helper/Types.php
+		-
+			identifier: shipmonk.deadProperty.neverRead
+			path: ../../src/State/File.php
+		-
+			identifier: wyrihaximus.reactphp.blocking.function.fileGetContents
+			path: ../../tests/*
+		-
+			identifier: wyrihaximus.reactphp.blocking.function.filePutContents
+			path: ../../src/Output/Error.php
+		-
+			identifier: missingType.iterableValue
+			path: ../../src/Output/Status/OverWritingOutPut.php

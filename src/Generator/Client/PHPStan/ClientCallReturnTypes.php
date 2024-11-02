@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan;
 
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ConfigurationPackage;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -25,9 +26,11 @@ use function trim;
 final class ClientCallReturnTypes
 {
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, Representation\Client $client): iterable
+    public static function generate(Package $package, Namespaced\Client $client): iterable
     {
-        /** @var array<Representation\Operation> $operations */
+        $package = ConfigurationPackage::unwrap($package);
+
+        /** @var array<Namespaced\Operation> $operations */
         $operations = [];
         foreach ($client->paths as $path) {
             $operations = [...$operations, ...$path->operations];
@@ -38,9 +41,7 @@ final class ClientCallReturnTypes
             $stmts[] = new Node\Stmt\If_(
                 new Expr\BinaryOp\Identical(
                     new Expr\Variable(
-                        new Node\Name(
-                            'call',
-                        ),
+                        'call',
                     ),
                     new Node\Scalar\String_($operation->matchMethod . ' ' . $operation->path),
                 ),
@@ -50,17 +51,11 @@ final class ClientCallReturnTypes
                             new Expr\MethodCall(
                                 new Expr\PropertyFetch(
                                     new Expr\Variable(
-                                        new Node\Name(
-                                            'this',
-                                        ),
+                                        'this',
                                     ),
-                                    new Node\Name(
-                                        'typeResolver',
-                                    ),
+                                    'typeResolver',
                                 ),
-                                new Node\Name(
-                                    'resolve',
-                                ),
+                                'resolve',
                                 [
                                     new Arg(
                                         new Node\Scalar\String_(
@@ -76,7 +71,7 @@ final class ClientCallReturnTypes
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(new Node\Name(trim($configuration->namespace->source . '\PHPStan', '\\')));
+        $stmt    = $factory->namespace(new Node\Name(trim($package->namespace->source . '\PHPStan', '\\')));
         $class   = $factory->class('ClientCallReturnTypes')->makeFinal()->makeReadonly()->implement(
             new Node\Name('\\' . DynamicMethodReturnTypeExtension::class),
         )->addStmt(
@@ -89,13 +84,9 @@ final class ClientCallReturnTypes
                     new Expr\Assign(
                         new Expr\PropertyFetch(
                             new Expr\Variable(
-                                new Node\Name(
-                                    'this',
-                                ),
+                                'this',
                             ),
-                            new Node\Name(
-                                'printer',
-                            ),
+                            'printer',
                         ),
                         new Expr\New_(
                             new Node\Name(
@@ -109,8 +100,8 @@ final class ClientCallReturnTypes
             $factory->method('getClass')->makePublic()->setReturnType('string')->addStmt(
                 new Node\Stmt\Return_(
                     new Expr\ClassConstFetch(
-                        new Node\Name('\\' . $configuration->namespace->source . '\Client'),
-                        new Node\Name('class'),
+                        new Node\Name('\\' . $package->namespace->source . '\Client'),
+                        'class',
                     ),
                 ),
             ),
@@ -118,9 +109,7 @@ final class ClientCallReturnTypes
             $factory->method('isMethodSupported')->makePublic()->setReturnType('bool')->addParam(
                 new Node\Param(
                     new Expr\Variable(
-                        new Node\Name(
-                            'methodReflection',
-                        ),
+                        'methodReflection',
                     ),
                     null,
                     new Node\Name(
@@ -132,13 +121,9 @@ final class ClientCallReturnTypes
                     new Expr\BinaryOp\Identical(
                         new Expr\MethodCall(
                             new Expr\Variable(
-                                new Node\Name(
-                                    'methodReflection',
-                                ),
+                                'methodReflection',
                             ),
-                            new Node\Name(
-                                'getName',
-                            ),
+                            'getName',
                         ),
                         new Node\Scalar\String_('call'),
                     ),
@@ -153,9 +138,7 @@ final class ClientCallReturnTypes
             )->addParam(
                 new Node\Param(
                     new Expr\Variable(
-                        new Node\Name(
-                            'methodReflection',
-                        ),
+                        'methodReflection',
                     ),
                     null,
                     new Node\Name(
@@ -165,9 +148,7 @@ final class ClientCallReturnTypes
             )->addParam(
                 new Node\Param(
                     new Expr\Variable(
-                        new Node\Name(
-                            'methodCall',
-                        ),
+                        'methodCall',
                     ),
                     null,
                     new Node\Name(
@@ -177,9 +158,7 @@ final class ClientCallReturnTypes
             )->addParam(
                 new Node\Param(
                     new Expr\Variable(
-                        new Node\Name(
-                            'scope',
-                        ),
+                        'scope',
                     ),
                     null,
                     new Node\Name(
@@ -190,19 +169,13 @@ final class ClientCallReturnTypes
                 new Node\Stmt\Expression(
                     new Expr\Assign(
                         new Expr\Variable(
-                            new Node\Name(
-                                'args',
-                            ),
+                            'args',
                         ),
                         new Expr\MethodCall(
                             new Expr\Variable(
-                                new Node\Name(
-                                    'methodCall',
-                                ),
+                                'methodCall',
                             ),
-                            new Node\Name(
-                                'getArgs',
-                            ),
+                            'getArgs',
                         ),
                     ),
                 ),
@@ -210,15 +183,11 @@ final class ClientCallReturnTypes
                 new Node\Stmt\If_(
                     new Expr\BinaryOp\Identical(
                         new Expr\FuncCall(
-                            new Node\Name(
-                                'count',
-                            ),
+                            new Node\Name('count'),
                             [
                                 new Arg(
                                     new Expr\Variable(
-                                        new Node\Name(
-                                            'args',
-                                        ),
+                                        'args',
                                     ),
                                 ),
                             ],
@@ -239,44 +208,30 @@ final class ClientCallReturnTypes
                 new Node\Stmt\Expression(
                     new Expr\Assign(
                         new Expr\Variable(
-                            new Node\Name(
-                                'call',
-                            ),
+                            'call',
                         ),
                         new Expr\FuncCall(
-                            new Node\Name(
-                                'substr',
-                            ),
+                            new Node\Name('substr'),
                             [
                                 new Arg(
                                     new MethodCall(
                                         new Expr\PropertyFetch(
                                             new Expr\Variable(
-                                                new Node\Name(
-                                                    'this',
-                                                ),
+                                                'this',
                                             ),
-                                            new Node\Name(
-                                                'printer',
-                                            ),
+                                            'printer',
                                         ),
-                                        new Node\Name(
-                                            'prettyPrintExpr',
-                                        ),
+                                        'prettyPrintExpr',
                                         [
                                             new Arg(
                                                 new Expr\PropertyFetch(
                                                     new Expr\ArrayDimFetch(
                                                         new Expr\Variable(
-                                                            new Node\Name(
-                                                                'args',
-                                                            ),
+                                                            'args',
                                                         ),
                                                         new Node\Scalar\LNumber(0),
                                                     ),
-                                                    new Node\Name(
-                                                        'value',
-                                                    ),
+                                                    'value',
                                                 ),
                                             ),
                                         ],
@@ -301,6 +256,6 @@ final class ClientCallReturnTypes
             ),
         );
 
-        yield new File($pathPrefix, 'PHPStan\ClientCallReturnTypes', $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, 'PHPStan\\ClientCallReturnTypes', $stmt->addStmt($class)->getNode(), File::DO_NOT_LOAD_ON_WRITE);
     }
 }

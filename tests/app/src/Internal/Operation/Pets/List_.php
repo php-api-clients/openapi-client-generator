@@ -3,14 +3,6 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Operation\Pets;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
 final class List_
 {
     public const OPERATION_ID = 'pets/list';
@@ -19,23 +11,21 @@ final class List_
     private int $perPage;
     /**Page number of the results to fetch. **/
     private int $page;
-    private readonly \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator;
-    private readonly Internal\Hydrator\Operation\Pets $hydrator;
-    public function __construct(\League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, Internal\Hydrator\Operation\Pets $hydrator, int $perPage = 30, int $page = 1)
+    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Internal\Hydrator\Operation\Pets $hydrator, int $perPage = 30, int $page = 1)
     {
         $this->perPage = $perPage;
         $this->page = $page;
         $this->responseSchemaValidator = $responseSchemaValidator;
         $this->hydrator = $hydrator;
     }
-    public function createRequest() : \Psr\Http\Message\RequestInterface
+    public function createRequest(): \Psr\Http\Message\RequestInterface
     {
-        return new \RingCentral\Psr7\Request('GET', (string) (new \League\Uri\UriTemplate('/pets{?page,per_page}'))->expand(array('page' => $this->page, 'per_page' => $this->perPage)));
+        return new \React\Http\Message\Request('GET', (string) (new \League\Uri\UriTemplate('/pets{?page,per_page}'))->expand(['page' => $this->page, 'per_page' => $this->perPage]));
     }
     /**
-     * @return \Rx\Observable<Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
+     * @return \Rx\Observable<\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\HellHound|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider>|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function createResponse(\Psr\Http\Message\ResponseInterface $response) : \Rx\Observable
+    public function createResponse(\Psr\Http\Message\ResponseInterface $response): \Rx\Observable|\ApiClients\Client\PetStore\Schema\Error
     {
         $code = $response->getStatusCode();
         [$contentType] = explode(';', $response->getHeaderLine('Content-Type'));
@@ -47,58 +37,58 @@ final class List_
                      * A paged array of pets
                      **/
                     case 200:
-                        return \Rx\Observable::fromArray($body, new \Rx\Scheduler\ImmediateScheduler())->map(function (array $body) : Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider {
+                        return \Rx\Observable::fromArray($body, new \Rx\Scheduler\ImmediateScheduler())->map(function (array $body): \ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\HellHound|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider {
                             $error = new \RuntimeException();
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Cat::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Cat::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Cat::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Cat::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaaa;
+                                goto items_application_json_two_hundred_0;
                             }
-                            items_application_json_two_hundred_aaaaa:
+                            items_application_json_two_hundred_0:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Dog::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Dog::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Dog::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Dog::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaab;
+                                goto items_application_json_two_hundred_1;
                             }
-                            items_application_json_two_hundred_aaaab:
+                            items_application_json_two_hundred_1:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\HellHound::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\HellHound::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\HellHound::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\HellHound::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaac;
+                                goto items_application_json_two_hundred_2;
                             }
-                            items_application_json_two_hundred_aaaac:
+                            items_application_json_two_hundred_2:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Bird::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Bird::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Bird::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Bird::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaad;
+                                goto items_application_json_two_hundred_3;
                             }
-                            items_application_json_two_hundred_aaaad:
+                            items_application_json_two_hundred_3:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Fish::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Fish::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Fish::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Fish::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaae;
+                                goto items_application_json_two_hundred_4;
                             }
-                            items_application_json_two_hundred_aaaae:
+                            items_application_json_two_hundred_4:
                             try {
-                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Spider::SCHEMA_JSON, '\\cebe\\openapi\\spec\\Schema'));
-                                return $this->hydrator->hydrateObject(Schema\Spider::class, $body);
+                                $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Spider::SCHEMA_JSON, '\cebe\openapi\spec\Schema'));
+                                return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Spider::class, $body);
                             } catch (\Throwable $error) {
-                                goto items_application_json_two_hundred_aaaaf;
+                                goto items_application_json_two_hundred_5;
                             }
-                            items_application_json_two_hundred_aaaaf:
+                            items_application_json_two_hundred_5:
                             throw $error;
                         });
                     /**
                      * unexpected error
                      **/
                     default:
-                        $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(Schema\Error::SCHEMA_JSON, \cebe\openapi\spec\Schema::class));
-                        throw new ErrorSchemas\Error($code, $this->hydrator->hydrateObject(Schema\Error::class, $body));
+                        $this->responseSchemaValidator->validate($body, \cebe\openapi\Reader::readFromJson(\ApiClients\Client\PetStore\Schema\Error::SCHEMA_JSON, \cebe\openapi\spec\Schema::class));
+                        return $this->hydrator->hydrateObject(\ApiClients\Client\PetStore\Schema\Error::class, $body);
                 }
                 break;
         }

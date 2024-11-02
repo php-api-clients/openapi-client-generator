@@ -19,7 +19,7 @@ final class PageAndPerPageInQuery extends AbstractListOperation implements ListO
         return 1;
     }
 
-    /** @return array<string> */
+    /** @return list<string> */
     final public static function keys(): array
     {
         return ['perPage', 'page'];

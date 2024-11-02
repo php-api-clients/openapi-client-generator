@@ -9,6 +9,7 @@ use Throwable;
 
 use function file_put_contents;
 use function getenv;
+use function is_string;
 use function Termwind\render;
 
 use const FILE_APPEND;
@@ -24,10 +25,15 @@ final readonly class Error
             </em>
         </div>');
 
-        if ((new CiDetector())->detect()->getCiName() !== CiDetector::CI_GITHUB_ACTIONS) {
+        if (new CiDetector()->detect()->getCiName() !== CiDetector::CI_GITHUB_ACTIONS) {
             return;
         }
 
-        file_put_contents(getenv('GITHUB_STEP_SUMMARY'), "### ⚠️ Error ⚠️\n```" . $throwable->getMessage() . "```\n", FILE_APPEND);
+        $summaryPath = getenv('GITHUB_STEP_SUMMARY');
+        if (! is_string($summaryPath) || $summaryPath === '') {
+            return;
+        }
+
+        file_put_contents($summaryPath, "### ⚠️ Error ⚠️\n```" . $throwable->getMessage() . "```\n", FILE_APPEND);
     }
 }

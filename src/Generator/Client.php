@@ -6,21 +6,24 @@ namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Methods\ChunkCount;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan\ClientCallReturnTypes;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan\ClientCallReturnTypesTest;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ConfigurationPackage;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
-use ApiClients\Tools\OpenApiClientGenerator\PrivatePromotedPropertyAsParam;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use ApiClients\Tools\OpenApiClientGenerator\Utils;
 use Jawira\CaseConverter\Convert;
+use League\OpenAPIValidation\Schema\SchemaValidator;
 use NumberToWords\NumberToWords;
-use PhpParser\Builder\Param;
+use OpenAPITools\Configuration\Package as ConfigurationPackageType;
+use OpenAPITools\Configuration\Package\QA\Tool;
+use OpenAPITools\Contract\FileGenerator;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
+use OpenAPITools\Utils\Utils;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -42,61 +45,66 @@ use function count;
 use function dirname;
 use function explode;
 use function implode;
-use function PHPStan\Testing\assertType;
-use function strlen;
-use function strpos;
+use function str_starts_with;
 use function trim;
 use function ucfirst;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
 
-final class Client
+/**
+ * @phpstan-type OperationTreeEntry array{operation: Namespaced\Operation, path: Namespaced\Path}
+ * @phpstan-type OperationTree array{operations: list<OperationTreeEntry>, paths: array<string, mixed>}
+ */
+final readonly class Client implements FileGenerator
 {
+    public function __construct(
+        private BuilderFactory $builderFactory,
+        private bool $call,
+        private bool $operations,
+    ) {
+    }
+
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, string $pathPrefixTests, Representation\Client $client, Routers $routers): iterable
+    public function generate(Package $package, Namespaced\Representation $representation): iterable
     {
+        $package = ConfigurationPackage::unwrap($package);
+
+        $routers    = new Routers();
         $operations = [];
-        foreach ($client->paths as $path) {
+        foreach ($representation->client->paths as $path) {
             $operations = [...$operations, ...$path->operations];
         }
 
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
+        $stmt = $this->builderFactory->namespace(trim($package->namespace->source, '\\'));
 
-        $class = $factory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal();
+        $class = $this->builderFactory->class('Client')->implement(new Node\Name('ClientInterface'))->makeFinal();
 
-        if ($configuration->entryPoints->call) {
+        if ($this->call) {
             $class->addStmt(
-                $factory->property('router')->setType('array')->setDefault([])->makePrivate(),
+                $this->builderFactory->property('router')->setType('array')->setDefault([])->makePrivate(),
             );
         }
 
-        if ($configuration->entryPoints->operations) {
+        if ($this->operations) {
             $class->addStmt(
-                $factory->property('operations')->setType('OperationsInterface')->makeReadonly()->makePrivate(),
-            );
-        }
-
-        if ($configuration->entryPoints->webHooks) {
-            $class->addStmt(
-                $factory->property('webHooks')->setType('WebHooks')->makeReadonly()->makePrivate(),
+                $this->builderFactory->property('operations')->setType('OperationsInterface')->makeReadonly()->makePrivate(),
             );
         }
 
         $class->addStmt(
-            $factory->property('routers')->setType('Internal\\Routers')->makeReadonly()->makePrivate(),
+            $this->builderFactory->property('routers')->setType('\\' . $package->namespace->source . '\\Internal\\Routers')->makeReadonly()->makePrivate(),
         )->addStmt(
-            $factory->method('__construct')->makePublic()->addParam(
-                (new Param('authentication'))->setType('\\' . AuthenticationInterface::class),
+            $this->builderFactory->method('__construct')->makePublic()->addParam(
+                $this->builderFactory->param('authentication')->makePrivate()->makeReadonly()->setType('\\' . AuthenticationInterface::class),
             )->addParam(
-                (new Param('browser'))->setType('\\' . Browser::class),
-            )->addStmt((static function (Representation\Client $client): Node\Expr {
-                $assignExpr = new Node\Expr\Variable('browser');
-
-                if ($client->baseUrl !== null) {
-                    $assignExpr = new Node\Expr\MethodCall(
-                        $assignExpr,
+                $this->builderFactory->param('browser')->makePrivate()->setType('\\' . Browser::class),
+            )->addStmt((static function (Namespaced\Client $client): Node\Stmt\Expression {
+                $browserVariable = new Node\Expr\Variable('browser');
+                $browserWithBase = $client->baseUrl === null
+                    ? $browserVariable
+                    : new Node\Expr\MethodCall(
+                        $browserVariable,
                         'withBase',
                         [
                             new Arg(
@@ -104,12 +112,11 @@ final class Client
                             ),
                         ],
                     );
-                }
 
-                return new Node\Expr\Assign(
+                return new Node\Stmt\Expression(new Node\Expr\Assign(
                     new Node\Expr\Variable('browser'),
                     new Node\Expr\MethodCall(
-                        $assignExpr,
+                        $browserWithBase,
                         'withFollowRedirects',
                         [
                             new Arg(
@@ -117,15 +124,15 @@ final class Client
                             ),
                         ],
                     ),
-                );
-            })($client))->addStmt(
+                ));
+            })($representation->client))->addStmt(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable('requestSchemaValidator'),
                     new Node\Expr\New_(
-                        new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                        new Node\Name('\\' . SchemaValidator::class),
                         [
                             new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                                new Node\Name('\\' . SchemaValidator::class),
                                 'VALIDATE_AS_REQUEST',
                             )),
                         ],
@@ -135,10 +142,10 @@ final class Client
                 new Node\Expr\Assign(
                     new Node\Expr\Variable('responseSchemaValidator'),
                     new Node\Expr\New_(
-                        new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                        new Node\Name('\\' . SchemaValidator::class),
                         [
                             new Node\Arg(new Node\Expr\ClassConstFetch(
-                                new Node\Name('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                                new Node\Name('\\' . SchemaValidator::class),
                                 'VALIDATE_AS_RESPONSE',
                             )),
                         ],
@@ -148,13 +155,13 @@ final class Client
                 new Node\Expr\Assign(
                     new Node\Expr\Variable('hydrators'),
                     new Node\Expr\New_(
-                        new Node\Name('Internal\\Hydrators'),
+                        new Node\Name('\\' . $package->namespace->source . '\\Internal\\Hydrators'),
                         [],
                     ),
                 ),
             )->addStmts([
-                ...($configuration->entryPoints->operations ? [
-                    new Node\Expr\Assign(
+                ...($this->operations ? [
+                    new Node\Stmt\Expression(new Node\Expr\Assign(
                         new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
                             'operations',
@@ -164,21 +171,21 @@ final class Client
                             [
                                 new Arg(
                                     new Node\Expr\New_(
-                                        new Node\Name('Internal\\Operators'),
+                                        new Node\Name('\\' . $package->namespace->source . '\\Internal\\Operators'),
                                         [
-                                            new Arg(
-                                                new Node\Expr\Variable('browser'),
-                                                false,
-                                                false,
-                                                [],
-                                                new Node\Identifier('browser'),
-                                            ),
                                             new Arg(
                                                 new Node\Expr\Variable('authentication'),
                                                 false,
                                                 false,
                                                 [],
                                                 new Node\Identifier('authentication'),
+                                            ),
+                                            new Arg(
+                                                new Node\Expr\Variable('browser'),
+                                                false,
+                                                false,
+                                                [],
+                                                new Node\Identifier('browser'),
                                             ),
                                             new Arg(
                                                 new Node\Expr\Variable('requestSchemaValidator'),
@@ -206,35 +213,7 @@ final class Client
                                 ),
                             ],
                         ),
-                    ),
-                ] : []),
-            ])->addStmts([
-                ...($configuration->entryPoints->webHooks ? [
-                    new Node\Expr\Assign(
-                        new Node\Expr\PropertyFetch(
-                            new Node\Expr\Variable('this'),
-                            'webHooks',
-                        ),
-                        new Node\Expr\New_(
-                            new Node\Name('WebHooks'),
-                            [
-                                new Arg(
-                                    new Node\Expr\Variable('requestSchemaValidator'),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('requestSchemaValidator'),
-                                ),
-                                new Arg(
-                                    new Node\Expr\Variable('hydrators'),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('hydrator'),
-                                ),
-                            ],
-                        ),
-                    ),
+                    )),
                 ] : []),
             ])->addStmt(
                 new Node\Stmt\Expression(
@@ -244,21 +223,21 @@ final class Client
                             'routers',
                         ),
                         new Node\Expr\New_(
-                            new Node\Name('Internal\\Routers'),
+                            new Node\Name('\\' . $package->namespace->source . '\\Internal\\Routers'),
                             [
-                                new Arg(
-                                    new Node\Expr\Variable('browser'),
-                                    false,
-                                    false,
-                                    [],
-                                    new Node\Identifier('browser'),
-                                ),
                                 new Arg(
                                     new Node\Expr\Variable('authentication'),
                                     false,
                                     false,
                                     [],
                                     new Node\Identifier('authentication'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable('browser'),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('browser'),
                                 ),
                                 new Arg(
                                     new Node\Expr\Variable('requestSchemaValidator'),
@@ -285,11 +264,55 @@ final class Client
                         ),
                     ),
                 ),
-            ),
+            )->addStmts([
+                ...($representation->webHooks === [] ? [] : [
+                    new Node\Stmt\Expression(new Node\Expr\Assign(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'webHooks',
+                        ),
+                        new Node\Expr\New_(
+                            new Node\Name('\\' . $package->namespace->source . '\\WebHooks'),
+                            [
+                                new Arg(
+                                    new Node\Expr\Variable('requestSchemaValidator'),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('requestSchemaValidator'),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable('hydrators'),
+                                    false,
+                                    false,
+                                    [],
+                                    new Node\Identifier('hydrator'),
+                                ),
+                            ],
+                        ),
+                    )),
+                ]),
+            ]),
         );
 
+        if ($representation->webHooks !== []) {
+            $class->addStmt(
+                $this->builderFactory->property('webHooks')->setType('\\' . $package->namespace->source . '\\WebHooks')->makeReadonly()->makePrivate(),
+            )->addStmt(
+                $this->builderFactory->method('webHooks')->makePublic()->setReturnType('\\' . WebHooksInterface::class)->addStmt(
+                    new Node\Stmt\Return_(
+                        new Node\Expr\PropertyFetch(
+                            new Node\Expr\Variable('this'),
+                            'webHooks',
+                        ),
+                    ),
+                ),
+            );
+        }
+
+        /** @var array<string, array<int, OperationTree>> $sortedOperations */
         $sortedOperations = [];
-        foreach ($client->paths as $path) {
+        foreach ($representation->client->paths as $path) {
             foreach ($path->operations as $operation) {
                 if ($operation->path === '/') {
                     $operationPath = [''];
@@ -310,57 +333,61 @@ final class Client
                     ];
                 }
 
-                $sortedOperations[$operation->matchMethod][$operationPathCount] = self::traverseOperationPaths($sortedOperations[$operation->matchMethod][$operationPathCount], $operationPath, $operation, $path);
+                /** @var OperationTree $operationTree */
+                $operationTree                                                  = $sortedOperations[$operation->matchMethod][$operationPathCount];
+                $sortedOperations[$operation->matchMethod][$operationPathCount] = self::traverseOperationPaths($operationTree, $operationPath, $operation, $path);
             }
         }
 
-        if ($configuration->entryPoints->call) {
-            $chunkCountClasses = [];
-            $operationsIfs     = [];
+        $chunkCountClasses = [];
+        if ($this->call) {
+            $operationsIfs = [];
             foreach ($sortedOperations as $method => $ops) {
                 $opsTmts = [];
-                foreach ($ops as $chunkCount => $moar) {
-                    $returnTypes            = [];
-                    $docBlockReturnTypes    = [];
-                    $traverseForReturnTypes = static function (array $moar) use (&$returnTypes, &$docBlockReturnTypes, &$traverseForReturnTypes): void {
-                        foreach (
-                            array_map(
-                                static fn (array $a): Representation\Operation => $a['operation'],
-                                $moar['operations'],
-                            ) as $operation
-                        ) {
-                            $returnTypes         = [
-                                ...$returnTypes,
+                foreach ($ops as $chunkCount => $operationTree) {
+                    /** @var OperationTree $operationTree */
+                    $returnTypesList         = [];
+                    $docBlockReturnTypesList = [];
+                    $traverseForReturnTypes  = static function (array $tree) use (&$returnTypesList, &$docBlockReturnTypesList, &$traverseForReturnTypes): void {
+                        /** @var list<OperationTreeEntry> $operationEntries */
+                        $operationEntries = $tree['operations'];
+                        foreach ($operationEntries as $operationEntry) {
+                            $operation               = $operationEntry['operation'];
+                            $returnTypesList         = [
+                                ...$returnTypesList,
                                 ...explode('|', Operation::getResultTypeFromOperation($operation)),
                             ];
-                            $docBlockReturnTypes = [
-                                ...$docBlockReturnTypes,
+                            $docBlockReturnTypesList = [
+                                ...$docBlockReturnTypesList,
                                 ...explode('|', Operation::getDocBlockResultTypeFromOperation($operation)),
                             ];
                         }
 
-                        foreach ($moar['paths'] as $path) {
-                            $traverseForReturnTypes($path);
+                        /** @var array<string, mixed> $nestedPaths */
+                        $nestedPaths = $tree['paths'];
+                        foreach ($nestedPaths as $nestedTree) {
+                            /** @var OperationTree $nestedTree */
+                            $traverseForReturnTypes($nestedTree);
                         }
                     };
 
-                    $traverseForReturnTypes($moar);
+                    $traverseForReturnTypes($operationTree);
                     $returnTypesUnfilterred = implode(
                         '|',
                         array_map(
-                            'trim',
+                            trim(...),
                             array_unique(
-                                [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypes)],
+                                [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypesList)],
                             ),
                         ),
                     );
                     $returnTypes            = implode(
                         '|',
                         array_map(
-                            'trim',
+                            trim(...),
                             array_filter(
                                 array_unique(
-                                    [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypes)],
+                                    [...Types::filterDuplicatesAndIncompatibleRawTypes(...$returnTypesList)],
                                 ),
                                 static fn (string $type): bool => $type !== 'void',
                             ),
@@ -369,22 +396,23 @@ final class Client
                     $docBlockReturnTypes    = implode(
                         '|',
                         array_map(
-                            'trim',
+                            trim(...),
                             array_filter(
                                 array_unique(
-                                    $docBlockReturnTypes,
+                                    $docBlockReturnTypesList,
                                 ),
                                 static fn (string $type): bool => $type !== 'void',
                             ),
                         ),
                     );
                     $chunkCountClasses[]    = $cc = new ChunkCount(
-                        'Internal\\Router\\' . (new Convert($method))->toPascal() . '\\' . (new Convert(NumberToWords::transformNumber('en', $chunkCount)))->toPascal(),
+                        'Internal\\Router\\' . new Convert($method)->toPascal() . '\\' . new Convert(NumberToWords::transformNumber('en', $chunkCount))->toPascal(),
                         $returnTypes,
                         $docBlockReturnTypes,
                         self::traverseOperations(
-                            $moar['operations'], /** @phpstan-ignore-line */
-                            $moar['paths'], /** @phpstan-ignore-line */
+                            $package,
+                            $operationTree['operations'],
+                            $operationTree['paths'],
                             0,
                             $routers,
                         ),
@@ -398,7 +426,7 @@ final class Client
                         ),
                         [
                             new Node\Stmt\If_(
-                                new Node\Expr\BinaryOp\Equal(
+                                new Node\Expr\BinaryOp\Identical(
                                     new Node\Expr\FuncCall(
                                         new Node\Name('\array_key_exists'),
                                         [
@@ -480,7 +508,11 @@ final class Client
                         new Node\Scalar\String_($method),
                     ),
                     (static function (array $opsTmts): array {
-                        $first   = array_shift($opsTmts);
+                        $first = array_shift($opsTmts);
+                        if ($first === null) {
+                            return [];
+                        }
+
                         $elseIfs = [];
 
                         foreach ($opsTmts as $opsTmt) {
@@ -500,11 +532,16 @@ final class Client
                 ];
             }
 
-            $firstOperationsIfs = array_shift($operationsIfs);
-            $operationsIf       = new Node\Stmt\If_(
-                $firstOperationsIfs[0], /** @phpstan-ignore-line */
+            if ($operationsIfs === []) {
+                return;
+            }
+
+            $firstOperationsIf = array_shift($operationsIfs);
+
+            $operationsIf = new Node\Stmt\If_(
+                $firstOperationsIf[0],
                 [
-                    'stmts' => $firstOperationsIfs[1], /** @phpstan-ignore-line */
+                    'stmts' => $firstOperationsIf[1],
                     'elseifs' => (static function (array $operationsIfs): array {
                         $elseIfs = [];
 
@@ -518,9 +555,9 @@ final class Client
             );
 
             $class->addStmt(
-                $factory->method('call')->makePublic()->setDocComment(
+                $this->builderFactory->method('call')->makePublic()->setDocComment(
                     new Doc(implode(PHP_EOL, [
-                        ...($configuration->qa?->phpcs ?  ['// phpcs:disable'] : []),
+                        ...($package->qa->phpcs instanceof Tool && $package->qa->phpcs->enabled ? ['// phpcs:disable'] : []),
                         '/**',
                     //                        ' * @return ' . (static function (array $operations): string {
                     //                            $count    = count($operations);
@@ -541,9 +578,9 @@ final class Client
                     //                            return $left . $right;
                     //                        })($operations),
                         ' */',
-                        ...($configuration->qa?->phpcs ?  ['// phpcs:enable'] : []),
+                        ...($package->qa->phpcs instanceof Tool && $package->qa->phpcs->enabled ? ['// phpcs:enable'] : []),
                     ])),
-                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
+                )->addParam($this->builderFactory->param('call')->setType('string'))->addParam($this->builderFactory->param('params')->setType('array')->setDefault([]))->setReturnType(
                     new UnionType(
                         array_map(
                             static fn (string $type): Name => new Name($type),
@@ -610,18 +647,20 @@ final class Client
                         ),
                     ),
                 )->addStmt($operationsIf)->addStmt(
-                    new Node\Stmt\Throw_(
-                        new Node\Expr\New_(
-                            new Node\Name('\InvalidArgumentException'),
+                    new Node\Stmt\Expression(
+                        new Node\Expr\Throw_(
+                            new Node\Expr\New_(
+                                new Node\Name('\InvalidArgumentException'),
+                            ),
                         ),
                     ),
                 ),
             );
         }
 
-        if ($configuration->entryPoints->operations) {
+        if ($this->operations) {
             $class->addStmt(
-                $factory->method('operations')->makePublic()->setReturnType('OperationsInterface')->addStmt(new Node\Stmt\Return_(
+                $this->builderFactory->method('operations')->makePublic()->setReturnType('OperationsInterface')->addStmt(new Node\Stmt\Return_(
                     new Node\Expr\PropertyFetch(
                         new Node\Expr\Variable('this'),
                         'operations',
@@ -630,76 +669,57 @@ final class Client
             );
         }
 
-        if ($configuration->entryPoints->webHooks) {
-            $class->addStmt(
-                $factory->method('webHooks')->makePublic()->setReturnType('\\' . WebHooksInterface::class)->addStmt(new Node\Stmt\Return_(
-                    new Node\Expr\PropertyFetch(
-                        new Node\Expr\Variable('this'),
-                        'webHooks',
-                    ),
-                )),
-            );
-        }
-
-        yield new File($pathPrefix, 'Client', $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, 'Client', $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
 
         foreach ($routers->get() as $router) {
-            yield from self::createRouter(
-                $pathPrefix,
-                $configuration->namespace->source . '\\',
+            yield from $this->createRouter(
+                $package,
                 $router,
                 $routers,
             );
         }
 
-        /** @phpstan-ignore-next-line */
-        if (! isset($chunkCountClasses)) {
-            return;
-        }
+        yield from \ApiClients\Tools\OpenApiClientGenerator\Generator\Routers::generate($package, $routers);
 
         foreach ($chunkCountClasses as $chunkCountClass) {
-            yield from self::createRouterChunkSize(
-                $pathPrefix,
-                $configuration->namespace->source . '\\',
+            yield from $this->createRouterChunkSize(
+                $package,
                 $chunkCountClass,
             );
         }
 
-        yield from \ApiClients\Tools\OpenApiClientGenerator\Generator\Routers::generate($configuration, $pathPrefix, $routers);
-
-        if (! $configuration->qa?->phpstan) {
+        if (! $package->qa->phpstan instanceof Tool || ! $package->qa->phpstan->enabled) {
             return;
         }
 
         require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'phpstan-assertType-mock.php';
-        assertType('bool', true);
 
-        yield from ClientCallReturnTypes::generate($configuration, $pathPrefix, $client);
-        yield from ClientCallReturnTypesTest::generate($configuration, $pathPrefixTests, $client);
+        yield from ClientCallReturnTypes::generate($package, $representation->client);
+        yield from ClientCallReturnTypesTest::generate($package, $representation->client);
 
-        if ($configuration->qa->phpstan->configFilePath === null) {
+        if ($package->qa->phpstan->configFilePath === null) {
             return;
         }
 
-        yield new File($pathPrefix, '../' . $configuration->qa->phpstan->configFilePath, implode(PHP_EOL, [
+        yield new File($package->destination->source, '../' . $package->qa->phpstan->configFilePath, implode(PHP_EOL, [
             'services:',
-            '  - class: ' . $configuration->namespace->source . '\PHPStan\ClientCallReturnTypes',
+            '  - class: ' . $package->namespace->source . '\PHPStan\ClientCallReturnTypes',
             '    tags:',
             '      - phpstan.broker.dynamicMethodReturnTypeExtension',
             '',
-        ]));
+        ]), File::DO_NOT_LOAD_ON_WRITE);
     }
 
     /**
-     * @param array<mixed> $operations
-     * @param array<mixed> $operationPath
+     * @param OperationTree $operations
+     * @param list<string>  $operationPath
      *
-     * @return array<Node>
+     * @return OperationTree
      */
-    private static function traverseOperationPaths(array $operations, array &$operationPath, Representation\Operation $operation, Representation\Path $path): array
+    private static function traverseOperationPaths(array $operations, array $operationPath, Namespaced\Operation $operation, Namespaced\Path $path): array
     {
         if (count($operationPath) === 0) {
-            $operations['operations'][] = [ /** @phpstan-ignore-line */
+            $operations['operations'][] = [
                 'operation' => $operation,
                 'path' => $path,
             ];
@@ -708,29 +728,33 @@ final class Client
         }
 
         $chunk = array_shift($operationPath);
-        if (! array_key_exists($chunk, $operations['paths'])) { /** @phpstan-ignore-line */
-            $operations['paths'][$chunk] = [ /** @phpstan-ignore-line */
+
+        if (! array_key_exists($chunk, $operations['paths'])) {
+            $operations['paths'][$chunk] = [
                 'operations' => [],
                 'paths' => [],
             ];
         }
 
-        $operations['paths'][$chunk] = self::traverseOperationPaths($operations['paths'][$chunk], $operationPath, $operation, $path); /** @phpstan-ignore-line */
+        /** @var OperationTree $childTree */
+        $childTree                   = $operations['paths'][$chunk];
+        $operations['paths'][$chunk] = self::traverseOperationPaths($childTree, $operationPath, $operation, $path);
 
         return $operations;
     }
 
     /**
-     * @param array<Representation\Path> $paths
+     * @param array<string, mixed> $paths
      *
-     * @return iterable<Representation\Path>
+     * @return iterable<OperationTreeEntry>
      */
     private static function operationsInThisThree(array $paths, int $level, Routers $routers): iterable
     {
         foreach ($paths as $path) {
+            /** @var OperationTree $path */
             yield from $path['operations'];
             yield from self::operationsInThisThree(
-                $path['paths'], /** @phpstan-ignore-line */
+                $path['paths'],
                 $level + 1,
                 $routers,
             );
@@ -738,16 +762,16 @@ final class Client
     }
 
     /**
-     * @param array<Representation\Operation> $operations
-     * @param array<Representation\Path>      $paths
+     * @param list<OperationTreeEntry> $operations
+     * @param array<string, mixed>     $paths
      *
-     * @return array<Node\Stmt>
+     * @return list<Node\Stmt>
      */
-    private static function traverseOperations(array $operations, array $paths, int $level, Routers $routers): array
+    private static function traverseOperations(ConfigurationPackageType $package, array $operations, array $paths, int $level, Routers $routers): array
     {
         $nonArgumentPathChunks = [];
         foreach (array_keys($paths) as $pathChunk) {
-            if (strpos($pathChunk, '{') === 0) {
+            if (str_starts_with($pathChunk, '{')) {
                 continue;
             }
 
@@ -772,18 +796,21 @@ final class Client
             $ifs[] = [
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\Variable('call'),
-                    new Node\Scalar\String_($operation['operation']->matchMethod . ' ' . $operation['operation']->path), /** @phpstan-ignore-line */
+                    new Node\Scalar\String_($operation['operation']->matchMethod . ' ' . $operation['operation']->path),
                 ),
-                static::callOperation(
+                self::callOperation(
+                    $package,
                     $routers,
-                    ...$operation, /** @phpstan-ignore-line */
+                    ...$operation,
                 ),
             ];
         }
 
 //        if (count($opsIntree) > 13) {
-        foreach ($paths as $pathChunk => $path) {
-            $ifs[] = [
+        foreach ($paths as $pathChunk => $pathTreeValue) {
+            /** @var OperationTree $pathTree */
+            $pathTree = $pathTreeValue;
+            $ifs[]    = [
                 new Node\Expr\BinaryOp\Equal(
                     new Node\Expr\ArrayDimFetch(
                         new Node\Expr\Variable('pathChunks'),
@@ -792,8 +819,9 @@ final class Client
                     new Node\Scalar\String_($pathChunk),
                 ),
                 self::traverseOperations(
-                    $path['operations'], /** @phpstan-ignore-line */
-                    $path['paths'], /** @phpstan-ignore-line */
+                    $package,
+                    $pathTree['operations'],
+                    $pathTree['paths'],
                     $level + 1,
                     $routers,
                 ),
@@ -823,8 +851,8 @@ final class Client
         ];
     }
 
-    /** @return array<Node\Stmt> */
-    private static function callOperation(Routers $routers, Representation\Operation $operation, Representation\Path $path): array
+    /** @return list<Node\Stmt> */
+    private static function callOperation(ConfigurationPackageType $package, Routers $routers, Namespaced\Operation $operation, Namespaced\Path $path): array
     {
         $returnType = implode(
             '|',
@@ -837,9 +865,20 @@ final class Client
                 ),
             ],
         );
-        $router     =  $routers->add(
+
+        $listOperationKey          = '';
+        $listOperationInitialValue = 0;
+        if ($operation->matchMethod === 'LIST') {
+            /** @var array{key: string, initialValue: int} $listOperationMeta */
+            $listOperationMeta         = $operation->metaData['listOperation'];
+            $listOperationKey          = $listOperationMeta['key'];
+            $listOperationInitialValue = $listOperationMeta['initialValue'];
+        }
+
+        $router =  $routers->add(
+            $package,
             $operation->matchMethod,
-            $operation->group,
+            $operation->group ?? '',
             $operation->name,
             $returnType,
             Operation::getDocBlockResultTypeFromOperation($operation),
@@ -868,14 +907,16 @@ final class Client
                                 ),
                                 [
                                     'stmts' => [
-                                        new Node\Stmt\Throw_(
-                                            new Node\Expr\New_(
-                                                new Node\Name('\InvalidArgumentException'),
-                                                [
-                                                    new Arg(
-                                                        new Node\Scalar\String_('Missing mandatory field: ' . $param->targetName),
-                                                    ),
-                                                ],
+                                        new Node\Stmt\Expression(
+                                            new Node\Expr\Throw_(
+                                                new Node\Expr\New_(
+                                                    new Node\Name('\InvalidArgumentException'),
+                                                    [
+                                                        new Arg(
+                                                            new Node\Scalar\String_('Missing mandatory field: ' . $param->targetName),
+                                                        ),
+                                                    ],
+                                                ),
                                             ),
                                         ),
                                     ],
@@ -905,15 +946,15 @@ final class Client
                 ...($operation->matchMethod !== 'LIST' ? self::makeCall(
                     $operation,
                     $path,
-                    $returnType === 'void' ? static fn (Expr $expr): Node\Stmt\Expression => new Node\Stmt\Expression($expr) : static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr)
+                    $returnType === 'void' ? static fn (Expr $expr): Node\Stmt\Expression => new Node\Stmt\Expression($expr) : static fn (Expr $expr): Node\Stmt\Return_ => new Node\Stmt\Return_($expr),
                 ) : [
                     new Node\Stmt\Expression(
                         new Node\Expr\Assign(
                             new Expr\ArrayDimFetch(
                                 new Expr\Variable('arguments'),
-                                new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
+                                new Node\Scalar\String_($listOperationKey),
                             ),
-                            new Node\Scalar\LNumber($operation->metaData['listOperation']['initialValue']), /** @phpstan-ignore-line */
+                            new Node\Scalar\LNumber($listOperationInitialValue),
                         ),
                     ),
                     new Node\Stmt\Do_(
@@ -950,7 +991,7 @@ final class Client
                                 new Expr\PostInc(
                                     new Expr\ArrayDimFetch(
                                         new Expr\Variable('arguments'),
-                                        new Node\Scalar\String_($operation->metaData['listOperation']['key']), /** @phpstan-ignore-line */
+                                        new Node\Scalar\String_($listOperationKey),
                                     ),
                                 ),
                             ),
@@ -972,7 +1013,7 @@ final class Client
                         ),
                         $router->loopUpMethod,
                     ),
-                    (new Convert(Utils::fixKeyword($router->method)))->toCamel(),
+                    new Convert(Utils::fixKeyword($router->method))->toCamel(),
                     [
                         new Arg(
                             new Node\Expr\Variable(
@@ -985,14 +1026,19 @@ final class Client
         ];
     }
 
-    /** @return array<Node\Stmt> */
-    private static function makeCall(Representation\Operation $operation, Representation\Path $path, callable $calWrap): array
+    /** @return list<Node\Stmt> */
+    private static function makeCall(Namespaced\Operation $operation, Namespaced\Path $path, callable $calWrap): array
     {
+        /** @var class-string $className */
+        $className                 = $operation->className->fullyQualified->source;
+        $constructor               = new ReflectionClass($className)->getConstructor();
+        $needsHydratorAndValidator = $constructor !== null && count(array_filter($constructor->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0;
+
         return [
             new Node\Stmt\Expression(new Node\Expr\Assign(
                 new Node\Expr\Variable('operator'),
                 new Node\Expr\New_(
-                    new Node\Name($operation->operatorClassName->relative),
+                    new Node\Name($operation->operatorClassName->fullyQualified->source),
                     [
                         new Arg(new Node\Expr\PropertyFetch(
                             new Node\Expr\Variable('this'),
@@ -1008,8 +1054,7 @@ final class Client
                                 'requestSchemaValidator',
                             )),
                         ] : []),
-                        /** @phpstan-ignore-next-line */
-                        ...(count(array_filter((new ReflectionClass($operation->className->fullyQualified->source))->getConstructor()->getParameters(), static fn (ReflectionParameter $parameter): bool => $parameter->name === 'responseSchemaValidator' || $parameter->name === 'hydrator')) > 0 ? [
+                        ...($needsHydratorAndValidator ? [
                             new Arg(new Node\Expr\PropertyFetch(
                                 new Node\Expr\Variable('this'),
                                 'responseSchemaValidator',
@@ -1045,31 +1090,30 @@ final class Client
     }
 
     /** @return iterable<File> */
-    private static function createRouter(string $pathPrefix, string $namespace, RouterClass $router, Routers $routers): iterable
+    private function createRouter(ConfigurationPackageType $package, RouterClass $router, Routers $routers): iterable
     {
-        $className = $routers->createClassName(Utils::fixKeyword($router->method), $router->group, '')->class;
-        $factory   = new BuilderFactory();
-        $stmt      = $factory->namespace(Utils::dirname($namespace . $className));
-        $class     = $factory->class(Utils::basename($namespace . $className))->makeFinal()->addStmt(
-            $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('requestSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+        $className = $routers->createClassName($package, Utils::fixKeyword($router->method), $router->group, '')->class;
+        $stmt      = $this->builderFactory->namespace($className->namespace->source);
+        $class     = $this->builderFactory->class($className->className)->makeFinal()->addStmt(
+            $this->builderFactory->method('__construct')->makePublic()->addParam(
+                $this->builderFactory->param('requestSchemaValidator')->makePrivate()->setType('\\' . SchemaValidator::class),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('responseSchemaValidator'))->setType('\League\OpenAPIValidation\Schema\SchemaValidator'),
+                $this->builderFactory->param('responseSchemaValidator')->makePrivate()->setType('\\' . SchemaValidator::class),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('hydrators'))->setType('Internal\\Hydrators'),
+                $this->builderFactory->param('hydrators')->makePrivate()->setType('\\' . $package->namespace->source . '\\Internal\\Hydrators'),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('browser'))->setType('\\' . Browser::class),
+                $this->builderFactory->param('browser')->makePrivate()->setType('\\' . Browser::class),
             )->addParam(
-                (new PrivatePromotedPropertyAsParam('authentication'))->setType('\\' . AuthenticationInterface::class),
+                $this->builderFactory->param('authentication')->makePrivate()->setType('\\' . AuthenticationInterface::class),
             ),
         );
 
         foreach ($router->methods as $method) {
             $class->addStmt(
-                $factory->method(
-                    (new Convert($method->name))->toCamel(),
+                $this->builderFactory->method(
+                    new Convert($method->name)->toCamel(),
                 )->makePublic()->addParam(
-                    (new Param('params'))->setType('array'),
+                    $this->builderFactory->param('params')->setType('array'),
                 )->addStmts($method->nodes)->setReturnType(
                     $method->returnType,
                 )->setDocComment(
@@ -1087,25 +1131,25 @@ final class Client
             );
         }
 
-        yield new File($pathPrefix, $className, $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, $className->relative, $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 
     /** @return iterable<File> */
-    private static function createRouterChunkSize(string $pathPrefix, string $namespace, ChunkCount $chunkCount): iterable
+    private function createRouterChunkSize(ConfigurationPackageType $package, ChunkCount $chunkCount): iterable
     {
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(Utils::dirname($namespace . $chunkCount->className));
+        $namespace = $package->namespace->source . '\\';
+        $stmt      = $this->builderFactory->namespace(Utils::dirname($namespace . $chunkCount->className));
 
-        $class = $factory->class(Utils::basename($namespace . $chunkCount->className))->makeFinal()->addStmt(
-            $factory->method('__construct')->makePublic()->addParam(
-                (new PrivatePromotedPropertyAsParam('routers'))->setType('\\' . $namespace . 'Internal\\Routers'),
+        $class = $this->builderFactory->class(Utils::basename($namespace . $chunkCount->className))->makeFinal()->addStmt(
+            $this->builderFactory->method('__construct')->makePublic()->addParam(
+                $this->builderFactory->param('routers')->makePrivate()->setType('\\' . $namespace . 'Internal\\Routers'),
             ),
         );
 
-        $callMethod = $factory->method('call')->makePublic()->addParams([
-            ...(static function (array $params): iterable {
+        $callMethod = $this->builderFactory->method('call')->makePublic()->addParams([
+            ...(function (array $params): iterable {
                 foreach ($params as $param => $type) {
-                    yield (new Param($param))->setType($type);
+                    yield $this->builderFactory->param($param)->setType($type);
                 }
             })([
                 'call' => 'string',
@@ -1113,18 +1157,20 @@ final class Client
                 'pathChunks' => 'array',
             ]),
         ])->addStmts($chunkCount->nodes)->addStmt(
-            new Node\Stmt\Throw_(
-                new Node\Expr\New_(
-                    new Node\Name('\InvalidArgumentException'),
+            new Node\Stmt\Expression(
+                new Node\Expr\Throw_(
+                    new Node\Expr\New_(
+                        new Node\Name('\InvalidArgumentException'),
+                    ),
                 ),
             ),
         );
 
-        if (strlen($chunkCount->returnType) > 0) {
+        if ($chunkCount->returnType !== '') {
             $callMethod->setReturnType($chunkCount->returnType);
         }
 
-        if (strlen($chunkCount->docBlockReturnType) > 0) {
+        if ($chunkCount->docBlockReturnType !== '') {
             $callMethod->setDocComment(
                 new Doc(
                     implode(
@@ -1141,6 +1187,6 @@ final class Client
 
         $class->addStmt($callMethod);
 
-        yield new File($pathPrefix, $chunkCount->className, $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, $chunkCount->className, $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 }

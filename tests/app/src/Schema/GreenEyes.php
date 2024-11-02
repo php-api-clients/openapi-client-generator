@@ -3,17 +3,9 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final readonly class GreenEyes implements Contract\GreenEyes
+final readonly class GreenEyes implements \ApiClients\Client\PetStore\Contract\GreenEyes
 {
-    public const SCHEMA_JSON = '{
+    const string SCHEMA_JSON = '{
     "required": [
         "count",
         "type"
@@ -33,9 +25,9 @@ final readonly class GreenEyes implements Contract\GreenEyes
         }
     }
 }';
-    public const SCHEMA_TITLE = '';
-    public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{
+    public const string SCHEMA_TITLE = '';
+    public const string SCHEMA_DESCRIPTION = '';
+    const string SCHEMA_EXAMPLE_DATA = '{
     "count": 5,
     "type": "hulk"
 }';

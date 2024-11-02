@@ -3,8 +3,17 @@
     "null", "true", "false",
     "static", "self", "parent",
     "array", "string", "int", "float", "bool", "iterable", "callable", "void", "object",
-    "Safe\\date", "WyriHaximus\\Constants\\Boolean\\FALSE_", "WyriHaximus\\Constants\\Boolean\\TRUE_",
-    "WyriHaximus\\Constants\\Numeric\\ONE", "WyriHaximus\\Constants\\Numeric\\ZERO"
+    "PHPStan\\Analyser\\Scope",
+    "PHPStan\\PhpDoc\\TypeStringResolver",
+    "PHPStan\\Reflection\\MethodReflection",
+    "PHPStan\\Type\\DynamicMethodReturnTypeExtension",
+    "PHPStan\\Type\\Type",
+    "Prophecy\\Argument",
+    "React\\Stream\\ReadableStreamInterface",
+    "Symfony\\Component\\Console\\Formatter\\OutputFormatterInterface",
+    "Symfony\\Component\\Console\\Output\\ConsoleOutput",
+    "Symfony\\Component\\Console\\Output\\OutputInterface",
+    "WyriHaximus\\AsyncTestUtilities\\AsyncTestCase"
   ],
   "php-core-extensions" : [
     "Core",

@@ -3,25 +3,17 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Router\Get;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
 final class PetsGroupedBy
 {
-    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Internal\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
+    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Internal\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
     /**
-     * @return Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok
+     * @return \ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function type(array $params) : \ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok
+    public function type(array $params): ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok|ApiClients\Client\PetStore\Schema\Error
     {
-        $arguments = array();
+        $arguments = [];
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');
         }
@@ -32,7 +24,7 @@ final class PetsGroupedBy
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        $operator = new Internal\Operator\Pets\Grouped\By\Type($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀GroupedByType());
+        $operator = new \ApiClients\Client\PetStore\Internal\Operator\Pets\Grouped\By\Type($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀GroupedByType());
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
 }

@@ -1,0 +1,40 @@
+state:
+  file: etc/openapi-client-generator.state
+  additionalFiles:
+    - composer.json
+    - composer.lock
+spec: petstore.yaml
+namespace:
+  source: ApiClients\Client\PetStore
+  test: ApiClients\Tests\Client\PetStore
+entryPoints:
+  call: true
+  operations: true
+  webHooks: false
+destination:
+  root: app
+  source: src
+  test: tests
+templates:
+  dir: app-templates
+  variables:
+    fullName: PetStore
+    packageName: petsore
+schemas:
+  allowDuplication: true
+  useAliasesForDuplication: true
+contentType:
+  - ApiClients\Tools\OpenApiClientGenerator\ContentType\Json
+  - ApiClients\Tools\OpenApiClientGenerator\ContentType\Raw
+voter:
+  listOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\ListOperation\PageAndPerPageInQuery
+  streamOperation:
+    - ApiClients\Tools\OpenApiClientGenerator\Voter\StreamOperation\DownloadInOperationId
+qa:
+  phpcs:
+    enabled: true
+  phpstan:
+    enabled: true
+    configFilePath: etc/phpstan-extension.neon
+

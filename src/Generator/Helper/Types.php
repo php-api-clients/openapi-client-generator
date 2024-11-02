@@ -9,11 +9,11 @@ use PhpParser\Node;
 use function array_key_exists;
 use function array_map;
 use function in_array;
-use function substr;
+use function str_starts_with;
 
 final class Types
 {
-    private const SCALARS = [
+    private const array SCALARS = [
         'string',
         'int',
         'float',
@@ -24,7 +24,7 @@ final class Types
     public static function normalizeDocBlock(string ...$types): array
     {
         return array_map(
-            static fn (string $type): string => in_array($type, self::SCALARS) || substr($type, 0, 1) === '\\' || substr($type, 0, 5) === 'array' ? $type : 'Schema\\' . $type,
+            static fn (string $type): string => in_array($type, self::SCALARS, true) || str_starts_with($type, '\\') || str_starts_with($type, 'array') ? $type : 'Schema\\' . $type,
             $types,
         );
     }
@@ -34,7 +34,7 @@ final class Types
     {
         return array_map(
             static function (string $type): string {
-                if (in_array($type, self::SCALARS) || substr($type, 0, 1) === '\\') {
+                if (in_array($type, self::SCALARS, true) || str_starts_with($type, '\\')) {
                     return $type;
                 }
 

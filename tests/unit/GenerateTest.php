@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace ApiClients\Tests\Tools\OpenApiClientGenerator;
 
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\Generator;
-use EventSauce\ObjectHydrator\ObjectMapperUsingReflection;
+use ApiClients\Tools\OpenApiClientGenerator\ConfigurationFactory;
 use IteratorIterator;
+use OpenAPITools\Generator\Generator;
+use PHPUnit\Framework\Attributes\Test;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SplFileInfo;
 use Symfony\Component\Yaml\Yaml;
 use WyriHaximus\TestUtilities\TestCase;
 
 use function array_keys;
 use function array_unique;
-use function assert;
 use function dirname;
-use function is_string;
+use function file_get_contents;
 use function ksort;
-use function Safe\file_get_contents;
-use function Safe\md5_file;
+use function md5_file;
 use function strlen;
 use function substr;
 
@@ -28,19 +27,23 @@ use const DIRECTORY_SEPARATOR;
 
 final class GenerateTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function generateAndCompare(): void
     {
-        $yaml                        = Yaml::parseFile(dirname(__DIR__) . '/openapi-client-petstore.yaml');
-        $yaml['destination']['root'] = 'test-app';
-        $configuration               = (new ObjectMapperUsingReflection())->hydrateObject(Configuration::class, $yaml);
-        (new Generator(
-            $configuration,
-            dirname(dirname(__DIR__) . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
-        ))->generate(
-            $configuration->namespace->source . '\\',
-            $configuration->namespace->test . '\\',
-            dirname(dirname(__DIR__) . '/openapi-client-petstore.yaml') . DIRECTORY_SEPARATOR,
+        $configurationFile      = dirname(__DIR__) . '/openapi-client-petstore.yaml';
+        $configurationDirectory = dirname($configurationFile) . DIRECTORY_SEPARATOR;
+
+        /** @var array<string, mixed> $yaml */
+        $yaml = Yaml::parseFile($configurationFile);
+
+        $destination = $yaml['destination'] ?? null;
+        self::assertIsArray($destination);
+        $destination['root'] = 'test-app';
+        $yaml['destination'] = $destination;
+
+        Generator::generate(
+            ConfigurationFactory::fromYaml($yaml, $configurationDirectory),
+            $configurationDirectory,
         );
 
         $appRootPath     = dirname(__DIR__) . '/app/';
@@ -50,7 +53,7 @@ final class GenerateTest extends TestCase
         $testAppMap = [];
 
         foreach (new IteratorIterator(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($appRootPath))) as $file) {
-            if (! $file->isFile()) {
+            if (! $file instanceof SplFileInfo || ! $file->isFile()) {
                 continue;
             }
 
@@ -63,7 +66,7 @@ final class GenerateTest extends TestCase
         }
 
         foreach (new IteratorIterator(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($testAppRootPath))) as $file) {
-            if (! $file->isFile()) {
+            if (! $file instanceof SplFileInfo || ! $file->isFile()) {
                 continue;
             }
 
@@ -79,8 +82,6 @@ final class GenerateTest extends TestCase
         ksort($testAppMap);
 
         foreach (array_unique([...array_keys($appMap), ...array_keys($testAppMap)]) as $generatedFileName) {
-            self::assertIsString($generatedFileName);
-            assert(is_string($generatedFileName));
             self::assertFileExists($appRootPath . $generatedFileName);
             self::assertFileExists($testAppRootPath . $generatedFileName);
 

@@ -1,526 +1,558 @@
 {
-    "specHash": "49b7769c2e53c7b43fd64f2c24afecb3",
+    "specHash": "c6791da54b0f6e6204158b7168cbc566bec5e29d1ebff077d31e364b603c5a16bb70e7629cddc278aabcf722e873376b2145d9a4dc5ab186c5d6241984164c66",
     "generatedFiles": {
         "files": [
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_.php",
-                "hash": "25a82ab4cabbcd0859ae973584a2783f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Cat.php",
+                "hash": "448d864ace1636478138143765a57968"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_.php",
-                "hash": "47c2a7da84b6ee54196ec3c6ac055f72"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Dog.php",
+                "hash": "f6a52e18f1d2ca8eeb7ea1bf4c02abb8"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_Test.php",
-                "hash": "a55edea63c07b47db2b06f8a4552419b"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/HellHound.php",
+                "hash": "bfbd7ed802b43161879bf7eb1e79f5bd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/ListListing.php",
-                "hash": "8328e99919a32a2f6cd0cc1e5e8d7220"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Spider.php",
+                "hash": "b170388bf11a738d4969461ac0d79843"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/ListListing.php",
-                "hash": "81a050aaa65ea5a5f4968fdacb151f1d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Bird.php",
+                "hash": "e5917cf90e52125d3d640f4e2c79c758"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/ListListingTest.php",
-                "hash": "a565e061be5406b21e98798aa1124632"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Fish.php",
+                "hash": "7b51a9dec094b0e5f47d5007f9f4bb1e"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Create.php",
-                "hash": "10ca455872aa8e50dc50e6ccc4be9ee8"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Error.php",
+                "hash": "1980cc1d5d64f67aa5616311326c4f51"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Create.php",
-                "hash": "1894602e2383fc07d45f10c15a959e5f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Legs.php",
+                "hash": "67918de3289586abaf3ac0d375834f97"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/CreateTest.php",
-                "hash": "c7f1b5aa62146ad64081177d26e9c994"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Tails.php",
+                "hash": "b54eff28cb688dee46648fb0bf47844c"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_\/Gatos.php",
-                "hash": "f4b232e914937297d5a892754f63c172"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Fins.php",
+                "hash": "1b81c6d9442e138d8e899cb7fc6c8733"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_\/Gatos.php",
-                "hash": "3b21fa465f28a528bafd38fed238d7d5"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Wings.php",
+                "hash": "fd1b755030c5d993fab90d38b2c4122e"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_\/GatosTest.php",
-                "hash": "ba271b6f0c919ad74870903c49358487"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/RedEyes.php",
+                "hash": "90fe6198c7bc310c24fa730b759660ca"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/List_\/GatosListing.php",
-                "hash": "3a785d5c18a38ad282fcf7c05a533cca"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/RedEyes\/B.php",
+                "hash": "9f9944d627c578e26baf62191a7ba9dd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/List_\/GatosListing.php",
-                "hash": "464515feabb30b925ca80dec3b3200b7"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/GreenEyes.php",
+                "hash": "41b9ab94c4eb748358973bc68b2ea28a"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/List_\/GatosListingTest.php",
-                "hash": "b390b45049613024209e795a63428b17"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/YellowEyes.php",
+                "hash": "16ee568e0f80ec2d66e8ae5f7e369cbc"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Kinds\/Walking.php",
-                "hash": "5b141f5559fa05146208c8b330cb34e3"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/BlackEyes.php",
+                "hash": "080123f2e4e051027f080491ea3a25ef"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Kinds\/Walking.php",
-                "hash": "3b69defcccd48d2b751cb96bcc0fd28e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/BlueEyes.php",
+                "hash": "f31e6a04abbf849e6f809925f28c50b3"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/Kinds\/WalkingTest.php",
-                "hash": "cdc490680bc8bc8bc01699bcd16afb7c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Cat\/Features.php",
+                "hash": "5a5b68c5c62bcbb3b1f0b52d259f7c52"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Kinds\/WalkingListing.php",
-                "hash": "9dd7908366a01691fbd955aa67b81d07"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/HellHound\/Eyes.php",
+                "hash": "8182fb556c99f3779160b30d74c982ac"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Kinds\/WalkingListing.php",
-                "hash": "4380b7a348e37e6df06c4c2d4829744b"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Operations\/Pets\/List_\/Response\/ApplicationJson\/Ok.php",
+                "hash": "16391800ebbef88c9c6efa05338ceab3"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/Kinds\/WalkingListingTest.php",
-                "hash": "c44cc667c3c4a7536ed9e65c1577c236"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Pets\/Create\/Request\/ApplicationJson.php",
+                "hash": "4d748f407979e87e41072b10f79f0e9d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Grouped\/By\/Type.php",
-                "hash": "9d26f1af1b900ea85a2b2c60f3e2411f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Operations\/Pets\/Kinds\/Walking\/Response\/ApplicationJson\/Ok.php",
+                "hash": "32b479ba8abe4f689743b65f2cfb26be"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Grouped\/By\/Type.php",
-                "hash": "2514d2139048da39f8734a87a34a4787"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok.php",
+                "hash": "ab4e3651adf4c8456948358c9044f47c"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/Grouped\/By\/TypeTest.php",
-                "hash": "b59cfc90a1cf6a8448bbda0227f202c8"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Operations\/Pets\/Names\/Response\/ApplicationJson\/Ok.php",
+                "hash": "874238abf0455b447536750719a305d8"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/Names.php",
-                "hash": "6597d53081735f442af07731f67048cd"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Contract\/Operations\/ShowPetById\/Response\/ApplicationJson\/Ok.php",
+                "hash": "f5a98bb240ee242b91ca736cbf427e8a"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/Names.php",
-                "hash": "66b7cac30b2f07748737b97e9a0e8056"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Cat.php",
+                "hash": "5382733efa00de96527b758e572e8169"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/NamesTest.php",
-                "hash": "9c861d7eda455fdb2d97464e4f52ebe1"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Dog.php",
+                "hash": "925a1193ac0febdc4134b21466ec721e"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/Pets\/NamesListing.php",
-                "hash": "c108707e8fff08989852ca98bf4f1043"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/HellHound.php",
+                "hash": "f5ef1783a48db62a196e6bdeaf89c211"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/Pets\/NamesListing.php",
-                "hash": "fa24eee87e05c9b3d7b373cde1511ddb"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Spider.php",
+                "hash": "d78cab1dbb8b3546993eb611dfd7be8b"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/Pets\/NamesListingTest.php",
-                "hash": "2bd6f5a5c8d809760ade5ebb0c1ff3d9"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Bird.php",
+                "hash": "bb1b5a0deb945ed731c5a98abf517783"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operation\/ShowPetById.php",
-                "hash": "c27f58ea100588a410786c5274652f59"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Fish.php",
+                "hash": "3463524c263bfeecf9eea004a7f8fd9b"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operator\/ShowPetById.php",
-                "hash": "f106fffb57aa50c3916b664e55eb4b33"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Error.php",
+                "hash": "f21ae525ddc01d1774a42795978ba7e5"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Internal\/Operation\/ShowPetByIdTest.php",
-                "hash": "56a07d4a2fff947aa1a91312eb6d5f42"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Legs.php",
+                "hash": "1569ae1c419451d491079acc15157302"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Cat.php",
-                "hash": "b27e87adfdb0b253dd166baba2e722fd"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Tails.php",
+                "hash": "8028144a8297c4410c1e33420544168f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Dog.php",
-                "hash": "4b8bf1158f13747f9c1e7dd683173f8b"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Fins.php",
+                "hash": "0aaf0dc0a1b4c5bb8ceee2e1d520b950"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/HellHound.php",
-                "hash": "d2ef7b550643537c7df6d47a9975c414"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Wings.php",
+                "hash": "5f2d34c62206c705df2399df69443ff6"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Spider.php",
-                "hash": "67eb1aa8c944170ae93b3d9167b148a1"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/RedEyes.php",
+                "hash": "df9bc6a1aec4416767ca0cad9379057a"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Bird.php",
-                "hash": "dcbced63bad5795cbada26277a7cda78"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/GreenEyes.php",
+                "hash": "3bd000e905607d0c7ff2b3cf937dcb27"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Fish.php",
-                "hash": "ae2166fca603aa40e8143c44d965d073"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/YellowEyes.php",
+                "hash": "3acd885859fc50e438f8393db8fbd970"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Error.php",
-                "hash": "888aac4e2dfd815ae61650be7c9a030c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/BlackEyes.php",
+                "hash": "97d7ab2e137220b7970ce9e9a60412e4"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Legs.php",
-                "hash": "a92256f12b2c73f6570dfe6c5f1c73e4"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/BlueEyes.php",
+                "hash": "9246bb96fd82e7a2903f8249cf61eb18"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Tails.php",
-                "hash": "66fa727e0d2d200b697fa4c551690703"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/EyeCount.php",
+                "hash": "d6c8745ae1cc35d05a2a1d871ca3359d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Fins.php",
-                "hash": "5015c047ef897ed7158b61dccf0eecc6"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Cat\/Features.php",
+                "hash": "6fd427b51bdf244d4b8677296d18d20c"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Wings.php",
-                "hash": "e9570bc1c4d2f81bd585bf5460846d16"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/HellHound\/Eyes.php",
+                "hash": "5307680026308db56b5f0e918e649b9f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/RedEyes.php",
-                "hash": "6323cdda485882f06d3ac6c8a91c1724"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Operations\/Pets\/List_\/Response\/ApplicationJson\/Ok.php",
+                "hash": "edce95dfb79ffa9d77d4da9fce25a941"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/RedEyes\/A.php",
-                "hash": "0ded9db3063fc1d083faccbe90fced50"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Pets\/Create\/Request\/ApplicationJson.php",
+                "hash": "884165042a3110f84faf480aeae881cd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/GreenEyes.php",
-                "hash": "9ea4e67be717aeaa917577d09d94e951"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Operations\/Pets\/Kinds\/Walking\/Response\/ApplicationJson\/Ok.php",
+                "hash": "3c2d388b1a189b49b53c08e1c349ca95"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/YellowEyes.php",
-                "hash": "8ba3be68dd394a4579ccd2f66fa00415"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok.php",
+                "hash": "54d4f2601f6646ed15431c750ddd3810"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/BlackEyes.php",
-                "hash": "ba7dc750473a4fc8caef228933de78b7"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Operations\/Pets\/Names\/Response\/ApplicationJson\/Ok.php",
+                "hash": "fe5cd0b2bd77189deb351b36878550d6"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/BlueEyes.php",
-                "hash": "d583ccd34c5dd526f16bee0d74ccc1fe"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Error\/Operations\/ShowPetById\/Response\/ApplicationJson\/Ok.php",
+                "hash": "e58a677bee8b8fb9a5cf84b3980c8164"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Cat\/Features.php",
-                "hash": "12e61b11807152ba3c71ef854c2d0ba7"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Cat\/Eyes.php",
+                "hash": "fe27d84b3777e11d6d5933c001b8ccdc"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/HellHound\/Eyes.php",
-                "hash": "43d9c8abf2ea3507db3499a57c730eb3"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Cat\/Eyes.php",
+                "hash": "eb3c137aff06bde7fd2eaaa1b280bbe6"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Operations\/Pets\/List_\/Response\/ApplicationJson\/Ok.php",
-                "hash": "3af7854e4196f13457cdd01aeffeb30c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Cat.php",
+                "hash": "9594a3951f6128f203e8abd89e4a7009"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Pets\/Create\/Request\/ApplicationJson.php",
-                "hash": "23c8c398cc7e8483fd9f89fc39ed7fbd"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Dog\/Eyes.php",
+                "hash": "9d98a4a16ad397f4ae8610b76053af2f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Operations\/Pets\/Kinds\/Walking\/Response\/ApplicationJson\/Ok.php",
-                "hash": "5021e52be7c2b44ce04df206dda33b53"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Dog\/Eyes.php",
+                "hash": "9e22f26b5cb0cbf97fd1cf88926a7154"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok.php",
-                "hash": "c7dba030163738f70d3d10673cb31d4e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Dog.php",
+                "hash": "edfb5e1fe67bae5944733a562ecb7ec3"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Operations\/Pets\/Names\/Response\/ApplicationJson\/Ok.php",
-                "hash": "43c07e4ce6bde480632b657eaa44558f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/HellHound.php",
+                "hash": "09e8390153c8c16e5e72c9fd17c95484"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Contract\/Operations\/ShowPetById\/Response\/ApplicationJson\/Ok.php",
-                "hash": "d9bfc89607641c5aa96c3f878c8bd923"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Spider\/Eyes.php",
+                "hash": "44c3e6d6afb5389f55ae82bf88e6342e"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Cat\/Eyes.php",
-                "hash": "cddfbcb1e600bdd28629759fe4b9889a"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Spider\/Eyes.php",
+                "hash": "006aa38da422f09ced50e2e785dd074d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Cat\/Eyes.php",
-                "hash": "503c33760dfe73b24a02bd20bfe4998d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Spider.php",
+                "hash": "aea109a98901ff0d9a9284c4f39c0c26"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Cat.php",
-                "hash": "ef4d11cfdac8fdd48315578396dbaf10"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Bird\/Eyes.php",
+                "hash": "49d89300aa522c4e659d02ad8ad2a204"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Dog\/Eyes.php",
-                "hash": "4fb880d277bb77b8ab11e2358dd40575"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Bird.php",
+                "hash": "c82e87b5e823f81c8d2d07fbe617f0c0"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Dog\/Eyes.php",
-                "hash": "a21475e3742fbd1cc55f1f14ab21bc33"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Fish\/Eyes.php",
+                "hash": "5c53e4cac5816017a0192ce8735956b1"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Dog.php",
-                "hash": "40843550ef160f86ce22d73c95a9bd2e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Fish.php",
+                "hash": "090fb832f71e889596e459c52c4355cd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/HellHound.php",
-                "hash": "6535e0dc68e97b4436096f6a4e40a61b"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Error.php",
+                "hash": "7f2560163c07df1768f14a85cf68acc8"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Spider\/Eyes.php",
-                "hash": "6d7ff273e85dd03a767677eff11631ce"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Legs.php",
+                "hash": "ef629db4c2a0f9e9dfa7710483219ca2"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Spider\/Eyes.php",
-                "hash": "7f117477922ccc957817fcc47b83177f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Tails.php",
+                "hash": "df8762fe4462a174c114e99bdb7a6562"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Spider.php",
-                "hash": "afcb2fcbc5f4af4a16acf8250f62a56f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Fins.php",
+                "hash": "2bab7ce5e8e5c3c8b73f249e0a84b346"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Bird\/Eyes.php",
-                "hash": "18bdd1915bbd9a5152e5dc5f98af70dd"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Wings.php",
+                "hash": "cd1bcfcfe0243eda2002bad1ef771348"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Bird.php",
-                "hash": "7fbc410f283b5ce5f3ff6cbacb00d2f3"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/RedEyes.php",
+                "hash": "db973fbd06f9b6e8086e6ceac140eadb"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Fish\/Eyes.php",
-                "hash": "f9572ac57d6b2ff7cc69e64c64fdac03"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/GreenEyes.php",
+                "hash": "95e056110c122f75a4bc6c8e008ac71d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Fish.php",
-                "hash": "6ec9eaa63e42a5967c467f241b3fde4c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/YellowEyes.php",
+                "hash": "23ebc1dd5c498b5a236f558efd78acdd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Error.php",
-                "hash": "f80f769c7a4c8c68aea934d6ab348753"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/BlackEyes.php",
+                "hash": "d991253fe3bfce4aae265c7ecfea046f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Error\/Error.php",
-                "hash": "feb248b9aaa268d799d22ce3a0d32d82"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/BlueEyes.php",
+                "hash": "ff8359a892151497f3aed1eb093244c4"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Legs.php",
-                "hash": "b67532b7c8ac986f616080402baac75d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/EyeCount.php",
+                "hash": "bbb6759380942cb7864ed15a5428b70d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Tails.php",
-                "hash": "b014236ffacd12123d41632522be3a0d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Cat\/Features.php",
+                "hash": "4f0f948efe9531e85f9768f97af61b11"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Fins.php",
-                "hash": "81b9d536290a1ae0be0b6044de7dcf85"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/HellHound\/Eyes.php",
+                "hash": "65c6ab721e49cfd75317e7ca749de438"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Wings.php",
-                "hash": "338b33430ecb97c1344c8bc9e8723bba"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Operations\/Pets\/List_\/Response\/ApplicationJson\/Ok.php",
+                "hash": "335c24bf15fb42bdb9d6c0b74f93d559"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/RedEyes.php",
-                "hash": "fdac8c22a648ed1ab185ec9901ab24ce"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Pets\/Create\/Request\/ApplicationJson.php",
+                "hash": "e09d7fb5e9e6c8994eaba0f4d21eb2bf"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/GreenEyes.php",
-                "hash": "4a74d6a7d6c2e5e6dc664ef559092127"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Operations\/Pets\/Kinds\/Walking\/Response\/ApplicationJson\/Ok.php",
+                "hash": "6262fad11d86d5ff14674dc00ac8ff8c"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/YellowEyes.php",
-                "hash": "906c2067a33469c829d8b7ebfce513d1"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok\/Pets.php",
+                "hash": "b2ec410e4550f8cb2f5ddf04876f1982"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/BlackEyes.php",
-                "hash": "3ceafa5ee4635806c15fd3aeff58d860"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok\/Pets.php",
+                "hash": "9d52606e91c9b96fdb8d9ac55c02c890"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/BlueEyes.php",
-                "hash": "17adf4d334500e864b4d0c94de3abb66"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok.php",
+                "hash": "a190c957c8c004683db38ddc4086ddc4"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/EyeCount.php",
-                "hash": "7bfe00b00b8ebe42ed6f5e2a37c385ef"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Operations\/Pets\/Names\/Response\/ApplicationJson\/Ok.php",
+                "hash": "5d609d8a79fdf1c6d4d82aa18345d625"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Cat\/Features.php",
-                "hash": "42309d9c833e24d88590ae6dd14a228a"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Schema\/Operations\/ShowPetById\/Response\/ApplicationJson\/Ok.php",
+                "hash": "fd49dfbcd2ccbefe53bd6a0ebecd3555"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/HellHound\/Eyes.php",
-                "hash": "0b6d5980da015ccf4d44d7ccf051886e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets.php",
+                "hash": "0c061ecf1e1ceeab3ffddf43e4a5a0f4"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Operations\/Pets\/List_\/Response\/ApplicationJson\/Ok.php",
-                "hash": "eb4bde06394e697066d745898decafe5"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets\/Gatos.php",
+                "hash": "2f7648546e0d243741265728476ba08e"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Pets\/Create\/Request\/ApplicationJson.php",
-                "hash": "b3fe54e8ff3b295241c9b95089a60f20"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets\/Kinds\/Walking.php",
+                "hash": "a67a1a58da00a984049c01c2672faa57"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Operations\/Pets\/Kinds\/Walking\/Response\/ApplicationJson\/Ok.php",
-                "hash": "d345051d1e2d8f2a301400efac81491c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets\/GroupedByType.php",
+                "hash": "362558281211bab266ee7c7e93d5bc1b"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Single\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok\/Pets.php",
-                "hash": "332c053b25e90067f64fcfa1805a9cfb"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets\/Names.php",
+                "hash": "5f59670b97735964a834b39416a9d3e9"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Attribute\/CastUnionToType\/Multiple\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok\/Pets.php",
-                "hash": "ce24c150645696a7ce97483ecbc9f314"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrator\/Operation\/Pets\/Petid.php",
+                "hash": "5c6f2b3757a2c419ffe41fd4b1f02adb"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Operations\/Pets\/Grouped\/By\/Type\/Response\/ApplicationJson\/Ok.php",
-                "hash": "7817c48c0faf01e7464f83bd9cf1b190"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Hydrators.php",
+                "hash": "a7614b77b839bd181a29d5dd0b50ffbb"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Operations\/Pets\/Names\/Response\/ApplicationJson\/Ok.php",
-                "hash": "4a301cd45b2aa9e0c3bb4e27b59b145b"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/Makefile",
+                "hash": "9f5392c2286b0d7c55613dc69f23f2c8"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Schema\/Operations\/ShowPetById\/Response\/ApplicationJson\/Ok.php",
-                "hash": "718bf83915b749a6b1967a6c5f1062f0"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/composer.json",
+                "hash": "231d105287cd1ef41859e6f4ebac4c58"
             },
             {
-                "name": ".\/tests\/app\/src\/\/ClientInterface.php",
-                "hash": "3c95cda80a5d5a0035ffd8d0b1978b3e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/List_.php",
+                "hash": "30e05e4eb97d8802f75c654b3c8f0165"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Client.php",
-                "hash": "50273a0e8ee86c0f309aa5a1bc78c304"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/List_.php",
+                "hash": "5ed669feb3c29d8001314db2f8ecc089"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Pets.php",
-                "hash": "26801353f33618f73545bb09d73546ee"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/Create.php",
+                "hash": "5185bbde9f38a57db39033521e771172"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/PetsList.php",
-                "hash": "d28ed757714675cce217d3c3280c0573"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/Create.php",
+                "hash": "d594b13effcac676daaeedeff4f91f3f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/PetsGroupedBy.php",
-                "hash": "fd3134b03ec0d40e4dc21785efa3da75"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/List_\/Gatos.php",
+                "hash": "9c6eb9f273cfe8b9c834c1344ad76b90"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get.php",
-                "hash": "c3cd1fe34e19e7d0c2377b4b9bce4939"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/List_\/Gatos.php",
+                "hash": "896c635d1311bca05e179fb49d2993a2"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/PetsKinds.php",
-                "hash": "9749d3aa066946d3731d64224e6b033c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/Kinds\/Walking.php",
+                "hash": "375e9a57a970e05c6437361daf7dfe26"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Pets.php",
-                "hash": "34036592004d7410317c6bb615b184c1"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/Kinds\/Walking.php",
+                "hash": "07f0af722689784ffabe3cd16dce4175"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/PetsList.php",
-                "hash": "430159a271abdf64c6848458b8309969"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/Grouped\/By\/Type.php",
+                "hash": "a842a23752d9fb46356ef6b2cd3704af"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/PetsKinds.php",
-                "hash": "66365f2b04fb1ca518ce93e400481d72"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/Grouped\/By\/Type.php",
+                "hash": "df0dc1a550aad45ae089f13dda43930c"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Post\/Pets.php",
-                "hash": "6a2b6ef8dc6fe4e7f0cfcc03a14ef916"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/Pets\/Names.php",
+                "hash": "f7616e3288243bb12e51267df447990d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Two.php",
-                "hash": "1c7472aa0e0a0f1719afb3017c1f0d40"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/Pets\/Names.php",
+                "hash": "b6c7b543e9834a7c37340efa66aad287"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Three.php",
-                "hash": "b87dabf60f65b189e3ad0ea673cb5b0f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operation\/ShowPetById.php",
+                "hash": "0d66a6ce8bf2a74ca3dd6e2a3fb6a35f"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Get\/Four.php",
-                "hash": "8556a87f9c23c5f5cc3719b45c33da71"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operator\/ShowPetById.php",
+                "hash": "98466c1bca05b8260023bca429a22e99"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Two.php",
-                "hash": "353e1d0a404c9aa1bb071279cc5de22c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/OperationsInterface.php",
+                "hash": "8d90aa322d2d1589f1303476ad5f65c7"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Three.php",
-                "hash": "5c677ce26874a1d04eced0390b5b6582"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Operations.php",
+                "hash": "5580ac87a9b3832776d2647c86d0afab"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/List\/Four.php",
-                "hash": "fa8bfd9dd72921449a8f9e7337ed1506"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Operators.php",
+                "hash": "b210597dba0a1d3c2bc8d4e6a7035bdc"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Router\/Post\/Two.php",
-                "hash": "259311d4ce584913ad28482b216ccb1f"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/ClientInterface.php",
+                "hash": "f581126e4e40e163c7b24a4e45100448"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Routers.php",
-                "hash": "8204cdc19452a95d8556cd3baf5b02a6"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Client.php",
+                "hash": "4875d5e2c75e15f01d6ecb045139b34a"
             },
             {
-                "name": ".\/tests\/app\/src\/\/PHPStan\/ClientCallReturnTypes.php",
-                "hash": "479c4668570871f44c72d5d2e47684d1"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/Pets.php",
+                "hash": "3d52d294c5494c0e9a3e8d7fd9fadaa0"
             },
             {
-                "name": ".\/tests\/app\/tests\/\/Types\/ClientCallReturnTypes.php",
-                "hash": "e3edeeec0b2b86a5d1a0448533e0729e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/PetsList.php",
+                "hash": "dd59ed1c2f4ec4801e0e96cdcc297e39"
             },
             {
-                "name": ".\/tests\/app\/src\/\/..\/etc\/phpstan-extension.neon",
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/PetsGroupedBy.php",
+                "hash": "7cf6113a184cc73a40fe6a16565269e5"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get.php",
+                "hash": "694589c85d19091fbc3cd7465b547112"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/PetsKinds.php",
+                "hash": "367c6205c3663f74562ceea71341045e"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Post\/Pets.php",
+                "hash": "29d4f8f4978fac96aa286ad285ea25ac"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Routers.php",
+                "hash": "6e7a9ea26c05cc9ad065d03d75895e2e"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/Two.php",
+                "hash": "ff80b7f61d59fc0a035d708c19ac9afb"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/Three.php",
+                "hash": "79bb09a47361b547ad8a8dc5e7c2f3f1"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Get\/Four.php",
+                "hash": "692172076dfa2654286429fa45260256"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Internal\/Router\/Post\/Two.php",
+                "hash": "abf5c85dd48a567ee4d2a1ae4098b5bb"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/PHPStan\/ClientCallReturnTypes.php",
+                "hash": "47b7f421a53030bfb30e014202736b8f"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Types\/ClientCallReturnTypes.php",
+                "hash": "6fb44a0ad7181025fce078feea6c8776"
+            },
+            {
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/etc\/phpstan-extension.neon",
                 "hash": "3d7b9f10231d14a80329ca810f476b3d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/OperationsInterface.php",
-                "hash": "59dc8c9c8649087bf7c3e7ee2866bed9"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/List_Test.php",
+                "hash": "816b2ef68f625cbf2d26dea6eb2db7bd"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Operation\/Pets.php",
-                "hash": "e10821cae7d62b7d07f0d2653fd4aeeb"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/CreateTest.php",
+                "hash": "44076d0f624a2e22b09bef1dc15971b4"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Operation\/PetsList.php",
-                "hash": "5dad30f80783e68cefd11f401b170d2d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/List_\/GatosTest.php",
+                "hash": "22729ba49dfb8be9d430d86cb28c7a8e"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Operation\/PetsKinds.php",
-                "hash": "5639df53f59d7fdcbf5f1a0951ce6359"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/Kinds\/WalkingTest.php",
+                "hash": "05f349581beeacb4a413f9c68dc659b3"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Operation\/PetsGroupedBy.php",
-                "hash": "116f94a4bf54b3186780de4c793c589d"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/Grouped\/By\/TypeTest.php",
+                "hash": "58a77bad44420c855882cb0d9689be9a"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Operators.php",
-                "hash": "9a327b2c58687e0ed2261c341c4e3422"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/Pets\/NamesTest.php",
+                "hash": "34c1497a2614ca5ea56bc9e3909e809a"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Operations.php",
-                "hash": "65089bd8b715ff442449eb7d7ed9b147"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/tests\/Internal\/Operation\/ShowPetByIdTest.php",
+                "hash": "49a45ece8cd721f0e598e45fce28342d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets.php",
-                "hash": "a051e5e611a2266ed49372835768dfc2"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Operation\/Pets.php",
+                "hash": "1e8e5d799e5983a9a8085500f61baba6"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets\/Gatos.php",
-                "hash": "fc5f76f6986c1c96eb7a4f9c98fb718e"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Operation\/PetsList.php",
+                "hash": "f6b8e2828be552d8f7e76f4beb5bcbaf"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets\/Kinds\/Walking.php",
-                "hash": "90eb300e4cb8d0abe7a5159f53c0d9c7"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Operation\/PetsKinds.php",
+                "hash": "601ed564f2cc8b9b71544b2c2faf9d5d"
             },
             {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets\/GroupedByType.php",
-                "hash": "da2f224be43cb2cc7903f47638c196e1"
-            },
-            {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets\/Names.php",
-                "hash": "763360da3f82b554e30cd9c53a2c4c69"
-            },
-            {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrator\/Operation\/Pets\/PetId.php",
-                "hash": "bc9eff40e9278db28d7b6f2d56990eba"
-            },
-            {
-                "name": ".\/tests\/app\/src\/\/Internal\/Hydrators.php",
-                "hash": "fbb023471a07a315d08b4a3c8a1a797c"
+                "name": "\/home\/wyrihaximus\/Projects\/PHPAPIClients\/openapi-client-generator\/tests\/test-app\/src\/Operation\/PetsGroupedBy.php",
+                "hash": "90536e5fa6d172ffebdc5c5a0a4b6cd2"
             }
         ]
     },
@@ -528,7 +560,7 @@
         "files": [
             {
                 "name": "composer.json",
-                "hash": "5f3a1e7681873ef9a8226a2a404267a9"
+                "hash": "567d4289eda75f5583c4d1e04e2bab96214b7ce74bfef44cf494171003d63c8563fae9f475152bdb15e467f33852e56d5a871a3a7cf6f722d72d01a0d2f9d6e5"
             },
             {
                 "name": "composer.lock",

@@ -3,17 +3,9 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema\Pets\Create\Request;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final readonly class ApplicationJson implements Contract\Pets\Create\Request\ApplicationJson
+final readonly class ApplicationJson implements \ApiClients\Client\PetStore\Contract\Pets\Create\Request\ApplicationJson
 {
-    public const SCHEMA_JSON = '{
+    const string SCHEMA_JSON = '{
     "oneOf": [
         {
             "required": [
@@ -773,9 +765,9 @@ final readonly class ApplicationJson implements Contract\Pets\Create\Request\App
         }
     ]
 }';
-    public const SCHEMA_TITLE = '';
-    public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '[]';
+    public const string SCHEMA_TITLE = '';
+    public const string SCHEMA_DESCRIPTION = '';
+    const string SCHEMA_EXAMPLE_DATA = '[]';
     public function __construct()
     {
     }

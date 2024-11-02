@@ -3,17 +3,9 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final readonly class Bird implements Contract\Bird
+final readonly class Bird implements \ApiClients\Client\PetStore\Contract\Bird
 {
-    public const SCHEMA_JSON = '{
+    const string SCHEMA_JSON = '{
     "required": [
         "id",
         "name",
@@ -147,9 +139,9 @@ final readonly class Bird implements Contract\Bird
         }
     }
 }';
-    public const SCHEMA_TITLE = '';
-    public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{
+    public const string SCHEMA_TITLE = '';
+    public const string SCHEMA_DESCRIPTION = '';
+    const string SCHEMA_EXAMPLE_DATA = '{
     "id": "4ccda740-74c3-4cfa-8571-ebf83c8f300a",
     "name": null,
     "flies": false,
@@ -158,7 +150,13 @@ final readonly class Bird implements Contract\Bird
         "type": "rage"
     }
 }';
-    public function __construct(public string $id, public string4 $name, public bool $flies, #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Single\Schema\Bird\Eyes] public Schema\RedEyes|Schema\BlueEyes|Schema\GreenEyes|Schema\YellowEyes|Schema\BlackEyes $eyes)
+    public function __construct(
+        public string $id,
+        public string4 $name,
+        public bool $flies,
+        #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Single\Schema\Bird\Eyes]
+        public \ApiClients\Client\PetStore\Schema\RedEyes|\ApiClients\Client\PetStore\Schema\BlueEyes|\ApiClients\Client\PetStore\Schema\GreenEyes|\ApiClients\Client\PetStore\Schema\YellowEyes|\ApiClients\Client\PetStore\Schema\BlackEyes $eyes
+    )
     {
     }
 }

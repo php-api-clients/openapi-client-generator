@@ -13,61 +13,80 @@ use ReflectionType;
 use ReflectionUnionType;
 
 use function array_map;
+use function implode;
+use function str_contains;
 use function str_replace;
-use function strpos;
 
 final class ReflectionTypes
 {
-    public static function copyReturnType(string $class, string $method): Node\ComplexType|Name|string
+    public static function name(ReflectionType $type): string
     {
-        $reflection = (new ReflectionClass($class))->getMethod($method)->getReturnType();
-        switch ($reflection::class) {
-            //ReflectionNamedType|ReflectionUnionType|ReflectionIntersectionType
-            case ReflectionNamedType::class:
-                return new Name(str_replace(
-                    'Traversable',
-                    'iterable',
-                    (strpos((string) $reflection, '\\') !== false ? '\\' : '') . $reflection,
-                ));
-
-                break;
-            case ReflectionUnionType::class:
-                return new Node\UnionType(
-                    [
-                        ...(static function (string ...$types): iterable {
-                            foreach ($types as $type) {
-                                if ($type === 'array') {
-                                    continue;
-                                }
-
-                                yield new Name(str_replace(
-                                    'Traversable',
-                                    'iterable',
-                                    (strpos($type, '\\') !== false ? '\\' : '') . $type,
-                                ));
-                            }
-                        })(...[
-                            ...Types::filterDuplicatesAndIncompatibleRawTypes(...array_map(
-                                static fn (ReflectionType $type): string => (string) $type,
-                                $reflection->getTypes(),
-                            )),
-                        ]),
-                    ],
-                );
-
-                break;
-            default:
-                return '';
+        if ($type instanceof ReflectionNamedType) {
+            return $type->getName();
         }
+
+        if ($type instanceof ReflectionUnionType) {
+            return implode('|', array_map(
+                self::name(...),
+                $type->getTypes(),
+            ));
+        }
+
+        return 'mixed';
     }
 
-    public static function copyDocBlock(string $class, string $method): Doc|null
+    /** @param class-string $class */
+    public static function copyReturnType(string $class, string $method): Node\ComplexType|Name|string
     {
-        $comment = (new ReflectionClass($class))->getMethod($method)->getDocComment();
-        if ($comment !== null) {
-            return new Doc($comment);
+        $reflection = new ReflectionClass($class)->getMethod($method)->getReturnType();
+        if ($reflection === null) {
+            return '';
         }
 
-        return null;
+        if ($reflection instanceof ReflectionNamedType) {
+            return new Name(str_replace(
+                'Traversable',
+                'iterable',
+                (str_contains($reflection->getName(), '\\') ? '\\' : '') . $reflection->getName(),
+            ));
+        }
+
+        if ($reflection instanceof ReflectionUnionType) {
+            return new Node\UnionType(
+                [
+                    ...(static function (string ...$types): iterable {
+                        foreach ($types as $type) {
+                            if ($type === 'array') {
+                                continue;
+                            }
+
+                            yield new Name(str_replace(
+                                'Traversable',
+                                'iterable',
+                                (str_contains($type, '\\') ? '\\' : '') . $type,
+                            ));
+                        }
+                    })(...[
+                        ...Types::filterDuplicatesAndIncompatibleRawTypes(...array_map(
+                            self::name(...),
+                            $reflection->getTypes(),
+                        )),
+                    ]),
+                ],
+            );
+        }
+
+        return '';
+    }
+
+    /** @param class-string $class */
+    public static function copyDocBlock(string $class, string $method): Doc|null
+    {
+        $comment = new ReflectionClass($class)->getMethod($method)->getDocComment();
+        if ($comment === false) {
+            return null;
+        }
+
+        return new Doc($comment);
     }
 }

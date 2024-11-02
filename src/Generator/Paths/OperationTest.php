@@ -1,0 +1,1013 @@
+<?php
+
+declare(strict_types=1);
+
+namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Paths;
+
+use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ConfigurationPackage;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Representation as RepresentationHelper;
+use InvalidArgumentException;
+use Jawira\CaseConverter\Convert;
+use NumberToWords\NumberToWords;
+use OpenAPITools\Configuration\Package as ConfigurationPackageType;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Gatherer\ExampleData;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Representation\Namespaced\Operation\RequestBody;
+use OpenAPITools\Utils\File;
+use PhpParser\Builder\Method;
+use PhpParser\Builder\Param;
+use PhpParser\BuilderFactory;
+use PhpParser\Comment\Doc;
+use PhpParser\Node;
+use PhpParser\Node\Arg;
+use Prophecy\Argument;
+use React\Http\Browser;
+use React\Http\Message\Response;
+use WyriHaximus\AsyncTestUtilities\AsyncTestCase;
+
+use function count;
+use function current;
+use function implode;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_string;
+use function ksort;
+use function preg_replace;
+use function str_replace;
+use function strtolower;
+use function urlencode;
+
+use const PHP_EOL;
+
+final readonly class OperationTest
+{
+    public function __construct(
+        private BuilderFactory $builderFactory,
+        private bool $call,
+        private bool $operations,
+    ) {
+    }
+
+    /** @return iterable<File> */
+    public function generate(Package $package, Namespaced\Operation $operation): iterable
+    {
+        $package = ConfigurationPackage::unwrap($package);
+
+        if (count($operation->response) === 0) {
+            return;
+        }
+
+        $stmt = $this->builderFactory->namespace($operation->className->namespace->test);
+
+        $class = $this->builderFactory->class($operation->className->className . 'Test')->extend(
+            new Node\Name(
+                '\\' . AsyncTestCase::class,
+            ),
+        )->makeFinal()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @covers ' . $operation->className->fullyQualified->source,
+                ' */',
+            ])),
+        );
+
+        $testsStmts = [];
+
+        foreach ($operation->response as $contentTypeSchema) {
+            if (! $contentTypeSchema->content instanceof Namespaced\Property\Type) {
+                continue;
+            }
+
+            $payload = $contentTypeSchema->content->payload;
+            /** @var list<Namespaced\Schema> $payloadItems */
+            $payloadItems = is_array($payload) ? $payload : [$payload];
+
+            foreach ($payloadItems as $index => $contentTypePayload) {
+                $testSuffix = NumberToWords::transformNumber('en', $index);
+                if (count($operation->requestBody) === 0) {
+                    if ($this->call) {
+                        $testsStmts[] =
+                            $this->createCallMethod(
+                                $operation,
+                                null,
+                                $contentTypeSchema,
+                                $package,
+                                $contentTypePayload,
+                                $testSuffix,
+                            );
+                    }
+
+                    if ($this->operations) {
+                        $testsStmts[] =
+                            $this->createOperationsMethod(
+                                $operation,
+                                null,
+                                $contentTypeSchema,
+                                $package,
+                                $contentTypePayload,
+                                $testSuffix,
+                            );
+                    }
+                } else {
+                    foreach ($operation->requestBody as $request) {
+                        if ($this->call) {
+                            $testsStmts[] =
+                                $this->createCallMethod(
+                                    $operation,
+                                    $request,
+                                    $contentTypeSchema,
+                                    $package,
+                                    $contentTypePayload,
+                                    $testSuffix,
+                                );
+                        }
+
+                        if (! $this->operations) {
+                            continue;
+                        }
+
+                        $testsStmts[] =
+                            $this->createOperationsMethod(
+                                $operation,
+                                $request,
+                                $contentTypeSchema,
+                                $package,
+                                $contentTypePayload,
+                                $testSuffix,
+                            );
+                    }
+                }
+            }
+        }
+
+        foreach ($operation->empty as $emptyResponse) {
+            if (count($operation->requestBody) === 0) {
+                if ($this->call) {
+                    $testsStmts[] =
+                        $this->createCallMethod(
+                            $operation,
+                            null,
+                            $emptyResponse,
+                            $package,
+                            null,
+                            'empty',
+                        );
+                }
+
+                if ($this->operations) {
+                    $testsStmts[] =
+                        $this->createOperationsMethod(
+                            $operation,
+                            null,
+                            $emptyResponse,
+                            $package,
+                            null,
+                            'empty',
+                        );
+                }
+            } else {
+                foreach ($operation->requestBody as $request) {
+                    if ($this->call) {
+                        $testsStmts[] =
+                            $this->createCallMethod(
+                                $operation,
+                                $request,
+                                $emptyResponse,
+                                $package,
+                                null,
+                                'empty',
+                            );
+                    }
+
+                    if (! $this->operations) {
+                        continue;
+                    }
+
+                    $testsStmts[] =
+                        $this->createOperationsMethod(
+                            $operation,
+                            $request,
+                            $emptyResponse,
+                            $package,
+                            null,
+                            'empty',
+                        );
+                }
+            }
+        }
+
+        if (count($testsStmts) <= 0) {
+            return;
+        }
+
+        $class->addStmts($testsStmts);
+
+        yield new File($package->destination->test, $operation->className->relative . 'Test', $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
+    }
+
+    private function createCallMethod(
+        Namespaced\Operation $operation,
+        mixed $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        ConfigurationPackageType $package,
+        mixed $contentTypePayload,
+        string $testSuffix,
+    ): Method {
+        if ($request !== null && ! $request instanceof RequestBody) {
+            throw new InvalidArgumentException('Request must be a RequestBody instance or null.');
+        }
+
+        if ($contentTypePayload !== null && ! is_string($contentTypePayload) && ! $contentTypePayload instanceof Namespaced\Schema && ! $contentTypePayload instanceof Namespaced\Property\Type) {
+            throw new InvalidArgumentException('Unsupported content type payload.');
+        }
+
+        $methodName = 'call_httpCode_' . $response->code . ($request instanceof RequestBody ? '_requestContentType_' . (preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType) ?? '') : '') . ($response instanceof  Namespaced\Operation\Response ? '_responseContentType_' . (preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) ?? '') : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
+        if ($response instanceof Namespaced\Operation\Response && $response->content instanceof Namespaced\Property\Type && $response->content->payload instanceof Namespaced\Schema) {
+            $responseSchemaFetch = new Node\Expr\FuncCall(
+                new Node\Name(
+                    'json_encode',
+                ),
+                [
+                    new Arg(
+                        new Node\Expr\FuncCall(
+                            new Node\Name(
+                                'json_decode',
+                            ),
+                            [
+                                new Arg(
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name(
+                                            $response->content->payload->className->fullyQualified->source,
+                                        ),
+                                        'SCHEMA_EXAMPLE_DATA',
+                                    ),
+                                ),
+                                new Arg(
+                                    new Node\Expr\ConstFetch(
+                                        new Node\Name(
+                                            'true',
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            );
+        } elseif ($response instanceof Namespaced\Operation\Response && $response->content instanceof Namespaced\Property\Type) {
+            $responseSchemaFetch = $this->gatherExampleDataNode($response->content, $methodName);
+        } else {
+            $responseSchemaFetch = new Node\Scalar\String_('');
+        }
+
+        return $this->builderFactory->method($methodName)->makePublic()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @test',
+                ' */',
+            ])),
+        )->addStmts([
+            ...$this->testSetUp($responseSchemaFetch, $operation, $request, $response, $package, $contentTypePayload),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'result',
+                    ),
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'client',
+                        ),
+                        'call',
+                        [
+                            new Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        $operation->className->fullyQualified->source,
+                                    ),
+                                    'OPERATION_MATCH',
+                                ),
+                            ),
+                            new Arg(
+                                new Node\Expr\FuncCall(
+                                    new Node\Expr\Closure(
+                                        [
+                                            'static' => true,
+                                            'returnType' => new Node\Name(
+                                                'array',
+                                            ),
+                                            'params' => [
+                                                new Param(
+                                                    'data',
+                                                )->setType(
+                                                    new Node\Name(
+                                                        'array',
+                                                    ),
+                                                )->getNode(),
+                                            ],
+                                            'stmts' => [
+                                                ...((static function (array $parameters): iterable {
+                                                    foreach ($parameters as $parameter) {
+                                                        yield new Node\Stmt\Expression(
+                                                            new Node\Expr\Assign(
+                                                                new Node\Expr\ArrayDimFetch(
+                                                                    new Node\Expr\Variable(
+                                                                        'data',
+                                                                    ),
+                                                                    new Node\Scalar\String_($parameter->targetName),
+                                                                ),
+                                                                $parameter->example->node,
+                                                            ),
+                                                        );
+                                                    }
+                                                })($operation->parameters)),
+                                                new Node\Stmt\Return_(
+                                                    new Node\Expr\Variable(
+                                                        'data',
+                                                    ),
+                                                ),
+                                            ],
+                                        ],
+                                    ),
+                                    [
+                                        new Arg(
+                                            ($request instanceof RequestBody ? new Node\Expr\FuncCall(
+                                                new Node\Name(
+                                                    'json_decode',
+                                                ),
+                                                [
+                                                    new Arg(
+                                                        new Node\Expr\ClassConstFetch(
+                                                            new Node\Name(
+                                                                $request->schema->className->fullyQualified->source,
+                                                            ),
+                                                            'SCHEMA_EXAMPLE_DATA',
+                                                        ),
+                                                    ),
+                                                    new Arg(
+                                                        new Node\Expr\ConstFetch(
+                                                            new Node\Name(
+                                                                'true',
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ) : new Node\Expr\Array_()),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            ...$operation->matchMethod === 'LIST' ?
+            [
+                new Node\Stmt\Foreach_(
+                    new Node\Expr\Variable('result'),
+                    new Node\Expr\Variable('item'),
+                ),
+            ] :
+            [],
+        ]);
+    }
+
+    private function createOperationsMethod(
+        Namespaced\Operation $operation,
+        mixed $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        ConfigurationPackageType $package,
+        mixed $contentTypePayload,
+        string $testSuffix,
+    ): Method {
+        if ($request !== null && ! $request instanceof RequestBody) {
+            throw new InvalidArgumentException('Request must be a RequestBody instance or null.');
+        }
+
+        if ($contentTypePayload !== null && ! is_string($contentTypePayload) && ! $contentTypePayload instanceof Namespaced\Schema && ! $contentTypePayload instanceof Namespaced\Property\Type) {
+            throw new InvalidArgumentException('Unsupported content type payload.');
+        }
+
+        $methodName = 'operations_httpCode_' . $response->code . ($request instanceof RequestBody ? '_requestContentType_' . (preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType) ?? '') : '') . ($response instanceof  Namespaced\Operation\Response ? '_responseContentType_' . (preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) ?? '') : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
+        if ($response instanceof Namespaced\Operation\Response && $response->content instanceof Namespaced\Property\Type && $response->content->payload instanceof Namespaced\Schema) {
+            $responseSchemaFetch = new Node\Expr\FuncCall(
+                new Node\Name(
+                    'json_encode',
+                ),
+                [
+                    new Arg(
+                        new Node\Expr\FuncCall(
+                            new Node\Name(
+                                'json_decode',
+                            ),
+                            [
+                                new Arg(
+                                    new Node\Expr\ClassConstFetch(
+                                        new Node\Name(
+                                            $response->content->payload->className->fullyQualified->source,
+                                        ),
+                                        'SCHEMA_EXAMPLE_DATA',
+                                    ),
+                                ),
+                                new Arg(
+                                    new Node\Expr\ConstFetch(
+                                        new Node\Name(
+                                            'true',
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ],
+            );
+        } elseif ($response instanceof Namespaced\Operation\Response && $response->content instanceof Namespaced\Property\Type) {
+            $responseSchemaFetch = $this->gatherExampleDataNode($response->content, $methodName);
+        } else {
+            $responseSchemaFetch = new Node\Scalar\String_('');
+        }
+
+        return $this->builderFactory->method($methodName)->makePublic()->setDocComment(
+            new Doc(implode(PHP_EOL, [
+                '/**',
+                ' * @test',
+                ' */',
+            ])),
+        )->addStmts([
+            ...$this->testSetUp($responseSchemaFetch, $operation, $request, $response, $package, $contentTypePayload),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'result',
+                    ),
+                    new Node\Expr\MethodCall(
+                        $operation->group === null ? new Node\Expr\MethodCall(
+                            new Node\Expr\Variable(
+                                'client',
+                            ),
+                            'operations',
+                        ) : new Node\Expr\MethodCall(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable(
+                                    'client',
+                                ),
+                                'operations',
+                            ),
+                            new Convert($operation->group)->toCamel(),
+                        ),
+                        new Convert($operation->name)->toCamel(),
+                        [
+                            ...((static function (array $parameters): iterable {
+                                foreach ($parameters as $parameter) {
+                                    yield new Arg($parameter->example->node);
+                                }
+                            })($operation->parameters)),
+                            ...($request instanceof RequestBody ? [
+                                new Arg(new Node\Expr\FuncCall(
+                                    new Node\Name(
+                                        'json_decode',
+                                    ),
+                                    [
+                                        new Arg(
+                                            new Node\Expr\ClassConstFetch(
+                                                new Node\Name(
+                                                    $request->schema->className->fullyQualified->source,
+                                                ),
+                                                'SCHEMA_EXAMPLE_DATA',
+                                            ),
+                                        ),
+                                        new Arg(
+                                            new Node\Expr\ConstFetch(
+                                                new Node\Name(
+                                                    'true',
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                )),
+                            ] : []),
+                        ],
+                    ),
+                ),
+            ),
+            ...($operation->matchMethod !== 'STREAM' && $response instanceof  Namespaced\Operation\EmptyResponse ? [
+                $this->assertion(new Node\Expr\StaticCall(
+                    new Node\Name('self'),
+                    'assertArrayHasKey',
+                    [
+                        new Arg(
+                            new Node\Scalar\String_('code'),
+                        ),
+                        new Arg(
+                            new Node\Expr\Variable(
+                                'result',
+                            ),
+                        ),
+                    ],
+                )),
+                $this->assertion(new Node\Expr\StaticCall(
+                    new Node\Name('self'),
+                    'assertSame',
+                    [
+                        new Arg(
+                            new Node\Scalar\LNumber(
+                                $response->code,
+                            ),
+                        ),
+                        new Arg(
+                            new Node\Expr\ArrayDimFetch(
+                                new Node\Expr\Variable(
+                                    'result',
+                                ),
+                                new Node\Scalar\String_('code'),
+                            ),
+                        ),
+                    ],
+                )),
+                ...(static function (Namespaced\Header ...$headers): iterable {
+                    foreach ($headers as $header) {
+                        yield new Node\Stmt\Expression(new Node\Expr\StaticCall(
+                            new Node\Name('self'),
+                            'assertArrayHasKey',
+                            [
+                                new Arg(
+                                    new Node\Scalar\String_(strtolower($header->name)),
+                                ),
+                                new Arg(
+                                    new Node\Expr\Variable(
+                                        'result',
+                                    ),
+                                ),
+                            ],
+                        ));
+                        yield new Node\Stmt\Expression(new Node\Expr\StaticCall(
+                            new Node\Name('self'),
+                            'assertSame',
+                            [
+                                new Arg(
+                                    $header->example->node,
+                                ),
+                                new Arg(
+                                    new Node\Expr\ArrayDimFetch(
+                                        new Node\Expr\Variable(
+                                            'result',
+                                        ),
+                                        new Node\Scalar\String_(strtolower($header->name)),
+                                    ),
+                                ),
+                            ],
+                        ));
+                    }
+                })(...$response->headers),
+            ] : []),
+            ...$operation->matchMethod === 'LIST' ?
+                [
+                    new Node\Stmt\Foreach_(
+                        new Node\Expr\Variable('result'),
+                        new Node\Expr\Variable('item'),
+                    ),
+                ] :
+                [],
+        ]);
+    }
+
+    private function assertion(Node\Expr\StaticCall $call): Node\Stmt\Expression
+    {
+        return new Node\Stmt\Expression($call);
+    }
+
+    private function wrapShouldBeCalled(Node\Expr\MethodCall $methodCall): Node\Stmt\Expression
+    {
+        return new Node\Stmt\Expression(
+            new Node\Expr\MethodCall(
+                $methodCall,
+                'shouldBeCalled',
+            ),
+        );
+    }
+
+    private function gatherExampleDataNode(Namespaced\Property\Type $type, string $methodName): Node\Expr
+    {
+        return ExampleData::gather(null, RepresentationHelper::propertyType($type), $methodName)->node;
+    }
+
+    /** @return list<Node\Stmt> */
+    private function testSetUp(
+        Node\Expr $responseSchemaFetch,
+        Namespaced\Operation $operation,
+        mixed $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        ConfigurationPackageType $package,
+        mixed $contentTypePayload,
+    ): array {
+        if ($request !== null && ! $request instanceof RequestBody) {
+            throw new InvalidArgumentException('Request must be a RequestBody instance or null.');
+        }
+
+        if ($contentTypePayload !== null && ! is_string($contentTypePayload) && ! $contentTypePayload instanceof Namespaced\Schema && ! $contentTypePayload instanceof Namespaced\Property\Type) {
+            throw new InvalidArgumentException('Unsupported content type payload.');
+        }
+
+        return [
+            ...(is_string($response->code) || $response->code < 400 || ! $contentTypePayload instanceof Namespaced\Schema ? [] : [
+                new Node\Stmt\Expression(
+                    new Node\Expr\StaticCall(
+                        new Node\Name(
+                            'self',
+                        ),
+                        'expectException',
+                        [
+                            new Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        $contentTypePayload->errorClassName->fullyQualified->source,
+                                    ),
+                                    'class',
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ]),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'response',
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name(
+                            '\\' . Response::class,
+                        ),
+                        [
+                            new Arg(
+                                new Node\Scalar\LNumber(is_string($response->code) ? 999 : $response->code),
+                            ),
+                            ...($response instanceof  Namespaced\Operation\Response ? [
+                                new Arg(
+                                    new Node\Expr\Array_([
+                                        new Node\Expr\ArrayItem(
+                                            new Node\Scalar\String_($response->contentType),
+                                            new Node\Scalar\String_('Content-Type'),
+                                        ),
+                                    ]),
+                                ),
+                                new Arg(
+                                    $contentTypePayload instanceof Namespaced\Schema && $contentTypePayload->isArray ? new Node\Expr\BinaryOp\Concat(
+                                        new Node\Scalar\String_('['),
+                                        new Node\Expr\BinaryOp\Concat(
+                                            $responseSchemaFetch,
+                                            new Node\Scalar\String_(']'),
+                                        ),
+                                    ) : $responseSchemaFetch,
+                                ),
+                            ] : [
+                                new Arg(
+                                    new Node\Expr\Array_([
+                                        ...(static function (Namespaced\Header ...$headers): iterable {
+                                            foreach ($headers as $header) {
+                                                yield new Node\Expr\ArrayItem(
+                                                    $header->example->node,
+                                                    new Node\Scalar\String_($header->name),
+                                                );
+                                            }
+                                        })(...$response->headers),
+                                    ]),
+                                ),
+                            ]),
+                        ],
+                    ),
+                ),
+            ),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'auth',
+                    ),
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'this',
+                        ),
+                        'prophesize',
+                        [
+                            new Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        '\\' . AuthenticationInterface::class,
+                                    ),
+                                    'class',
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            $this->wrapShouldBeCalled(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'auth',
+                        ),
+                        'authHeader',
+                        [
+                            new Arg(
+                                new Node\Expr\StaticCall(
+                                    new Node\Name(
+                                        '\\' . Argument::class,
+                                    ),
+                                    'any',
+                                ),
+                            ),
+                        ],
+                    ),
+                    'willReturn',
+                    [
+                        new Arg(
+                            new Node\Scalar\String_('Bearer beer'),
+                        ),
+                    ],
+                ),
+            ),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'browser',
+                    ),
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'this',
+                        ),
+                        'prophesize',
+                        [
+                            new Arg(
+                                new Node\Expr\ClassConstFetch(
+                                    new Node\Name(
+                                        '\\' . Browser::class,
+                                    ),
+                                    'class',
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+            new Node\Stmt\Expression(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'browser',
+                        ),
+                        'withBase',
+                        [
+                            new Arg(
+                                new Node\Expr\StaticCall(
+                                    new Node\Name(
+                                        '\\' . Argument::class,
+                                    ),
+                                    'any',
+                                ),
+                            ),
+                        ],
+                    ),
+                    'willReturn',
+                    [
+                        new Arg(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable(
+                                    'browser',
+                                ),
+                                'reveal',
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            new Node\Stmt\Expression(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'browser',
+                        ),
+                        'withFollowRedirects',
+                        [
+                            new Arg(
+                                new Node\Expr\StaticCall(
+                                    new Node\Name(
+                                        '\\' . Argument::class,
+                                    ),
+                                    'any',
+                                ),
+                            ),
+                        ],
+                    ),
+                    'willReturn',
+                    [
+                        new Arg(
+                            new Node\Expr\MethodCall(
+                                new Node\Expr\Variable(
+                                    'browser',
+                                ),
+                                'reveal',
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            $this->wrapShouldBeCalled(
+                new Node\Expr\MethodCall(
+                    new Node\Expr\MethodCall(
+                        new Node\Expr\Variable(
+                            'browser',
+                        ),
+                        'request',
+                        [
+                            new Arg(
+                                new Node\Scalar\String_(
+                                    $operation->method,
+                                ),
+                            ),
+                            new Arg(
+                                new Node\Scalar\String_(
+                                    str_replace(
+                                        (static function (array $parameters): array {
+                                            $items = [];
+                                            foreach ($parameters as $parameter) {
+                                                if ($parameter->location !== 'path') {
+                                                    continue;
+                                                }
+
+                                                $items[] = '{' . $parameter->targetName . '}';
+                                            }
+
+                                            return $items;
+                                        })($operation->parameters),
+                                        (static function (array $parameters): array {
+                                            $items = [];
+                                            foreach ($parameters as $parameter) {
+                                                if ($parameter->location !== 'path') {
+                                                    continue;
+                                                }
+
+                                                $raw = $parameter->example->raw;
+                                                if (is_bool($raw)) {
+                                                    $items[] = (string) (int) $raw;
+                                                    continue;
+                                                }
+
+                                                if (is_string($raw)) {
+                                                    $items[] = $raw;
+                                                    continue;
+                                                }
+
+                                                if (! is_int($raw) && ! is_float($raw)) {
+                                                    continue;
+                                                }
+
+                                                $items[] = (string) $raw;
+                                            }
+
+                                            return $items;
+                                        })($operation->parameters),
+                                        $operation->path,
+                                    ) . (static function (array $parameters): string {
+                                        $items = [];
+                                        foreach ($parameters as $parameter) {
+                                            if ($parameter->location !== 'query') {
+                                                continue;
+                                            }
+
+                                            if (is_bool($parameter->example->raw)) {
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . (int) $parameter->example->raw;
+                                                continue;
+                                            }
+
+                                            if ($parameter->type === 'array' && is_array($parameter->example->raw)) {
+                                                $firstExample                  = current($parameter->example->raw);
+                                                $encodedValue                  = is_string($firstExample) ? $firstExample : (is_int($firstExample) || is_float($firstExample) ? (string) $firstExample : '');
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . urlencode($encodedValue);
+                                                continue;
+                                            }
+
+                                            if (is_string($parameter->example->raw)) {
+                                                $items[$parameter->targetName] = $parameter->targetName . '=' . urlencode($parameter->example->raw);
+                                                continue;
+                                            }
+
+                                            $items[$parameter->targetName] = $parameter->targetName . '=' . (is_int($parameter->example->raw) || is_float($parameter->example->raw) ? (string) $parameter->example->raw : '');
+                                        }
+
+                                        ksort($items);
+
+                                        return count($items) > 0 ? '?' . implode('&', $items) : '';
+                                    })($operation->parameters),
+                                ),
+                            ),
+                            new Arg(
+                                new Node\Expr\StaticCall(
+                                    new Node\Name(
+                                        '\\' . Argument::class,
+                                    ),
+                                    'type',
+                                    [
+                                        new Arg(
+                                            new Node\Scalar\String_(
+                                                'array',
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            new Arg(
+                                $request instanceof RequestBody ? new Node\Expr\FuncCall(
+                                    new Node\Name(
+                                        'json_encode',
+                                    ),
+                                    [
+                                        new Arg(
+                                            new Node\Expr\FuncCall(
+                                                new Node\Name(
+                                                    'json_decode',
+                                                ),
+                                                [
+                                                    new Arg(
+                                                        new Node\Expr\ClassConstFetch(
+                                                            new Node\Name(
+                                                                $request->schema->className->fullyQualified->source,
+                                                            ),
+                                                            'SCHEMA_EXAMPLE_DATA',
+                                                        ),
+                                                    ),
+                                                    new Arg(
+                                                        new Node\Expr\ConstFetch(
+                                                            new Node\Name(
+                                                                'true',
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                    ],
+                                ) : new Node\Expr\StaticCall(
+                                    new Node\Name(
+                                        '\\' . Argument::class,
+                                    ),
+                                    'any',
+                                ),
+                            ),
+                        ],
+                    ),
+                    'willReturn',
+                    [
+                        new Arg(
+                            new Node\Expr\FuncCall(
+                                new Node\Name(
+                                    '\React\Promise\resolve',
+                                ),
+                                [
+                                    new Arg(
+                                        new Node\Expr\Variable(
+                                            'response',
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            new Node\Stmt\Expression(
+                new Node\Expr\Assign(
+                    new Node\Expr\Variable(
+                        'client',
+                    ),
+                    new Node\Expr\New_(
+                        new Node\Name(
+                            '\\' . $package->namespace->source . '\Client',
+                        ),
+                        [
+                            new Arg(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\Variable(
+                                        'auth',
+                                    ),
+                                    'reveal',
+                                ),
+                            ),
+                            new Arg(
+                                new Node\Expr\MethodCall(
+                                    new Node\Expr\Variable(
+                                        'browser',
+                                    ),
+                                    'reveal',
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ];
+    }
+}

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan;
 
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -25,9 +25,9 @@ use function trim;
 final class ClientCallReturnTypes
 {
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, Representation\Client $client): iterable
+    public static function generate(Package $package, Namespaced\Client $client): iterable
     {
-        /** @var array<Representation\Operation> $operations */
+        /** @var array<Namespaced\Operation> $operations */
         $operations = [];
         foreach ($client->paths as $path) {
             $operations = [...$operations, ...$path->operations];
@@ -76,7 +76,7 @@ final class ClientCallReturnTypes
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(new Node\Name(trim($configuration->namespace->source . '\PHPStan', '\\')));
+        $stmt    = $factory->namespace(new Node\Name(trim($package->namespace->source . '\PHPStan', '\\')));
         $class   = $factory->class('ClientCallReturnTypes')->makeFinal()->makeReadonly()->implement(
             new Node\Name('\\' . DynamicMethodReturnTypeExtension::class),
         )->addStmt(
@@ -109,7 +109,7 @@ final class ClientCallReturnTypes
             $factory->method('getClass')->makePublic()->setReturnType('string')->addStmt(
                 new Node\Stmt\Return_(
                     new Expr\ClassConstFetch(
-                        new Node\Name('\\' . $configuration->namespace->source . '\Client'),
+                        new Node\Name('\\' . $package->namespace->source . '\Client'),
                         new Node\Name('class'),
                     ),
                 ),
@@ -301,6 +301,6 @@ final class ClientCallReturnTypes
             ),
         );
 
-        yield new File($pathPrefix, 'PHPStan\ClientCallReturnTypes', $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, 'PHPStan\\ClientCallReturnTypes', $stmt->addStmt($class)->getNode(), File::DO_NOT_LOAD_ON_WRITE);
     }
 }

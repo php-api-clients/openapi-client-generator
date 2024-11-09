@@ -77,3 +77,6 @@ generate-example-client-miele:
 
 generate-test-client:
 	$(DOCKER_RUN) php ./bin/openapi-client-generator ./tests/openapi-client-petstore.yaml
+
+generate-packages:
+	$(DOCKER_RUN) php ./vendor/bin/openapi-generator ./example/client-gitub-one.php

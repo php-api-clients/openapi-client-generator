@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use OpenAPITools\Representation;
 use PhpParser\Builder;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -31,12 +31,12 @@ use const PHP_EOL;
 
 final class Operation
 {
-    public static function methodSignature(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodSignature(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
         return self::methodReturnType(self::methodParams($method, $operation), $operation);
     }
 
-    public static function methodParams(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodParams(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
         return $method->addParams([
             ...(static function (array $params): iterable {
@@ -50,7 +50,7 @@ final class Operation
         ]);
     }
 
-    public static function methodReturnType(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodReturnType(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
         $docComment = ReflectionTypes::copyDocBlock($operation->operatorClassName->fullyQualified->source, 'call');
 
@@ -63,7 +63,7 @@ final class Operation
         );
     }
 
-    public static function methodCallOperation(Representation\Operation $operation): Node\Stmt\Return_
+    public static function methodCallOperation(Representation\Namespaced\Operation $operation): Node\Stmt\Return_
     {
         return new Node\Stmt\Return_(
             new Expr\MethodCall(
@@ -87,7 +87,7 @@ final class Operation
         );
     }
 
-    public static function getResultTypeFromOperation(Representation\Operation $operation): string
+    public static function getResultTypeFromOperation(Representation\Namespaced\Operation $operation): string
     {
         /** @phpstan-ignore-next-line */
         $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
@@ -110,7 +110,7 @@ final class Operation
         );
     }
 
-    public static function getDocBlockFromOperation(Representation\Operation $operation): Doc
+    public static function getDocBlockFromOperation(Representation\Namespaced\Operation $operation): Doc
     {
         return new Doc(
             implode(
@@ -124,7 +124,7 @@ final class Operation
         );
     }
 
-    public static function getDocBlockResultTypeFromOperation(Representation\Operation $operation): string
+    public static function getDocBlockResultTypeFromOperation(Representation\Namespaced\Operation $operation): string
     {
         /** @phpstan-ignore-next-line */
         $docComment = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getDocComment();

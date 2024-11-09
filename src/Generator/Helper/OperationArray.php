@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use cebe\openapi\spec\Schema as cebeSchema;
+use OpenApiTools\Representation\Namespaced\Property\Type;
+use OpenApiTools\Representation\Namespaced\Schema;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 
@@ -58,7 +58,7 @@ final class OperationArray
     }
 
     /** @return iterable<Schema> */
-    public static function uniqueSchemas(string|Schema|PropertyType ...$propertyTypes): iterable
+    public static function uniqueSchemas(string|Schema|Type ...$propertyTypes): iterable
     {
         $schemas = [];
 

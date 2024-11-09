@@ -2,17 +2,14 @@
 
 declare(strict_types=1);
 
-namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
+namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Paths;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
-use ApiClients\Tools\OpenApiClientGenerator\Gatherer\ExampleData;
-use ApiClients\Tools\OpenApiClientGenerator\Registry\ThrowableSchema;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
 use Jawira\CaseConverter\Convert;
 use NumberToWords\NumberToWords;
+use OpenAPITools\Configuration\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\Builder\Method;
 use PhpParser\Builder\Param;
 use PhpParser\BuilderFactory;
@@ -40,17 +37,23 @@ use const PHP_EOL;
 
 final class OperationTest
 {
+    public function __construct(
+        private BuilderFactory $builderFactory,
+        private bool $call,
+        private bool $operations,
+    ) {
+    }
+
     /** @return iterable<File> */
-    public static function generate(string $pathPrefix, Representation\Operation $operation, Representation\Hydrator $hydrator, ThrowableSchema $throwableSchemaRegistry, Configuration $configuration): iterable
+    public function generate(Package $package, Namespaced\Operation $operation): iterable
     {
         if (count($operation->response) === 0) {
             return;
         }
 
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace($operation->className->namespace->test);
+        $stmt = $this->builderFactory->namespace($operation->className->namespace->test);
 
-        $class = $factory->class($operation->className->className . 'Test')->extend(
+        $class = $this->builderFactory->class($operation->className->className . 'Test')->extend(
             new Node\Name(
                 '\\' . AsyncTestCase::class,
             ),
@@ -62,6 +65,8 @@ final class OperationTest
             ])),
         );
 
+        $testsStmts = [];
+
         foreach ($operation->response as $contentTypeSchema) {
             $contentTypePayloads = $contentTypeSchema->content->payload;
             if (! is_array($contentTypePayloads)) {
@@ -69,70 +74,62 @@ final class OperationTest
             }
 
             foreach ($contentTypePayloads as $index => $contentTypePayload) {
-                if (! $contentTypePayload instanceof Representation\Schema) {
+                if (! $contentTypePayload instanceof Namespaced\Schema) {
                     continue;
                 }
 
                 $testSuffix = NumberToWords::transformNumber('en', $index);
                 if (count($operation->requestBody) === 0) {
-                    if ($configuration->entryPoints->call) {
-                        $class->addStmt(
-                            self::createCallMethod(
-                                $factory,
+                    if ($this->call) {
+                        $testsStmts[] =
+                            $this->createCallMethod(
                                 $operation,
                                 null,
                                 $contentTypeSchema,
-                                $configuration,
+                                $package,
                                 $contentTypePayload,
                                 $testSuffix,
-                            ),
-                        );
+                            );
                     }
 
-                    if ($configuration->entryPoints->operations) {
-                        $class->addStmt(
-                            self::createOperationsMethod(
-                                $factory,
+                    if ($this->operations) {
+                        $testsStmts[] =
+                            $this->createOperationsMethod(
                                 $operation,
                                 null,
                                 $contentTypeSchema,
-                                $configuration,
+                                $package,
                                 $contentTypePayload,
                                 $testSuffix,
-                            ),
-                        );
+                            );
                     }
                 } else {
                     foreach ($operation->requestBody as $request) {
-                        if ($configuration->entryPoints->call) {
-                            $class->addStmt(
-                                self::createCallMethod(
-                                    $factory,
+                        if ($this->call) {
+                            $testsStmts[] =
+                                $this->createCallMethod(
                                     $operation,
                                     $request,
                                     $contentTypeSchema,
-                                    $configuration,
+                                    $package,
                                     $contentTypePayload,
                                     $testSuffix,
-                                ),
-                            );
+                                );
                         }
 
-                        if (! $configuration->entryPoints->operations) {
+                        if (! $this->operations) {
                             continue;
                         }
 
-                        $class->addStmt(
-                            self::createOperationsMethod(
-                                $factory,
+                        $testsStmts[] =
+                            $this->createOperationsMethod(
                                 $operation,
                                 $request,
                                 $contentTypeSchema,
-                                $configuration,
+                                $package,
                                 $contentTypePayload,
                                 $testSuffix,
-                            ),
-                        );
+                            );
                     }
                 }
             }
@@ -140,75 +137,79 @@ final class OperationTest
 
         foreach ($operation->empty as $emptyResponse) {
             if (count($operation->requestBody) === 0) {
-                if ($configuration->entryPoints->call) {
-                    $class->addStmt(
-                        self::createCallMethod(
-                            $factory,
+                if ($this->call) {
+                    $testsStmts[] =
+                        $this->createCallMethod(
                             $operation,
                             null,
                             $emptyResponse,
-                            $configuration,
+                            $package,
                             null,
                             'empty',
-                        ),
-                    );
+                        );
                 }
 
-                if ($configuration->entryPoints->operations) {
-                    $class->addStmt(
-                        self::createOperationsMethod(
-                            $factory,
+                if ($this->operations) {
+                    $testsStmts[] =
+                        $this->createOperationsMethod(
                             $operation,
                             null,
                             $emptyResponse,
-                            $configuration,
+                            $package,
                             null,
                             'empty',
-                        ),
-                    );
+                        );
                 }
             } else {
                 foreach ($operation->requestBody as $request) {
-                    if ($configuration->entryPoints->call) {
-                        $class->addStmt(
-                            self::createCallMethod(
-                                $factory,
+                    if ($this->call) {
+                        $testsStmts[] =
+                            $this->createCallMethod(
                                 $operation,
                                 $request,
                                 $emptyResponse,
-                                $configuration,
+                                $package,
                                 null,
                                 'empty',
-                            ),
-                        );
+                            );
                     }
 
-                    if (! $configuration->entryPoints->operations) {
+                    if (! $this->operations) {
                         continue;
                     }
 
-                    $class->addStmt(
-                        self::createOperationsMethod(
-                            $factory,
+                    $testsStmts[] =
+                        $this->createOperationsMethod(
                             $operation,
                             $request,
                             $emptyResponse,
-                            $configuration,
+                            $package,
                             null,
                             'empty',
-                        ),
-                    );
+                        );
                 }
             }
         }
 
-        yield new File($pathPrefix, $operation->className->relative . 'Test', $stmt->addStmt($class)->getNode());
+        if (count($testsStmts) <= 0) {
+            return;
+        }
+
+        $class->addStmts($testsStmts);
+
+        yield new File($package->destination->test, $operation->className->relative . 'Test', $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 
-    private static function createCallMethod(BuilderFactory $factory, Representation\Operation $operation, Representation\OperationRequestBody|null $request, Representation\OperationResponse|Representation\OperationEmptyResponse $response, Configuration $configuration, Representation\Schema|Representation\PropertyType|string|null $contentTypePayload, string $testSuffix): Method
-    {
-        $methodName = 'call_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof Representation\OperationResponse ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
-        if ($response instanceof Representation\OperationResponse && $response->content->payload instanceof Representation\Schema) {
+    private function createCallMethod(
+        Namespaced\Operation $operation,
+        Namespaced\Operation\RequestBody|null $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        Package $package,
+        Namespaced\Schema|Namespaced\Property\Type|string|null $contentTypePayload,
+        string $testSuffix,
+    ): Method {
+        $methodName = 'call_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof  Namespaced\Operation\Response ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
+        if ($response instanceof  Namespaced\Operation\Response && $response->content->payload instanceof  Namespaced\Schema) {
             $responseSchemaFetch = new Node\Expr\FuncCall(
                 new Node\Name(
                     'json_encode',
@@ -223,7 +224,7 @@ final class OperationTest
                                 new Arg(
                                     new Node\Expr\ClassConstFetch(
                                         new Node\Name(
-                                            $response->content->payload->className->relative,
+                                            $response->content->payload->className->fullyQualified->source,
                                         ),
                                         'SCHEMA_EXAMPLE_DATA',
                                     ),
@@ -240,20 +241,20 @@ final class OperationTest
                     ),
                 ],
             );
-        } elseif ($response instanceof Representation\OperationResponse) {
+        } elseif ($response instanceof  Namespaced\Operation\Response) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
         } else {
             $responseSchemaFetch = new Node\Scalar\String_('');
         }
 
-        return $factory->method($methodName)->makePublic()->setDocComment(
+        return $this->builderFactory->method($methodName)->makePublic()->setDocComment(
             new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @test',
                 ' */',
             ])),
         )->addStmts([
-            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration, $contentTypePayload),
+            ...$this->testSetUp($responseSchemaFetch, $operation, $request, $response, $package, $contentTypePayload),
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
@@ -268,7 +269,7 @@ final class OperationTest
                             new Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Name(
-                                        $operation->className->relative,
+                                        $operation->className->fullyQualified->source,
                                     ),
                                     'OPERATION_MATCH',
                                 ),
@@ -324,7 +325,7 @@ final class OperationTest
                                                     new Arg(
                                                         new Node\Expr\ClassConstFetch(
                                                             new Node\Name(
-                                                                $request->schema->className->relative,
+                                                                $request->schema->className->fullyQualified->source,
                                                             ),
                                                             'SCHEMA_EXAMPLE_DATA',
                                                         ),
@@ -357,10 +358,16 @@ final class OperationTest
         ]);
     }
 
-    private static function createOperationsMethod(BuilderFactory $factory, Representation\Operation $operation, Representation\OperationRequestBody|null $request, Representation\OperationResponse|Representation\OperationEmptyResponse $response, Configuration $configuration, Representation\Schema|Representation\PropertyType|string|null $contentTypePayload, string $testSuffix): Method
-    {
-        $methodName = 'operations_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof Representation\OperationResponse ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
-        if ($response instanceof Representation\OperationResponse && $response->content->payload instanceof Representation\Schema) {
+    private function createOperationsMethod(
+        Namespaced\Operation $operation,
+        Namespaced\Operation\RequestBody|null $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        Package $package,
+        Namespaced\Schema|Namespaced\Property\Type|string|null $contentTypePayload,
+        string $testSuffix,
+    ): Method {
+        $methodName = 'operations_httpCode_' . $response->code . ($request === null ? '' : '_requestContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $request->contentType)) . ($response instanceof  Namespaced\Operation\Response ? '_responseContentType_' . preg_replace('/[^a-zA-Z0-9]+/', '_', $response->contentType) : '') . ($testSuffix !== '' ? '_' . $testSuffix : '');
+        if ($response instanceof  Namespaced\Operation\Response && $response->content->payload instanceof  Namespaced\Schema) {
             $responseSchemaFetch = new Node\Expr\FuncCall(
                 new Node\Name(
                     'json_encode',
@@ -375,7 +382,7 @@ final class OperationTest
                                 new Arg(
                                     new Node\Expr\ClassConstFetch(
                                         new Node\Name(
-                                            $response->content->payload->className->relative,
+                                            $response->content->payload->className->fullyQualified->source,
                                         ),
                                         'SCHEMA_EXAMPLE_DATA',
                                     ),
@@ -392,20 +399,20 @@ final class OperationTest
                     ),
                 ],
             );
-        } elseif ($response instanceof Representation\OperationResponse) {
+        } elseif ($response instanceof  Namespaced\Operation\Response) {
             $responseSchemaFetch = ExampleData::gather(null, $response->content, $methodName)->node;
         } else {
             $responseSchemaFetch = new Node\Scalar\String_('');
         }
 
-        return $factory->method($methodName)->makePublic()->setDocComment(
+        return $this->builderFactory->method($methodName)->makePublic()->setDocComment(
             new Doc(implode(PHP_EOL, [
                 '/**',
                 ' * @test',
                 ' */',
             ])),
         )->addStmts([
-            ...self::testSetUp($responseSchemaFetch, $operation, $request, $response, $configuration, $contentTypePayload),
+            ...$this->testSetUp($responseSchemaFetch, $operation, $request, $response, $package, $contentTypePayload),
             new Node\Stmt\Expression(
                 new Node\Expr\Assign(
                     new Node\Expr\Variable(
@@ -442,7 +449,7 @@ final class OperationTest
                                         new Arg(
                                             new Node\Expr\ClassConstFetch(
                                                 new Node\Name(
-                                                    $request->schema->className->relative,
+                                                    $request->schema->className->fullyQualified->source,
                                                 ),
                                                 'SCHEMA_EXAMPLE_DATA',
                                             ),
@@ -461,7 +468,7 @@ final class OperationTest
                     ),
                 ),
             ),
-            ...($operation->matchMethod !== 'STREAM' && $response instanceof Representation\OperationEmptyResponse ? [
+            ...($operation->matchMethod !== 'STREAM' && $response instanceof  Namespaced\Operation\EmptyResponse ? [
                 new Node\Expr\StaticCall(
                     new Node\Name('self'),
                     'assertArrayHasKey',
@@ -495,7 +502,7 @@ final class OperationTest
                         ),
                     ],
                 ),
-                ...(static function (Representation\Header ...$headers): iterable {
+                ...(static function (Namespaced\Header ...$headers): iterable {
                     foreach ($headers as $header) {
                         yield new Node\Expr\StaticCall(
                             new Node\Name('self'),
@@ -542,7 +549,7 @@ final class OperationTest
         ]);
     }
 
-    private static function wrapShouldBeCalled(Node\Expr\MethodCall $methodCall): Node\Expr\MethodCall
+    private function wrapShouldBeCalled(Node\Expr\MethodCall $methodCall): Node\Expr\MethodCall
     {
         return new Node\Expr\MethodCall(
             $methodCall,
@@ -551,8 +558,14 @@ final class OperationTest
     }
 
     /** @return array<Node> */
-    private static function testSetUp(Node\Expr $responseSchemaFetch, Representation\Operation $operation, Representation\OperationRequestBody|null $request, Representation\OperationResponse|Representation\OperationEmptyResponse $response, Configuration $configuration, Representation\Schema|Representation\PropertyType|string|null $contentTypePayload): array
-    {
+    private function testSetUp(
+        Node\Expr $responseSchemaFetch,
+        Namespaced\Operation $operation,
+        Namespaced\Operation\RequestBody|null $request,
+        Namespaced\Operation\Response|Namespaced\Operation\EmptyResponse $response,
+        Package $package,
+        Namespaced\Schema|Namespaced\Property\Type|string|null $contentTypePayload,
+    ): array {
         return [
             ...(is_string($response->code) || $response->code < 400 || $contentTypePayload === null ? [] : [
                 new Node\Stmt\Expression(
@@ -565,7 +578,7 @@ final class OperationTest
                             new Arg(
                                 new Node\Expr\ClassConstFetch(
                                     new Node\Name(
-                                        $contentTypePayload->errorClassNameAliased->relative,
+                                        $contentTypePayload->errorClassName->fullyQualified->source,
                                     ),
                                     'class',
                                 ),
@@ -587,7 +600,7 @@ final class OperationTest
                             new Arg(
                                 new Node\Scalar\LNumber(is_string($response->code) ? 999 : $response->code),
                             ),
-                            ...($response instanceof Representation\OperationResponse ? [
+                            ...($response instanceof  Namespaced\Operation\Response ? [
                                 new Arg(
                                     new Node\Expr\Array_([
                                         new Node\Expr\ArrayItem(
@@ -597,7 +610,7 @@ final class OperationTest
                                     ]),
                                 ),
                                 new Arg(
-                                    $contentTypePayload instanceof Schema && $contentTypePayload->isArray ? new Node\Expr\BinaryOp\Concat(
+                                    $contentTypePayload instanceof Namespaced\Schema && $contentTypePayload->isArray ? new Node\Expr\BinaryOp\Concat(
                                         new Node\Scalar\String_('['),
                                         new Node\Expr\BinaryOp\Concat(
                                             $responseSchemaFetch,
@@ -608,7 +621,7 @@ final class OperationTest
                             ] : [
                                 new Arg(
                                     new Node\Expr\Array_([
-                                        ...(static function (Representation\Header ...$headers): iterable {
+                                        ...(static function (Namespaced\Header ...$headers): iterable {
                                             foreach ($headers as $header) {
                                                 yield new Node\Expr\ArrayItem(
                                                     $header->example->node,
@@ -646,7 +659,7 @@ final class OperationTest
                     ),
                 ),
             ),
-            self::wrapShouldBeCalled(
+            $this->wrapShouldBeCalled(
                 new Node\Expr\MethodCall(
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
@@ -753,7 +766,7 @@ final class OperationTest
                     ),
                 ],
             ),
-            self::wrapShouldBeCalled(
+            $this->wrapShouldBeCalled(
                 new Node\Expr\MethodCall(
                     new Node\Expr\MethodCall(
                         new Node\Expr\Variable(
@@ -860,7 +873,7 @@ final class OperationTest
                                                     new Arg(
                                                         new Node\Expr\ClassConstFetch(
                                                             new Node\Name(
-                                                                $request->schema->className->relative,
+                                                                $request->schema->className->fullyQualified->source,
                                                             ),
                                                             'SCHEMA_EXAMPLE_DATA',
                                                         ),
@@ -906,7 +919,7 @@ final class OperationTest
                     ),
                     new Node\Expr\New_(
                         new Node\Name(
-                            '\\' . $configuration->namespace->source . '\Client',
+                            '\\' . $package->namespace->source . '\Client',
                         ),
                         [
                             new Arg(

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Client\PHPStan;
 
 use ApiClients\Contracts\HTTP\Headers\AuthenticationInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
@@ -21,7 +21,7 @@ use function trim;
 final class ClientCallReturnTypesTest
 {
     /** @return iterable<File> */
-    public static function generate(Configuration $configuration, string $pathPrefix, Representation\Client $client): iterable
+    public static function generate(Package $package, Namespaced\Client $client): iterable
     {
         $operations = [];
         foreach ($client->paths as $path) {
@@ -29,7 +29,7 @@ final class ClientCallReturnTypesTest
         }
 
         $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(new Node\Name(trim($configuration->namespace->test . '\\Types', '\\')));
+        $stmt    = $factory->namespace(new Node\Name(trim($package->namespace->test . '\\Types', '\\')));
 
         $stmt->addStmt(
             new Node\Stmt\Expression(
@@ -41,7 +41,7 @@ final class ClientCallReturnTypesTest
                     ),
                     new Expr\New_(
                         new Node\Name(
-                            '\\' . $configuration->namespace->source . '\\Client',
+                            '\\' . $package->namespace->source . '\\Client',
                         ),
                         [
                             new Arg(
@@ -114,6 +114,6 @@ final class ClientCallReturnTypesTest
             );
         }
 
-        yield new File($pathPrefix, 'Types\ClientCallReturnTypes', $stmt->getNode());
+        yield new File($package->destination->test, 'Types\\ClientCallReturnTypes', $stmt->getNode(), File::DO_NOT_LOAD_ON_WRITE);
     }
 }

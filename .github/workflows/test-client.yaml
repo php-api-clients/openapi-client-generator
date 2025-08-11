@@ -13,7 +13,7 @@ jobs:
     container:
       image: ghcr.io/wyrihaximusnet/php:8.2-nts-alpine-dev-root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           fetch-depth: '0'
           persist-credentials: 'false'
@@ -27,7 +27,7 @@ jobs:
       - name: Tar example files
         run: tar -czf example.tar ./example
       - name: Upload Generated Client
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: example-${{ inputs.name }}-client
           path: ./example.tar
@@ -38,9 +38,9 @@ jobs:
       version: ${{ steps.supported-versions-matrix.outputs.version }}
       upcoming: ${{ steps.supported-versions-matrix.outputs.upcoming }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - id: supported-versions-matrix
-        uses: WyriHaximus/github-action-composer-php-versions-in-range@v1
+        uses: WyriHaximus/github-action-composer-php-versions-in-range@ea3d54bf7909d5607c4f32bda9cd8d64e420ec99 # v1
         with:
           upcomingReleases: true
   supported-checks-matrix:
@@ -51,11 +51,11 @@ jobs:
     outputs:
       check: ${{ steps.supported-checks-matrix.outputs.check }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - run: |
           mkdir -p example/generated-${{ inputs.name }}
       - name: Download Generated Client
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: example-${{ inputs.name }}-client
           path: ./
@@ -83,14 +83,14 @@ jobs:
     container:
       image: ghcr.io/wyrihaximusnet/php:${{ matrix.php }}-nts-alpine-dev-root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - run: git config --global --add safe.directory $GITHUB_WORKSPACE # Do this ourself because `actions/checkout@v3 doesn't succeed in doing this
       - run: |
           mkdir -p example/generated-${{ inputs.name }}
       - name: Download Generated Client
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: example-${{ inputs.name }}-client
           path: ./

@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: '0'
           persist-credentials: 'false'
-      - uses: "ramsey/composer-install@v2"
+      - uses: "ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520" # 3.1.1
       - run: |
           mkdir -p example/generated-${{ inputs.name }}
       - run: curl -o example/api.github.com.yaml https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml
@@ -96,7 +96,7 @@ jobs:
           path: ./
       - name: UnTar example files
         run: tar -xzf example.tar
-      - uses: ramsey/composer-install@v2
+      - uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520 # 3.1.1
         with:
           working-directory: "example/generated-${{ inputs.name }}/"
           ignore-cache: "yes"

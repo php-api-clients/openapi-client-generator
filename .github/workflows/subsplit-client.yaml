@@ -17,5 +17,5 @@ jobs:
         with:
           fetch-depth: '0'
           persist-credentials: 'false'
-      - uses: "ramsey/composer-install@v2"
+      - uses: "ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520" # 3.1.1
       - run: make generate-example-client-subsplit

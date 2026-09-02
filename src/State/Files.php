@@ -41,7 +41,7 @@ final class Files
         unset($this->files[$fileName]);
     }
 
-    /** @return array<File> */
+    /** @return list<File> */
     public function files(): array
     {
         return array_values($this->files);

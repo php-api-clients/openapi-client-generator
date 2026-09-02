@@ -3,31 +3,16 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Operation;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
 final class PetsList
 {
-    public function __construct(private Internal\Operators $operators)
+    public function __construct(public \ApiClients\Client\PetStore\Internal\Operators $operators)
     {
     }
     /**
-     * @return iterable<int,Schema\Cat>
+     * @return iterable<int,\ApiClients\Client\PetStore\Schema\Cat>|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function gatos(int $perPage, int $page) : iterable
+    public function gatos(int $perPage, int $page): \Rx\Observable|\ApiClients\Client\PetStore\Schema\Error
     {
-        return $this->operators->pets👷List_👷Gatos()->call($perPage, $page);
-    }
-    /**
-     * @return iterable<int,Schema\Cat>
-     */
-    public function gatosListing(int $perPage, int $page) : iterable
-    {
-        return $this->operators->pets👷List_👷GatosListing()->call($perPage, $page);
+        return $this->operators->pets👷List👷Gatos()->call($perPage, $page);
     }
 }

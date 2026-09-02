@@ -3,25 +3,17 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Router\Get;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
 final class Pets
 {
-    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private Internal\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
+    public function __construct(private \League\OpenAPIValidation\Schema\SchemaValidator $requestSchemaValidator, private \League\OpenAPIValidation\Schema\SchemaValidator $responseSchemaValidator, private \ApiClients\Client\PetStore\Internal\Hydrators $hydrators, private \React\Http\Browser $browser, private \ApiClients\Contracts\HTTP\Headers\AuthenticationInterface $authentication)
     {
     }
     /**
-     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
+     * @return iterable<int,\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\HellHound|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider>|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function list(array $params) : iterable
+    public function list(array $params): Rx\Observable|ApiClients\Client\PetStore\Schema\Error
     {
-        $arguments = array();
+        $arguments = [];
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');
         }
@@ -32,15 +24,15 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        $operator = new Internal\Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
+        $operator = new \ApiClients\Client\PetStore\Internal\Operator\Pets\List_($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets());
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
     /**
-     * @return iterable<int,string>
+     * @return iterable<int,string>|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function names(array $params) : iterable
+    public function names(array $params): Rx\Observable|ApiClients\Client\PetStore\Schema\Error
     {
-        $arguments = array();
+        $arguments = [];
         if (array_key_exists('per_page', $params) === false) {
             throw new \InvalidArgumentException('Missing mandatory field: per_page');
         }
@@ -51,7 +43,7 @@ final class Pets
         }
         $arguments['page'] = $params['page'];
         unset($params['page']);
-        $operator = new Internal\Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
+        $operator = new \ApiClients\Client\PetStore\Internal\Operator\Pets\Names($this->browser, $this->authentication, $this->responseSchemaValidator, $this->hydrators->getObjectMapperOperation🌀Pets🌀Names());
         return $operator->call($arguments['per_page'], $arguments['page']);
     }
 }

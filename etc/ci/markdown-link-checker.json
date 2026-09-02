@@ -1,15 +1,12 @@
 {
-  "ignorePatterns": [
-    {
-      "pattern": "^(.*){{[^}]+([^{])*}}(.*)$"
-    }
-  ],
-  "httpHeaders": [
-    {
-      "urls": ["https://docs.github.com/"],
-      "headers": {
-        "Accept-Encoding": "zstd, br, gzip, deflate"
-      }
-    }
-  ]
+    "httpHeaders": [
+        {
+            "urls": [
+                "https://docs.github.com/"
+            ],
+            "headers": {
+                "Accept-Encoding": "zstd, br, gzip, deflate"
+            }
+        }
+    ]
 }

@@ -9,6 +9,9 @@ entryPoints:
   call: true
   operations: true
   webHooks: true
+  webHookMiddleware:
+    paths:
+      - /webhook
 namespace:
   source: ApiClients\Client\Github
   test: ApiClients\Tests\Client\Github

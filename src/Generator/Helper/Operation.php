@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator\Helper;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation;
+use OpenAPITools\Representation;
 use PhpParser\Builder;
 use PhpParser\Comment\Doc;
 use PhpParser\Node;
@@ -16,54 +16,57 @@ use PHPStan\PhpDocParser\Parser\ConstExprParser;
 use PHPStan\PhpDocParser\Parser\PhpDocParser;
 use PHPStan\PhpDocParser\Parser\TokenIterator;
 use PHPStan\PhpDocParser\Parser\TypeParser;
+use PHPStan\PhpDocParser\ParserConfig;
 use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
 use Rx\Observable;
 
 use function array_map;
 use function count;
-use function explode;
 use function implode;
 use function is_string;
 use function str_replace;
-use function strpos;
 
 use const PHP_EOL;
 
 final class Operation
 {
-    public static function methodSignature(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodSignature(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
         return self::methodReturnType(self::methodParams($method, $operation), $operation);
     }
 
-    public static function methodParams(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodParams(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
         return $method->addParams([
             ...(static function (array $params): iterable {
                 foreach ($params as $param) {
-                    yield (new Builder\Param($param->name))->setType($param->type === '' ? 'mixed' : $param->type);
+                    yield new Builder\Param($param->name)->setType($param->type === '' ? 'mixed' : $param->type);
                 }
             })($operation->parameters),
             ...(count($operation->requestBody) > 0 ? [
-                (new Builder\Param('params'))->setType('array'),
+                new Builder\Param('params')->setType('array'),
             ] : []),
         ]);
     }
 
-    public static function methodReturnType(Builder\Method $method, Representation\Operation $operation): Builder\Method
+    public static function methodReturnType(Builder\Method $method, Representation\Namespaced\Operation $operation): Builder\Method
     {
-        $docComment = ReflectionTypes::copyDocBlock($operation->operatorClassName->fullyQualified->source, 'call');
+        /** @var class-string $operatorClassName */
+        $operatorClassName = $operation->operatorClassName->fullyQualified->source;
+        $docComment        = ReflectionTypes::copyDocBlock($operatorClassName, 'call');
 
-        if ($docComment !== null) {
+        if ($docComment instanceof Doc) {
             $method = $method->setDocComment($docComment);
         }
 
         return $method->setReturnType(
-            ReflectionTypes::copyReturnType($operation->operatorClassName->fullyQualified->source, 'call'),
+            ReflectionTypes::copyReturnType($operatorClassName, 'call'),
         );
     }
 
-    public static function methodCallOperation(Representation\Operation $operation): Node\Stmt\Return_
+    public static function methodCallOperation(Representation\Namespaced\Operation $operation): Node\Stmt\Return_
     {
         return new Node\Stmt\Return_(
             new Expr\MethodCall(
@@ -87,57 +90,71 @@ final class Operation
         );
     }
 
-    public static function getResultTypeFromOperation(Representation\Operation $operation): string
+    public static function getResultTypeFromOperation(Representation\Namespaced\Operation $operation): string
     {
-        /** @phpstan-ignore-next-line */
-        $returnType = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getReturnType();
+        /** @var class-string $className */
+        $className  = $operation->className->fullyQualified->source;
+        $returnType = new ReflectionClass($className)->getMethod('createResponse')->getReturnType();
         if ($returnType === null) {
             return 'void';
         }
 
-        if ((string) $returnType === 'void') {
-            return (string) $returnType;
+        if ($returnType instanceof ReflectionNamedType && $returnType->getName() === 'void') {
+            return 'void';
         }
 
-        return self::convertObservableIntoIterable(
-            implode(
-                '|',
-                array_map(
-                    static fn (string $object): Node\Name => new Node\Name((strpos($object, '\\') > 0 ? '\\' : '') . $object),
-                    explode('|', (string) $returnType),
-                ),
-            ),
-        );
+        $types = $returnType instanceof ReflectionUnionType
+            ? array_map(
+                ReflectionTypes::name(...),
+                $returnType->getTypes(),
+            )
+            : [ReflectionTypes::name($returnType)];
+
+        return self::convertObservableIntoIterable(implode('|', $types));
     }
 
-    public static function getDocBlockFromOperation(Representation\Operation $operation): Doc
+    public static function getDocBlockFromOperation(Representation\Namespaced\Operation $operation): Doc|null
     {
+        $resultType = self::getDocBlockResultTypeFromOperation($operation);
+
+        /**
+         * An operation only carries an @return on createResponse() when the native
+         * return type cannot express the full type, such as the item type behind an
+         * Observable. Reflecting on the rest yields no type, and writing the tag
+         * anyway leaves an empty `@return` behind.
+         */
+        if ($resultType === '') {
+            return null;
+        }
+
         return new Doc(
             implode(
                 PHP_EOL,
                 [
                     '/**',
-                    ' * @return ' . self::getDocBlockResultTypeFromOperation($operation),
+                    ' * @return ' . $resultType,
                     ' */',
                 ],
             ),
         );
     }
 
-    public static function getDocBlockResultTypeFromOperation(Representation\Operation $operation): string
+    public static function getDocBlockResultTypeFromOperation(Representation\Namespaced\Operation $operation): string
     {
-        /** @phpstan-ignore-next-line */
-        $docComment = (new ReflectionClass($operation->className->fullyQualified->source))->getMethod('createResponse')->getDocComment();
+        /** @var class-string $className */
+        $className  = $operation->className->fullyQualified->source;
+        $docComment = new ReflectionClass($className)->getMethod('createResponse')->getDocComment();
         if (! is_string($docComment)) {
             return '';
         }
 
         // basic setup
 
-        $lexer           = new Lexer();
-        $constExprParser = new ConstExprParser();
-        $typeParser      = new TypeParser($constExprParser);
-        $phpDocParser    = new PhpDocParser($typeParser, $constExprParser);
+        $config          = new ParserConfig([]);
+        $lexer           = new Lexer($config);
+        $constExprParser = new ConstExprParser($config);
+        $typeParser      = new TypeParser($config, $constExprParser);
+        $phpDocParser    = new PhpDocParser($config, $typeParser, $constExprParser);
 
         // parsing and reading a PHPDoc string
         $tokens     = new TokenIterator($lexer->tokenize($docComment));

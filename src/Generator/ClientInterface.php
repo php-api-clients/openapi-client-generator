@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace ApiClients\Tools\OpenApiClientGenerator\Generator;
 
 use ApiClients\Contracts\OpenAPI\WebHooksInterface;
-use ApiClients\Tools\OpenApiClientGenerator\Configuration;
-use ApiClients\Tools\OpenApiClientGenerator\File;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\ConfigurationPackage;
+use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Types;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
-use PhpParser\Builder\Param;
+use OpenAPITools\Configuration\Package\QA\Tool;
+use OpenAPITools\Contract\FileGenerator;
+use OpenAPITools\Contract\Package;
+use OpenAPITools\Representation\Namespaced;
+use OpenAPITools\Utils\File;
 use PhpParser\BuilderFactory;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Name;
@@ -23,25 +26,29 @@ use function trim;
 
 use const PHP_EOL;
 
-final class ClientInterface
+final readonly class ClientInterface implements FileGenerator
 {
-    /**
-     * @param array<Operation> $operations
-     *
-     * @return iterable<File>
-     */
-    public static function generate(Configuration $configuration, string $pathPrefix, array $operations): iterable
+    public function __construct(
+        private BuilderFactory $builderFactory,
+        private bool $call,
+        private bool $operations,
+    ) {
+    }
+
+    /** @return iterable<File> */
+    public function generate(Package $package, Namespaced\Representation $representation): iterable
     {
-        $factory = new BuilderFactory();
-        $stmt    = $factory->namespace(trim($configuration->namespace->source, '\\'));
+        $package = ConfigurationPackage::unwrap($package);
 
-        $class = $factory->interface('ClientInterface');
+        $stmt = $this->builderFactory->namespace(trim($package->namespace->source, '\\'));
 
-        if ($configuration->entryPoints->call) {
+        $class = $this->builderFactory->interface('ClientInterface');
+
+        if ($this->call) {
             $class->addStmt(
-                $factory->method('call')->makePublic()->setDocComment(
+                $this->builderFactory->method('call')->makePublic()->setDocComment(
                     new Doc(implode(PHP_EOL, [
-                        ...($configuration->qa?->phpcs ?  ['// phpcs:disable'] : []),
+                        ...($package->qa->phpcs instanceof Tool && $package->qa->phpcs->enabled ? ['// phpcs:disable'] : []),
                         '/**',
                     //                        ' * @return ' . (static function (array $operations): string {
                     //                            $count    = count($operations);
@@ -62,19 +69,21 @@ final class ClientInterface
                     //                            return $left . $right;
                     //                        })($operations),
                         ' */',
-                        ...($configuration->qa?->phpcs ?  ['// phpcs:enabled'] : []),
+                        ...($package->qa->phpcs instanceof Tool && $package->qa->phpcs->enabled ? ['// phpcs:enabled'] : []),
                     ])),
-                )->addParam((new Param('call'))->setType('string'))->addParam((new Param('params'))->setType('array')->setDefault([]))->setReturnType(
+                )->addParam($this->builderFactory->param('call')->setType('string'))->addParam($this->builderFactory->param('params')->setType('array')->setDefault([]))->setReturnType(
                     new UnionType(
                         array_map(
                             static fn (string $type): Name => new Name($type),
                             array_unique(
                                 [
-                                    ...Types::filterDuplicatesAndIncompatibleRawTypes(...(static function (array $operations): iterable {
-                                        foreach ($operations as $operation) {
-                                            yield from explode('|', \ApiClients\Tools\OpenApiClientGenerator\Generator\Helper\Operation::getResultTypeFromOperation($operation));
+                                    ...Types::filterDuplicatesAndIncompatibleRawTypes(...(static function (Namespaced\Path ...$paths): iterable {
+                                        foreach ($paths as $path) {
+                                            foreach ($path->operations as $operation) {
+                                                yield from explode('|', Operation::getResultTypeFromOperation($operation));
+                                            }
                                         }
-                                    })($operations)),
+                                    })(...$representation->client->paths)),
                                 ],
                             ),
                         ),
@@ -83,18 +92,18 @@ final class ClientInterface
             );
         }
 
-        if ($configuration->entryPoints->operations) {
+        if ($this->operations) {
             $class->addStmt(
-                $factory->method('operations')->setReturnType('OperationsInterface')->makePublic(),
+                $this->builderFactory->method('operations')->setReturnType('OperationsInterface')->makePublic(),
             );
         }
 
-        if ($configuration->entryPoints->webHooks) {
+        if ($representation->webHooks !== []) {
             $class->addStmt(
-                $factory->method('webHooks')->setReturnType('\\' . WebHooksInterface::class)->makePublic(),
+                $this->builderFactory->method('webHooks')->setReturnType('\\' . WebHooksInterface::class)->makePublic(),
             );
         }
 
-        yield new File($pathPrefix, 'ClientInterface', $stmt->addStmt($class)->getNode());
+        yield new File($package->destination->source, 'ClientInterface', $stmt->addStmt($class)->getNode(), File::DO_LOAD_ON_WRITE);
     }
 }

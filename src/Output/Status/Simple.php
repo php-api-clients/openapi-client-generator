@@ -9,10 +9,10 @@ use function array_map;
 
 use const PHP_EOL;
 
-final class Simple
+final readonly class Simple
 {
     /** @var array<string, Step> */
-    private readonly array $steps;
+    private array $steps;
 
     public function __construct(Step ...$steps)
     {

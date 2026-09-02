@@ -8,33 +8,35 @@ use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\Router;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClass;
 use ApiClients\Tools\OpenApiClientGenerator\Generator\Client\Routers\RouterClassMethod;
 use Jawira\CaseConverter\Convert;
+use OpenAPITools\Configuration\Package;
+use OpenAPITools\Utils\ClassString;
 use PhpParser\Node;
 
 use function lcfirst;
-use function rtrim;
 use function str_replace;
 
 final class Routers
 {
-    /** @var array<string, array<string, array<string, array{nodes: array<Node>, returnType: string, docBlockReturnType: string}>>> $operations */
+    /** @var array<string, array<string, array<string, array{nodes: list<Node\Stmt>, returnType: string, docBlockReturnType: string}>>> $operations */
     private array $operations = [];
 
-    /** @param array<Node> $nodes */
+    /** @param list<Node\Stmt> $nodes */
     public function add(
+        Package $package,
         string $method,
-        string|null $group,
+        string $group,
         string $name,
         string $returnType,
         string $docBlockReturnType,
         array $nodes,
     ): Router {
-        $this->operations[$method][$group ?? ''][$name] = [
+        $this->operations[$method][$group][$name] = [
             'nodes' => $nodes,
             'returnType' => $returnType,
             'docBlockReturnType' => $docBlockReturnType,
         ];
 
-        return $this->createClassName($method, $group, $name);
+        return $this->createClassName($package, $method, $group, $name);
     }
 
     /** @return iterable<RouterClass> */
@@ -57,20 +59,21 @@ final class Routers
     }
 
     public function createClassName(
+        Package $package,
         string $method,
-        string|null $group,
+        string $group,
         string $name,
     ): Router {
-        $className = rtrim('Internal\\Router\\' . (new Convert($method))->toPascal() . ($group === null ? '' : '\\' . (new Convert($group))->toPascal()), '\\');
+        $className = ClassString::factory($package->namespace, 'Internal\\Router\\' . new Convert($method)->toPascal() . ($group === '' ? '' : '\\' . new Convert($group)->toPascal()));
 
         return new Router(
             $className,
-            (new Convert($name))->toCamel(),
+            new Convert($name)->toCamel(),
             str_replace(
                 '\\',
                 '🔀',
                 lcfirst(
-                    $className,
+                    $className->relative,
                 ),
             ),
         );

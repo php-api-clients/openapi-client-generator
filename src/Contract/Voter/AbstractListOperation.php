@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace ApiClients\Tools\OpenApiClientGenerator\Contract\Voter;
 
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Operation;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\PropertyType;
-use ApiClients\Tools\OpenApiClientGenerator\Representation\Schema;
+use OpenAPITools\Representation\Namespaced\Operation;
+use OpenAPITools\Representation\Namespaced\Schema;
 
 use function array_key_exists;
+use function in_array;
 
 abstract class AbstractListOperation implements ListOperation
 {
     final public static function list(Operation $operation): bool
     {
         foreach ($operation->response as $response) {
-            if ($response->code === 200 && $response->content instanceof Schema) {
+            if ($response->code !== 200) {
+                continue;
+            }
+
+            if ($response->content instanceof Schema) {
                 return false;
             }
 
-            if ($response->code === 200 && $response->content instanceof PropertyType && $response->content->type !== 'array') {
+            if ($response->content->type !== 'array') {
                 return false;
             }
         }
@@ -41,12 +45,6 @@ abstract class AbstractListOperation implements ListOperation
             $match[$parameter->name] = true;
         }
 
-        foreach ($match as $matched) {
-            if ($matched === false) {
-                return false;
-            }
-        }
-
-        return true;
+        return ! in_array(false, $match, true);
     }
 }

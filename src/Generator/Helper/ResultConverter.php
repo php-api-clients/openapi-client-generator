@@ -10,7 +10,7 @@ use Rx\Observable;
 
 final class ResultConverter
 {
-    /** @return iterable<Node> */
+    /** @return iterable<Node\Stmt> */
     public static function convert(Node\Expr $expr): iterable
     {
         yield new Node\Stmt\Expression(

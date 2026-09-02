@@ -3,27 +3,19 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Internal\Router\Get;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final class Two
+final readonly class Two
 {
     public function __construct(private \ApiClients\Client\PetStore\Internal\Routers $routers)
     {
     }
     /**
-     * @return iterable<int,Schema\Cat|Schema\Dog|Schema\HellHound|Schema\Bird|Schema\Fish|Schema\Spider>
+     * @return iterable<int,\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\HellHound|\ApiClients\Client\PetStore\Schema\Bird|\ApiClients\Client\PetStore\Schema\Fish|\ApiClients\Client\PetStore\Schema\Spider>|\ApiClients\Client\PetStore\Schema\Error
      */
-    public function call(string $call, array $params, array $pathChunks) : iterable
+    public function call(string $call, array $params, array $pathChunks): Rx\Observable|ApiClients\Client\PetStore\Schema\Error
     {
         if ($pathChunks[0] == '') {
             if ($pathChunks[1] == 'pets') {
-                if ($call == 'GET /pets') {
+                if ($call === 'GET /pets') {
                     return $this->routers->internal🔀Router🔀Get🔀Pets()->list($params);
                 }
             }

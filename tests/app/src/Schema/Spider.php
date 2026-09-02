@@ -3,17 +3,9 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final readonly class Spider implements Contract\Spider
+final readonly class Spider implements \ApiClients\Client\PetStore\Contract\Spider
 {
-    public const SCHEMA_JSON = '{
+    const string SCHEMA_JSON = '{
     "required": [
         "id",
         "name",
@@ -157,9 +149,9 @@ final readonly class Spider implements Contract\Spider
         }
     }
 }';
-    public const SCHEMA_TITLE = '';
-    public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{
+    public const string SCHEMA_TITLE = '';
+    public const string SCHEMA_DESCRIPTION = '';
+    const string SCHEMA_EXAMPLE_DATA = '{
     "id": "4ccda740-74c3-4cfa-8571-ebf83c8f300a",
     "name": "generated",
     "legs": [
@@ -210,7 +202,13 @@ final readonly class Spider implements Contract\Spider
     /**
      * @param array<\ApiClients\Client\PetStore\Schema\RedEyes|\ApiClients\Client\PetStore\Schema\BlueEyes|\ApiClients\Client\PetStore\Schema\GreenEyes|\ApiClients\Client\PetStore\Schema\YellowEyes|\ApiClients\Client\PetStore\Schema\BlackEyes> $eyes
      */
-    public function __construct(public string $id, public string $name, public array $legs, #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Spider\Eyes] public array $eyes)
+    public function __construct(
+        public string $id,
+        public string $name,
+        public array $legs,
+        #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Spider\Eyes]
+        public array $eyes
+    )
     {
     }
 }

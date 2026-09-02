@@ -3,17 +3,9 @@
 declare (strict_types=1);
 namespace ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson;
 
-use ApiClients\Client\PetStore\Contract;
-use ApiClients\Client\PetStore\Error as ErrorSchemas;
-use ApiClients\Client\PetStore\Internal;
-use ApiClients\Client\PetStore\Operation;
-use ApiClients\Client\PetStore\Schema;
-use League\OpenAPIValidation;
-use React\Http;
-use ApiClients\Contracts;
-final readonly class Ok implements Contract\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok
+final readonly class Ok implements \ApiClients\Client\PetStore\Contract\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok
 {
-    public const SCHEMA_JSON = '{
+    const string SCHEMA_JSON = '{
     "required": [
         "pets"
     ],
@@ -369,9 +361,9 @@ final readonly class Ok implements Contract\Operations\Pets\Grouped\By\Type\Resp
         }
     }
 }';
-    public const SCHEMA_TITLE = '';
-    public const SCHEMA_DESCRIPTION = '';
-    public const SCHEMA_EXAMPLE_DATA = '{
+    public const string SCHEMA_TITLE = '';
+    public const string SCHEMA_DESCRIPTION = '';
+    const string SCHEMA_EXAMPLE_DATA = '{
     "pets": [
         {
             "id": "4ccda740-74c3-4cfa-8571-ebf83c8f300a",
@@ -409,7 +401,10 @@ final readonly class Ok implements Contract\Operations\Pets\Grouped\By\Type\Resp
     /**
      * @param array<\ApiClients\Client\PetStore\Schema\Cat|\ApiClients\Client\PetStore\Schema\Dog|\ApiClients\Client\PetStore\Schema\HellHound> $pets
      */
-    public function __construct(#[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok\Pets] public array $pets)
+    public function __construct(
+        #[\ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok\Pets]
+        public array $pets
+    )
     {
     }
 }

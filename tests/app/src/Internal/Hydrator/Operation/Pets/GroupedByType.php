@@ -23,8 +23,8 @@ class GroupedByType implements ObjectMapper
     public function hydrateObject(string $className, array $payload): object
     {
         return match($className) {
-            'ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok' => $this->hydrateApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Operations⚡️Pets⚡️Grouped⚡️By⚡️Type⚡️Response⚡️ApplicationJson⚡️Ok($payload),
-                'ApiClients\Client\PetStore\Schema\Error' => $this->hydrateApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Error($payload),
+            \ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok::class => $this->hydrateApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Operations⚡️Pets⚡️Grouped⚡️By⚡️Type⚡️Response⚡️ApplicationJson⚡️Ok($payload),
+                \ApiClients\Client\PetStore\Schema\Error::class => $this->hydrateApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Error($payload),
             default => throw UnableToHydrateObject::noHydrationDefined($className, $this->hydrationStack),
         };
     }
@@ -45,8 +45,8 @@ class GroupedByType implements ObjectMapper
             static $petsCaster1;
 
             if ($petsCaster1 === null) {
-                $petsCaster1 = new \ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok\Pets(...array (
-));
+                $petsCaster1 = new \ApiClients\Client\PetStore\Internal\Attribute\CastUnionToType\Multiple\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok\Pets(... [
+]);
             }
 
             $value = $petsCaster1->cast($value, $this);
@@ -61,7 +61,7 @@ class GroupedByType implements ObjectMapper
             after_pets:
 
         } catch (\Throwable $exception) {
-            throw UnableToHydrateObject::dueToError('ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok', $exception, stack: $this->hydrationStack);
+            throw UnableToHydrateObject::dueToError(\ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok::class, $exception, stack: $this->hydrationStack);
         }
 
         if (count($missingFields) > 0) {
@@ -71,7 +71,7 @@ class GroupedByType implements ObjectMapper
         try {
             return new \ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok(...$properties);
         } catch (\Throwable $exception) {
-            throw UnableToHydrateObject::dueToError('ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok', $exception, stack: $this->hydrationStack);
+            throw UnableToHydrateObject::dueToError(\ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok::class, $exception, stack: $this->hydrationStack);
         }
     }
 
@@ -104,7 +104,7 @@ class GroupedByType implements ObjectMapper
             after_message:
 
         } catch (\Throwable $exception) {
-            throw UnableToHydrateObject::dueToError('ApiClients\Client\PetStore\Schema\Error', $exception, stack: $this->hydrationStack);
+            throw UnableToHydrateObject::dueToError(\ApiClients\Client\PetStore\Schema\Error::class, $exception, stack: $this->hydrationStack);
         }
 
         if (count($missingFields) > 0) {
@@ -114,24 +114,24 @@ class GroupedByType implements ObjectMapper
         try {
             return new \ApiClients\Client\PetStore\Schema\Error(...$properties);
         } catch (\Throwable $exception) {
-            throw UnableToHydrateObject::dueToError('ApiClients\Client\PetStore\Schema\Error', $exception, stack: $this->hydrationStack);
+            throw UnableToHydrateObject::dueToError(\ApiClients\Client\PetStore\Schema\Error::class, $exception, stack: $this->hydrationStack);
         }
     }
     
     private function serializeViaTypeMap(string $accessor, object $object, array $payloadToTypeMap): array
     {
         foreach ($payloadToTypeMap as $payloadType => [$valueType, $method]) {
-            if (is_a($object, $valueType)) {
+            if ($object instanceof $valueType) {
                 return [$accessor => $payloadType] + $this->{$method}($object);
             }
         }
 
-        throw new \LogicException('No type mapped for object of class: ' . get_class($object));
+        throw new \LogicException('No type mapped for object of class: ' . $object::class);
     }
 
     public function serializeObject(object $object): mixed
     {
-        return $this->serializeObjectOfType($object, get_class($object));
+        return $this->serializeObjectOfType($object, $object::class);
     }
 
     /**
@@ -149,9 +149,9 @@ class GroupedByType implements ObjectMapper
             'DateTime' => $this->serializeValueDateTime($object),
             'DateTimeImmutable' => $this->serializeValueDateTimeImmutable($object),
             'DateTimeInterface' => $this->serializeValueDateTimeInterface($object),
-            'ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok' => $this->serializeObjectApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Operations⚡️Pets⚡️Grouped⚡️By⚡️Type⚡️Response⚡️ApplicationJson⚡️Ok($object),
-            'ApiClients\Client\PetStore\Schema\Error' => $this->serializeObjectApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Error($object),
-                default => throw new \LogicException('No serialization defined for $className'),
+            \ApiClients\Client\PetStore\Schema\Operations\Pets\Grouped\By\Type\Response\ApplicationJson\Ok::class => $this->serializeObjectApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Operations⚡️Pets⚡️Grouped⚡️By⚡️Type⚡️Response⚡️ApplicationJson⚡️Ok($object),
+            \ApiClients\Client\PetStore\Schema\Error::class => $this->serializeObjectApiClients⚡️Client⚡️PetStore⚡️Schema⚡️Error($object),
+                default => throw new \LogicException("No serialization defined for $className"),
             };
         } catch (\Throwable $exception) {
             throw UnableToSerializeObject::dueToError($className, $exception);
@@ -164,8 +164,8 @@ class GroupedByType implements ObjectMapper
         static $serializer;
         
         if ($serializer === null) {
-            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeArrayItems(...array (
-));
+            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeArrayItems(... [
+]);
         }
         
         return $serializer->serialize($value, $this);
@@ -177,8 +177,8 @@ class GroupedByType implements ObjectMapper
         static $serializer;
         
         if ($serializer === null) {
-            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeUuidToString(...array (
-));
+            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeUuidToString(... [
+]);
         }
         
         return $serializer->serialize($value, $this);
@@ -190,8 +190,8 @@ class GroupedByType implements ObjectMapper
         static $serializer;
         
         if ($serializer === null) {
-            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(...array (
-));
+            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(... [
+]);
         }
         
         return $serializer->serialize($value, $this);
@@ -203,8 +203,8 @@ class GroupedByType implements ObjectMapper
         static $serializer;
         
         if ($serializer === null) {
-            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(...array (
-));
+            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(... [
+]);
         }
         
         return $serializer->serialize($value, $this);
@@ -216,8 +216,8 @@ class GroupedByType implements ObjectMapper
         static $serializer;
         
         if ($serializer === null) {
-            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(...array (
-));
+            $serializer = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeDateTime(... [
+]);
         }
         
         return $serializer->serialize($value, $this);
@@ -233,8 +233,8 @@ class GroupedByType implements ObjectMapper
         static $petsSerializer0;
 
         if ($petsSerializer0 === null) {
-            $petsSerializer0 = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeArrayItems(...array (
-));
+            $petsSerializer0 = new \EventSauce\ObjectHydrator\PropertySerializers\SerializeArrayItems(... [
+]);
         }
         
         $pets = $petsSerializer0->serialize($pets, $this);

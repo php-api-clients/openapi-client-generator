@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PHPStan\Testing;
 
-function assertType($a, $b): void
+// phpcs:disable
+function assertType(mixed $expectedType, mixed $actualType): void
 {
 }
